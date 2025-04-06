@@ -1,0 +1,409 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		00A1234567890123456789AB /* VoiceToObsidianApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B1234567890123456789AB /* VoiceToObsidianApp.swift */; };
+		00A2234567890123456789AB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B2234567890123456789AB /* ContentView.swift */; };
+		00A3234567890123456789AB /* RecordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B3234567890123456789AB /* RecordView.swift */; };
+		00A4234567890123456789AB /* VoiceNoteListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B4234567890123456789AB /* VoiceNoteListView.swift */; };
+		00A5234567890123456789AB /* VoiceNoteDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B5234567890123456789AB /* VoiceNoteDetailView.swift */; };
+		00A6234567890123456789AB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B6234567890123456789AB /* SettingsView.swift */; };
+		00A7234567890123456789AB /* VoiceNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B7234567890123456789AB /* VoiceNote.swift */; };
+		00A8234567890123456789AB /* VoiceNoteStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B8234567890123456789AB /* VoiceNoteStore.swift */; };
+		00A9234567890123456789AB /* ObsidianService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B9234567890123456789AB /* ObsidianService.swift */; };
+		00AA234567890123456789AB /* AnthropicService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BA234567890123456789AB /* AnthropicService.swift */; };
+		00AB234567890123456789AB /* DocumentPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BB234567890123456789AB /* DocumentPicker.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		00B1234567890123456789AB /* VoiceToObsidianApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceToObsidianApp.swift; sourceTree = "<group>"; };
+		00B2234567890123456789AB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		00B3234567890123456789AB /* RecordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordView.swift; sourceTree = "<group>"; };
+		00B4234567890123456789AB /* VoiceNoteListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteListView.swift; sourceTree = "<group>"; };
+		00B5234567890123456789AB /* VoiceNoteDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteDetailView.swift; sourceTree = "<group>"; };
+		00B6234567890123456789AB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		00B7234567890123456789AB /* VoiceNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNote.swift; sourceTree = "<group>"; };
+		00B8234567890123456789AB /* VoiceNoteStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteStore.swift; sourceTree = "<group>"; };
+		00B9234567890123456789AB /* ObsidianService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObsidianService.swift; sourceTree = "<group>"; };
+		00BA234567890123456789AB /* AnthropicService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicService.swift; sourceTree = "<group>"; };
+		00BB234567890123456789AB /* DocumentPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPicker.swift; sourceTree = "<group>"; };
+		00C1234567890123456789AB /* VoiceToObsidian.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceToObsidian.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		00C2234567890123456789AB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		00C3234567890123456789AB /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		00D1234567890123456789AB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		00E1234567890123456789AB = {
+			isa = PBXGroup;
+			children = (
+				00E2234567890123456789AB /* VoiceToObsidian */,
+				00E3234567890123456789AB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		00E2234567890123456789AB /* VoiceToObsidian */ = {
+			isa = PBXGroup;
+			children = (
+				00B1234567890123456789AB /* VoiceToObsidianApp.swift */,
+				00E4234567890123456789AB /* Views */,
+				00E5234567890123456789AB /* Models */,
+				00E6234567890123456789AB /* ViewModels */,
+				00E7234567890123456789AB /* Services */,
+				00C2234567890123456789AB /* Info.plist */,
+				00C3234567890123456789AB /* LaunchScreen.storyboard */,
+			);
+			path = VoiceToObsidian;
+			sourceTree = "<group>";
+		};
+		00E3234567890123456789AB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				00C1234567890123456789AB /* VoiceToObsidian.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		00E4234567890123456789AB /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				00B2234567890123456789AB /* ContentView.swift */,
+				00B3234567890123456789AB /* RecordView.swift */,
+				00B4234567890123456789AB /* VoiceNoteListView.swift */,
+				00B5234567890123456789AB /* VoiceNoteDetailView.swift */,
+				00B6234567890123456789AB /* SettingsView.swift */,
+				00BB234567890123456789AB /* DocumentPicker.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		00E5234567890123456789AB /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				00B7234567890123456789AB /* VoiceNote.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		00E6234567890123456789AB /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				00B8234567890123456789AB /* VoiceNoteStore.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		00E7234567890123456789AB /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				00B9234567890123456789AB /* ObsidianService.swift */,
+				00BA234567890123456789AB /* AnthropicService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		00F1234567890123456789AB /* VoiceToObsidian */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 00F2234567890123456789AB /* Build configuration list for PBXNativeTarget "VoiceToObsidian" */;
+			buildPhases = (
+				00F3234567890123456789AB /* Sources */,
+				00D1234567890123456789AB /* Frameworks */,
+				00F4234567890123456789AB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = VoiceToObsidian;
+			productName = VoiceToObsidian;
+			productReference = 00C1234567890123456789AB /* VoiceToObsidian.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		00G1234567890123456789AB /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					00F1234567890123456789AB = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 00G2234567890123456789AB /* Build configuration list for PBXProject "VoiceToObsidian" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 00E1234567890123456789AB;
+			productRefGroup = 00E3234567890123456789AB /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				00F1234567890123456789AB /* VoiceToObsidian */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		00F4234567890123456789AB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		00F3234567890123456789AB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				00A1234567890123456789AB /* VoiceToObsidianApp.swift in Sources */,
+				00A2234567890123456789AB /* ContentView.swift in Sources */,
+				00A3234567890123456789AB /* RecordView.swift in Sources */,
+				00A4234567890123456789AB /* VoiceNoteListView.swift in Sources */,
+				00A5234567890123456789AB /* VoiceNoteDetailView.swift in Sources */,
+				00A6234567890123456789AB /* SettingsView.swift in Sources */,
+				00A7234567890123456789AB /* VoiceNote.swift in Sources */,
+				00A8234567890123456789AB /* VoiceNoteStore.swift in Sources */,
+				00A9234567890123456789AB /* ObsidianService.swift in Sources */,
+				00AA234567890123456789AB /* AnthropicService.swift in Sources */,
+				00AB234567890123456789AB /* DocumentPicker.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		00H1234567890123456789AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		00H2234567890123456789AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		00I1234567890123456789AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = 8JF5HHJ64N;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "$(SRCROOT)/LaunchScreen";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.VoiceToObsidian;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		00I2234567890123456789AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = 8JF5HHJ64N;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "$(SRCROOT)/LaunchScreen";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.VoiceToObsidian;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		00F2234567890123456789AB /* Build configuration list for PBXNativeTarget "VoiceToObsidian" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00I1234567890123456789AB /* Debug */,
+				00I2234567890123456789AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		00G2234567890123456789AB /* Build configuration list for PBXProject "VoiceToObsidian" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00H1234567890123456789AB /* Debug */,
+				00H2234567890123456789AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 00G1234567890123456789AB /* Project object */;
+}
