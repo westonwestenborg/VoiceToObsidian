@@ -16,21 +16,24 @@ struct VoiceNoteDetailView: View {
                 // Background color
                 Color.flexokiBackground
                     .edgesIgnoringSafeArea(.all)
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 24) {
                 // Title
                 Text(voiceNote.title)
                     .font(.largeTitle)
                     .fontWeight(.bold)
+                    .dynamicTypeSize(.small...(.accessibility5))
                 
                 // Date and duration info
                 HStack {
                     Label(formattedDate(voiceNote.creationDate), systemImage: "calendar")
                         .foregroundColor(Color.flexokiText2)
+                        .dynamicTypeSize(.small...(.accessibility5))
                     
                     Spacer()
                     
                     Label(formattedDuration(voiceNote.duration), systemImage: "clock")
                         .foregroundColor(Color.flexokiText2)
+                        .dynamicTypeSize(.small...(.accessibility5))
                 }
                 .font(.subheadline)
                 
@@ -39,19 +42,21 @@ struct VoiceNoteDetailView: View {
                     // Progress bar
                     ProgressView(value: currentTime, total: voiceNote.duration)
                         .progressViewStyle(LinearProgressViewStyle())
-                        .padding(.vertical)
+                        .padding(.vertical, 16)
                     
                     // Time display
                     HStack {
                         Text(formatTimeString(currentTime))
                             .font(.caption)
                             .monospacedDigit()
+                            .dynamicTypeSize(.small...(.accessibility5))
                         
                         Spacer()
                         
                         Text(formatTimeString(voiceNote.duration))
                             .font(.caption)
                             .monospacedDigit()
+                            .dynamicTypeSize(.small...(.accessibility5))
                     }
                     
                     // Playback controls
@@ -78,17 +83,19 @@ struct VoiceNoteDetailView: View {
                                 .foregroundColor(Color.flexokiAccentRed)
                         }
                     }
-                    .padding()
+                    .padding(.horizontal, 16)
+            .padding(.vertical, 16)
                 }
-                .padding()
+                .padding(16)
                 .background(Color.flexokiBackground2)
                 .cornerRadius(10)
                 
                 // Transcript section
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("Transcript")
                             .font(.headline)
+                            .dynamicTypeSize(.small...(.accessibility5))
                         
                         Spacer()
                         
@@ -98,19 +105,23 @@ struct VoiceNoteDetailView: View {
                             Text(showingOriginalTranscript ? "Show Cleaned" : "Show Original")
                                 .font(.caption)
                                 .foregroundColor(Color.flexokiAccentBlue)
+                                .dynamicTypeSize(.small...(.accessibility5))
                         }
+                        .frame(minHeight: 44)
                     }
                     
                     if showingOriginalTranscript {
                         Text(voiceNote.originalTranscript)
-                            .padding()
+                            .padding(16)
                             .background(Color.flexokiBackground2)
                             .cornerRadius(8)
+                            .dynamicTypeSize(.small...(.accessibility5))
                     } else {
                         Text(voiceNote.cleanedTranscript)
-                            .padding()
+                            .padding(16)
                             .background(Color.flexokiBackground2)
                             .cornerRadius(8)
+                            .dynamicTypeSize(.small...(.accessibility5))
                     }
                 }
                 
@@ -119,6 +130,7 @@ struct VoiceNoteDetailView: View {
                     VStack(alignment: .leading) {
                         Text("Obsidian Note")
                             .font(.headline)
+                            .dynamicTypeSize(.small...(.accessibility5))
                         
                         Button(action: {
                             // TODO: Open Obsidian note if possible
@@ -128,17 +140,20 @@ struct VoiceNoteDetailView: View {
                                 Image(systemName: "doc.text")
                                 Text(obsidianPath)
                                     .lineLimit(1)
+                                    .dynamicTypeSize(.small...(.accessibility5))
                                 Spacer()
                                 Image(systemName: "arrow.up.right.square")
                             }
-                            .padding()
+                            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
                             .background(Color.flexokiBackground2)
                             .cornerRadius(8)
                         }
                     }
                 }
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
             }
         }
         .background(Color.flexokiBackground)

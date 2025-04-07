@@ -13,7 +13,7 @@ struct RecordView: View {
             // Background color
             Color.flexokiBackground
                 .edgesIgnoringSafeArea(.all)
-        VStack {
+        VStack(spacing: 16) {
             Spacer()
             
             // Recording visualization with waveform
@@ -40,7 +40,8 @@ struct RecordView: View {
             Text(timeString(time: recordingTime))
                 .font(.system(size: 48, weight: .bold, design: .monospaced))
                 .foregroundColor(isRecording ? Color.flexokiAccentRed : Color.flexokiText)
-                .padding(.top, 40)
+                .padding(.top, 16)
+                .dynamicTypeSize(.small...(.accessibility5))
             
             Spacer()
             
@@ -57,11 +58,12 @@ struct RecordView: View {
                     .foregroundColor(Color.flexokiPaper)
                     .padding()
                     .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
                     .background(isRecording ? Color.flexokiAccentRed : Color.flexokiAccentBlue)
                     .cornerRadius(10)
             }
-            .padding(.horizontal)
-            .padding(.bottom, 30)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 24)
         }
         .alert("Processing Voice Note", isPresented: $showingProcessingAlert) {
             ProgressView()

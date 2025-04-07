@@ -26,7 +26,8 @@ struct VoiceNoteListView: View {
                     Text("No voice notes yet")
                         .foregroundColor(Color.flexokiText2)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
+                        .padding(16)
+                        .dynamicTypeSize(.small...(.accessibility5))
                         .listRowBackground(Color.flexokiBackground)
                 } else {
                     ForEach(filteredNotes) { voiceNote in
@@ -68,14 +69,16 @@ struct VoiceNoteRow: View {
     
     var body: some View {
         // Use a clean layout without additional backgrounds
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(voiceNote.title)
                 .font(.headline)
+                .dynamicTypeSize(.small...(.accessibility5))
             
             Text(voiceNote.cleanedTranscript.prefix(100) + (voiceNote.cleanedTranscript.count > 100 ? "..." : ""))
                 .font(.subheadline)
                 .foregroundColor(Color.flexokiText2)
                 .lineLimit(2)
+                .dynamicTypeSize(.small...(.accessibility5))
             
             HStack {
                 Image(systemName: "calendar")
@@ -83,6 +86,7 @@ struct VoiceNoteRow: View {
                 Text(formattedDate(voiceNote.creationDate))
                     .font(.caption)
                     .foregroundColor(Color.flexokiText2)
+                    .dynamicTypeSize(.small...(.accessibility5))
                 
                 Spacer()
                 
@@ -91,10 +95,11 @@ struct VoiceNoteRow: View {
                 Text(formattedDuration(voiceNote.duration))
                     .font(.caption)
                     .foregroundColor(Color.flexokiText2)
+                    .dynamicTypeSize(.small...(.accessibility5))
             }
-            .padding(.top, 4)
+            .padding(.top, 8)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
     }
     
     private func formattedDate(_ date: Date) -> String {

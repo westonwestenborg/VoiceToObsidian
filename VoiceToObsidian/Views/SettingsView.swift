@@ -18,10 +18,11 @@ struct FlexokiFormView<Content: View>: View {
             
             // Content with styling
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 24) {
                     content
                 }
-                .padding()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
             }
         }
     }
@@ -37,13 +38,14 @@ struct FlexokiSectionView<Content: View>: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text(title)
                 .font(.headline)
                 .foregroundColor(Color.flexokiText)
-                .padding(.leading, 16)
+                .dynamicTypeSize(.small...(.accessibility5))
+                .padding(.horizontal, 16)
             
-            VStack(spacing: 2) {
+            VStack(spacing: 8) {
                 content
             }
             .padding(16)
@@ -69,9 +71,10 @@ struct SettingsView: View {
                     Text("API Key")
                         .font(.subheadline)
                         .foregroundColor(Color.flexokiText2)
+                        .dynamicTypeSize(.small...(.accessibility5))
                     
                     SecureField("Enter your Anthropic API key", text: $anthropicAPIKey)
-                        .padding(10)
+                        .padding(8)
                         .background(Color.flexokiBackground)
                         .cornerRadius(8)
                         .overlay(
@@ -81,6 +84,7 @@ struct SettingsView: View {
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                         .foregroundColor(Color.flexokiText)
+                        .frame(minHeight: 44)
                     
                     Button(action: {
                         hideKeyboard()
@@ -93,9 +97,10 @@ struct SettingsView: View {
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(Color.flexokiPaper)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                            .frame(minHeight: 44)
                             .background(Color.flexokiAccentBlue)
                             .cornerRadius(8)
+                            .dynamicTypeSize(.small...(.accessibility5))
                     }
                 }
             }
@@ -145,29 +150,33 @@ struct SettingsView: View {
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(Color.flexokiPaper)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                            .frame(minHeight: 44)
                             .background(Color.flexokiAccentBlue)
                             .cornerRadius(8)
+                            .dynamicTypeSize(.small...(.accessibility5))
                     }
                 }
             }
             
             // About Section
             FlexokiSectionView("About") {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("Voice to Obsidian")
                         .font(.headline)
                         .foregroundColor(Color.flexokiText)
+                        .dynamicTypeSize(.small...(.accessibility5))
                     
                     Text("Version 1.0")
                         .font(.subheadline)
                         .foregroundColor(Color.flexokiText2)
+                        .dynamicTypeSize(.small...(.accessibility5))
                     
                     Text("This app records voice memos, transcribes them, cleans them up using Anthropic's Claude API, and saves them to your Obsidian vault.")
                         .font(.caption)
                         .foregroundColor(Color.flexokiText2)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 4)
+                        .padding(.top, 8)
+                        .dynamicTypeSize(.small...(.accessibility5))
                 }
                 .padding(.vertical, 4)
             }

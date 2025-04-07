@@ -14,11 +14,12 @@ struct ContentView: View {
             
             if !isReady {
                 // Show a simple loading view
-                VStack {
+                VStack(spacing: 16) {
                     Text("Voice to Obsidian")
                         .font(.largeTitle)
                         .foregroundColor(Color.flexokiText)
-                        .padding()
+                        .padding(.horizontal, 16)
+                        .dynamicTypeSize(.small...(.accessibility5))
                     
                     // Simple loading indicator
                     Circle()
@@ -28,6 +29,7 @@ struct ContentView: View {
                         .rotationEffect(Angle(degrees: isReady ? 0 : 360))
                         .animation(Animation.linear(duration: 1).repeatForever(autoreverses: false), value: isReady)
                 }
+                .padding(.horizontal, 16)
                 .onAppear {
                     // Delay full initialization
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
