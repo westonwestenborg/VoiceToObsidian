@@ -46,9 +46,6 @@ struct VoiceNoteListView: View {
             }
             .listStyle(PlainListStyle())
             .background(Color.flexokiBackground)
-            .onAppear {
-                UITableView.appearance().backgroundColor = UIColor(Color.flexokiBackground)
-            }
             }
         }
     }
