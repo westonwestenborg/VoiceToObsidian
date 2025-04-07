@@ -12,6 +12,10 @@ struct VoiceNoteDetailView: View {
     
     var body: some View {
         ScrollView {
+            ZStack {
+                // Background color
+                Color.flexokiBackground
+                    .edgesIgnoringSafeArea(.all)
             VStack(alignment: .leading, spacing: 20) {
                 // Title
                 Text(voiceNote.title)
@@ -21,12 +25,12 @@ struct VoiceNoteDetailView: View {
                 // Date and duration info
                 HStack {
                     Label(formattedDate(voiceNote.creationDate), systemImage: "calendar")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.flexokiText2)
                     
                     Spacer()
                     
                     Label(formattedDuration(voiceNote.duration), systemImage: "clock")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.flexokiText2)
                 }
                 .font(.subheadline)
                 
@@ -62,7 +66,7 @@ struct VoiceNoteDetailView: View {
                             Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
                                 .resizable()
                                 .frame(width: 44, height: 44)
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color.flexokiAccentBlue)
                         }
                         
                         Button(action: {
@@ -71,13 +75,13 @@ struct VoiceNoteDetailView: View {
                             Image(systemName: "stop.circle.fill")
                                 .resizable()
                                 .frame(width: 44, height: 44)
-                                .foregroundColor(.red)
+                                .foregroundColor(Color.flexokiAccentRed)
                         }
                     }
                     .padding()
                 }
                 .padding()
-                .background(Color(.systemGray6))
+                .background(Color.flexokiBackground2)
                 .cornerRadius(10)
                 
                 // Transcript section
@@ -93,19 +97,19 @@ struct VoiceNoteDetailView: View {
                         }) {
                             Text(showingOriginalTranscript ? "Show Cleaned" : "Show Original")
                                 .font(.caption)
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color.flexokiAccentBlue)
                         }
                     }
                     
                     if showingOriginalTranscript {
                         Text(voiceNote.originalTranscript)
                             .padding()
-                            .background(Color(.systemGray6))
+                            .background(Color.flexokiBackground2)
                             .cornerRadius(8)
                     } else {
                         Text(voiceNote.cleanedTranscript)
                             .padding()
-                            .background(Color(.systemGray6))
+                            .background(Color.flexokiBackground2)
                             .cornerRadius(8)
                     }
                 }
@@ -128,14 +132,16 @@ struct VoiceNoteDetailView: View {
                                 Image(systemName: "arrow.up.right.square")
                             }
                             .padding()
-                            .background(Color(.systemGray6))
+                            .background(Color.flexokiBackground2)
                             .cornerRadius(8)
                         }
                     }
                 }
             }
             .padding()
+            }
         }
+        .background(Color.flexokiBackground)
         .navigationBarTitle("", displayMode: .inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {

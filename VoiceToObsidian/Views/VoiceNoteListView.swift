@@ -17,17 +17,23 @@ struct VoiceNoteListView: View {
     
     var body: some View {
         NavigationView {
+            ZStack {
+                // Background color
+                Color.flexokiBackground
+                    .edgesIgnoringSafeArea(.all)
             List {
                 if filteredNotes.isEmpty {
                     Text("No voice notes yet")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.flexokiText2)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding()
+                        .listRowBackground(Color.flexokiBackground)
                 } else {
                     ForEach(filteredNotes) { voiceNote in
                         NavigationLink(destination: VoiceNoteDetailView(voiceNote: voiceNote)) {
                             VoiceNoteRow(voiceNote: voiceNote)
                         }
+                        .listRowBackground(Color.flexokiBackground)
                     }
                     .onDelete(perform: deleteNotes)
                 }
@@ -36,6 +42,12 @@ struct VoiceNoteListView: View {
             .searchable(text: $searchText, prompt: "Search notes")
             .toolbar {
                 EditButton()
+            }
+            .listStyle(PlainListStyle())
+            .background(Color.flexokiBackground)
+            .onAppear {
+                UITableView.appearance().backgroundColor = UIColor(Color.flexokiBackground)
+            }
             }
         }
     }
@@ -55,29 +67,30 @@ struct VoiceNoteRow: View {
     let voiceNote: VoiceNote
     
     var body: some View {
+        // Use a clean layout without additional backgrounds
         VStack(alignment: .leading, spacing: 4) {
             Text(voiceNote.title)
                 .font(.headline)
             
             Text(voiceNote.cleanedTranscript.prefix(100) + (voiceNote.cleanedTranscript.count > 100 ? "..." : ""))
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.flexokiText2)
                 .lineLimit(2)
             
             HStack {
                 Image(systemName: "calendar")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.flexokiText2)
                 Text(formattedDate(voiceNote.creationDate))
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.flexokiText2)
                 
                 Spacer()
                 
                 Image(systemName: "clock")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.flexokiText2)
                 Text(formattedDuration(voiceNote.duration))
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.flexokiText2)
             }
             .padding(.top, 4)
         }
@@ -102,5 +115,6 @@ struct VoiceNoteListView_Previews: PreviewProvider {
     static var previews: some View {
         VoiceNoteListView()
             .environmentObject(VoiceNoteStore(previewData: true))
+            .background(Color.flexokiBackground)
     }
 }

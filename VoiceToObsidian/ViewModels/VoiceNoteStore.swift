@@ -22,18 +22,51 @@ class VoiceNoteStore: ObservableObject {
     // Path to Obsidian vault - to be set by the user
     private var obsidianVaultPath: String = UserDefaults.standard.string(forKey: "ObsidianVaultPath") ?? ""
     
+    // Track whether we've completed initialization
+    private var hasInitialized = false
+    
     init(previewData: Bool = false) {
         if previewData {
             voiceNotes = VoiceNote.sampleNotes
+            hasInitialized = true
         } else {
+            // Load voice notes immediately but defer other heavy initialization
+            // This makes the app launch faster while still showing content
             loadVoiceNotes()
+            
+            // Defer speech recognition setup which is memory intensive
+            DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                self?.setupSpeechRecognition()
+                DispatchQueue.main.async {
+                    self?.hasInitialized = true
+                }
+            }
+        }
+    }
+    
+    private func performDeferredInitialization() {
+        guard !hasInitialized else { return }
+        
+        // If voice notes haven't been loaded yet, load them
+        if voiceNotes.isEmpty {
+            loadVoiceNotes()
+        }
+        
+        // Setup speech recognition if needed
+        if speechRecognizer == nil {
             setupSpeechRecognition()
         }
+        
+        hasInitialized = true
     }
     
     // MARK: - Voice Recording
     
     func startRecording(completion: @escaping (Bool) -> Void) {
+        // Ensure initialization is complete before recording
+        if !hasInitialized {
+            performDeferredInitialization()
+        }
         // Set up the recording session
         let session = AVAudioSession.sharedInstance()
         recordingSession = session
@@ -215,17 +248,20 @@ class VoiceNoteStore: ObservableObject {
     // MARK: - Speech Recognition
     
     private func setupSpeechRecognition() {
-        speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-        
-        // Request authorization for speech recognition
-        SFSpeechRecognizer.requestAuthorization { status in
-            guard status == .authorized else {
-                print("Speech recognition authorization denied")
-                return
+        // Use autoreleasepool to help with memory management
+        autoreleasepool {
+            speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+            
+            // Request authorization for speech recognition
+            SFSpeechRecognizer.requestAuthorization { status in
+                guard status == .authorized else {
+                    print("Speech recognition authorization denied")
+                    return
+                }
+                // Authorization successful
+                print("Speech recognition authorization granted")
             }
-            // Authorization successful
-            print("Speech recognition authorization granted")
-        }
+        } // Close autoreleasepool
     }
     
     private func startSpeechRecognition() {
@@ -387,18 +423,45 @@ class VoiceNoteStore: ObservableObject {
     }
     
     private func loadVoiceNotes() {
-        let url = getVoiceNotesFileURL()
-        
-        if FileManager.default.fileExists(atPath: url.path) {
-            do {
-                let data = try Data(contentsOf: url)
-                voiceNotes = try JSONDecoder().decode([VoiceNote].self, from: data)
-            } catch {
-                print("Failed to load voice notes: \(error.localizedDescription)")
+        // Use autoreleasepool to help with memory management during JSON decoding
+        autoreleasepool {
+            let url = getVoiceNotesFileURL()
+            
+            if FileManager.default.fileExists(atPath: url.path) {
+                do {
+                    // Use a file handle instead of loading entire file into memory at once
+                    let fileHandle = try FileHandle(forReadingFrom: url)
+                    let data = fileHandle.readDataToEndOfFile()
+                    try fileHandle.close()
+                    
+                    // Decode on a background thread if this is called from main thread
+                    if Thread.isMainThread && data.count > 10_000 { // Only for large files
+                        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                            autoreleasepool {
+                                do {
+                                    let decodedNotes = try JSONDecoder().decode([VoiceNote].self, from: data)
+                                    DispatchQueue.main.async {
+                                        self?.voiceNotes = decodedNotes
+                                    }
+                                } catch {
+                                    print("Failed to decode voice notes: \(error.localizedDescription)")
+                                    DispatchQueue.main.async {
+                                        self?.voiceNotes = []
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // For smaller files or background threads, decode directly
+                        voiceNotes = try JSONDecoder().decode([VoiceNote].self, from: data)
+                    }
+                } catch {
+                    print("Failed to load voice notes: \(error.localizedDescription)")
+                    voiceNotes = []
+                }
+            } else {
                 voiceNotes = []
             }
-        } else {
-            voiceNotes = []
         }
     }
     

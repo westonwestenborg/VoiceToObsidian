@@ -9,23 +9,26 @@ struct RecordView: View {
     @State private var showingProcessingAlert = false
     
     var body: some View {
+        ZStack {
+            // Background color
+            Color.flexokiBackground
+                .edgesIgnoringSafeArea(.all)
         VStack {
             Spacer()
             
-            // Recording visualization
+            // Recording visualization with waveform
             ZStack {
-                Circle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 250, height: 250)
+                // Main visualization
+                WaveformView(
+                    isRecording: isRecording,
+                    color: isRecording ? Color.flexokiAccentRed : Color.flexokiAccentBlue
+                )
+                .frame(width: 250, height: 250)
                 
-                Circle()
-                    .fill(isRecording ? Color.red : Color.blue)
-                    .frame(width: 80, height: 80)
-                
+                // Pulsing circle when recording
                 if isRecording {
-                    // Animated recording indicator
                     Circle()
-                        .stroke(Color.red, lineWidth: 3)
+                        .stroke(Color.flexokiAccentRed, lineWidth: 3)
                         .frame(width: 250, height: 250)
                         .scaleEffect(isRecording ? 1.1 : 1.0)
                         .opacity(isRecording ? 0.5 : 1.0)
@@ -36,7 +39,7 @@ struct RecordView: View {
             // Timer display
             Text(timeString(time: recordingTime))
                 .font(.system(size: 48, weight: .bold, design: .monospaced))
-                .foregroundColor(isRecording ? .red : .primary)
+                .foregroundColor(isRecording ? Color.flexokiAccentRed : Color.flexokiText)
                 .padding(.top, 40)
             
             Spacer()
@@ -51,10 +54,10 @@ struct RecordView: View {
             }) {
                 Text(isRecording ? "Stop Recording" : "Start Recording")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color.flexokiPaper)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(isRecording ? Color.red : Color.blue)
+                    .background(isRecording ? Color.flexokiAccentRed : Color.flexokiAccentBlue)
                     .cornerRadius(10)
             }
             .padding(.horizontal)
@@ -65,6 +68,7 @@ struct RecordView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Your voice note is being transcribed and processed...")
+        }
         }
     }
     
@@ -98,7 +102,10 @@ struct RecordView: View {
             
             if success, let _ = voiceNote {
                 // Successfully processed voice note
-                // TODO: Show success notification or navigate to the note
+                // Reset the timer to 0 after successful processing
+                DispatchQueue.main.async {
+                    self.recordingTime = 0
+                }
             } else {
                 // TODO: Show error alert
             }

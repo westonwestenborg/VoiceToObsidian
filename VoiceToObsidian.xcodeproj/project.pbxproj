@@ -18,6 +18,9 @@
 		00A9234567890123456789AB /* ObsidianService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B9234567890123456789AB /* ObsidianService.swift */; };
 		00AA234567890123456789AB /* AnthropicService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BA234567890123456789AB /* AnthropicService.swift */; };
 		00AB234567890123456789AB /* DocumentPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BB234567890123456789AB /* DocumentPicker.swift */; };
+		D403DDF32DA33DA100C29CDB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D403DDF22DA33DA100C29CDB /* Assets.xcassets */; };
+		D403DDFE2DA3444B00C29CDB /* WaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DDFD2DA3444B00C29CDB /* WaveformView.swift */; };
+		D403DE002DA3497F00C29CDB /* SimpleFlexokiColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DDFF2DA3497F00C29CDB /* SimpleFlexokiColors.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +38,9 @@
 		00C1234567890123456789AB /* VoiceToObsidian.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceToObsidian.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		00C2234567890123456789AB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		00C3234567890123456789AB /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		D403DDF22DA33DA100C29CDB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = VoiceToObsidian/Assets.xcassets; sourceTree = "<group>"; };
+		D403DDFD2DA3444B00C29CDB /* WaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformView.swift; sourceTree = "<group>"; };
+		D403DDFF2DA3497F00C29CDB /* SimpleFlexokiColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleFlexokiColors.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,6 +57,7 @@
 		00E1234567890123456789AB = {
 			isa = PBXGroup;
 			children = (
+				D403DDF22DA33DA100C29CDB /* Assets.xcassets */,
 				00E2234567890123456789AB /* VoiceToObsidian */,
 				00E3234567890123456789AB /* Products */,
 			);
@@ -59,6 +66,8 @@
 		00E2234567890123456789AB /* VoiceToObsidian */ = {
 			isa = PBXGroup;
 			children = (
+				D403DDFA2DA3442300C29CDB /* Utilities */,
+				D403DDF62DA3440F00C29CDB /* Extensions */,
 				00B1234567890123456789AB /* VoiceToObsidianApp.swift */,
 				00E4234567890123456789AB /* Views */,
 				00E5234567890123456789AB /* Models */,
@@ -81,6 +90,7 @@
 		00E4234567890123456789AB /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				D403DDFD2DA3444B00C29CDB /* WaveformView.swift */,
 				00B2234567890123456789AB /* ContentView.swift */,
 				00B3234567890123456789AB /* RecordView.swift */,
 				00B4234567890123456789AB /* VoiceNoteListView.swift */,
@@ -114,6 +124,21 @@
 				00BA234567890123456789AB /* AnthropicService.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		D403DDF62DA3440F00C29CDB /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				D403DDFF2DA3497F00C29CDB /* SimpleFlexokiColors.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		D403DDFA2DA3442300C29CDB /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Utilities;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -174,6 +199,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D403DDF32DA33DA100C29CDB /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -186,6 +212,8 @@
 			files = (
 				00A1234567890123456789AB /* VoiceToObsidianApp.swift in Sources */,
 				00A2234567890123456789AB /* ContentView.swift in Sources */,
+				D403DDFE2DA3444B00C29CDB /* WaveformView.swift in Sources */,
+				D403DE002DA3497F00C29CDB /* SimpleFlexokiColors.swift in Sources */,
 				00A3234567890123456789AB /* RecordView.swift in Sources */,
 				00A4234567890123456789AB /* VoiceNoteListView.swift in Sources */,
 				00A5234567890123456789AB /* VoiceNoteDetailView.swift in Sources */,
@@ -331,11 +359,11 @@
 				DEVELOPMENT_TEAM = 8JF5HHJ64N;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
+				INFOPLIST_FILE = "$(SRCROOT)/VoiceToObsidian/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = "$(SRCROOT)/LaunchScreen";
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -362,11 +390,11 @@
 				DEVELOPMENT_TEAM = 8JF5HHJ64N;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
+				INFOPLIST_FILE = "$(SRCROOT)/VoiceToObsidian/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = "$(SRCROOT)/LaunchScreen";
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (

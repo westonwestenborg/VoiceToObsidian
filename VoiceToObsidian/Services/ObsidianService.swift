@@ -61,8 +61,7 @@ class ObsidianService {
             try markdownContent.write(to: noteURL, atomically: true, encoding: .utf8)
             print("Successfully wrote markdown content to file")
             
-            // Update the daily note
-            updateDailyNote(with: voiceNote, notePath: notePath, baseURL: baseURL)
+            // No longer updating daily note - using bidirectional links instead
             
             // Stop accessing the security-scoped resource if we started
             if didStartAccessing, let url = vaultURL {
@@ -189,16 +188,24 @@ class ObsidianService {
     /// - Parameter voiceNote: The voice note to generate content for
     /// - Returns: Markdown content as a string
     private func generateMarkdownContent(for voiceNote: VoiceNote) -> String {
+        // Get today's date in the format YYYY-MM-DD for linking to daily note
         let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dailyNoteDate = dateFormatter.string(from: Date())
+        
+        // Format the creation timestamp
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let dateString = dateFormatter.string(from: voiceNote.creationDate)
         
+        // Generate markdown without repeating the title (since the filename will be the title)
         let markdown = """
-        # \(voiceNote.title)
+        ---
+        date: \(dateString)
+        duration: \(formatDuration(voiceNote.duration))
+        daily: [[\(dailyNoteDate)]]
+        ---
         
-        - **Date**: \(dateString)
-        - **Duration**: \(formatDuration(voiceNote.duration))
-        - **Audio**: [[Attachments/\(voiceNote.audioFilename)]]
+        ![[Attachments/\(voiceNote.audioFilename)]]
         
         ## Transcript
         
@@ -208,57 +215,5 @@ class ObsidianService {
         return markdown
     }
     
-    /// Updates the daily note with a link to the new voice note
-    /// - Parameters:
-    ///   - voiceNote: The voice note to link
-    ///   - notePath: The path to the voice note file
-    private func updateDailyNote(with voiceNote: VoiceNote, notePath: String, baseURL: URL) {
-        // Get today's date in the format YYYY-MM-DD
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let todayString = dateFormatter.string(from: Date())
-        
-        print("Updating daily note for date: \(todayString)")
-        
-        // Path to the daily note
-        let dailyNotePath = baseURL.appendingPathComponent("\(todayString).md")
-        print("Daily note path: \(dailyNotePath.path)")
-        
-        // Check if the daily note exists
-        if fileManager.fileExists(atPath: dailyNotePath.path) {
-            print("Daily note exists, updating it")
-            do {
-                // Read the existing content
-                var dailyNoteContent = try String(contentsOf: dailyNotePath, encoding: .utf8)
-                
-                // Add the voice note link
-                let linkToAdd = "\n\n## Voice Note: \(voiceNote.title)\n\n- [[Voice Notes/\(voiceNote.title)]] - \(formatDuration(voiceNote.duration))"
-                
-                dailyNoteContent += linkToAdd
-                
-                // Write back to the file
-                try dailyNoteContent.write(to: dailyNotePath, atomically: true, encoding: .utf8)
-                print("Successfully updated daily note")
-            } catch {
-                print("Error updating daily note: \(error.localizedDescription)")
-            }
-        } else {
-            // Create a new daily note
-            print("Daily note does not exist, creating it")
-            do {
-                let dailyNoteContent = """
-                # \(todayString)
-                
-                ## Voice Note: \(voiceNote.title)
-                
-                - [[Voice Notes/\(voiceNote.title)]] - \(formatDuration(voiceNote.duration))
-                """
-                
-                try dailyNoteContent.write(to: dailyNotePath, atomically: true, encoding: .utf8)
-                print("Successfully created daily note")
-            } catch {
-                print("Error creating daily note: \(error.localizedDescription)")
-            }
-        }
-    }
+    // Daily note updating has been removed in favor of bidirectional links
 }
