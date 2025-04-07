@@ -25,48 +25,72 @@ class VoiceNoteStore: ObservableObject {
     // Track whether we've completed initialization
     private var hasInitialized = false
     
-    init(previewData: Bool = false) {
+    init(previewData: Bool = false, lazyInit: Bool = false) {
+        print("VoiceNoteStore initialization started")
+        
         if previewData {
             voiceNotes = VoiceNote.sampleNotes
             hasInitialized = true
+            print("VoiceNoteStore initialized with preview data")
+        } else if lazyInit {
+            // Super lazy initialization - do nothing until explicitly needed
+            print("VoiceNoteStore using lazy initialization")
         } else {
-            // Load voice notes immediately but defer other heavy initialization
+            // Only load voice notes, defer everything else
             // This makes the app launch faster while still showing content
-            loadVoiceNotes()
-            
-            // Defer speech recognition setup which is memory intensive
-            DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                self?.setupSpeechRecognition()
-                DispatchQueue.main.async {
-                    self?.hasInitialized = true
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                autoreleasepool {
+                    print("Starting to load voice notes")
+                    self?.loadVoiceNotes()
+                    print("Voice notes loaded")
+                    
+                    DispatchQueue.main.async {
+                        self?.hasInitialized = true
+                        print("VoiceNoteStore initialized with voice notes only")
+                    }
                 }
             }
+            // No longer setting up speech recognition here - will be done on demand
         }
     }
     
     private func performDeferredInitialization() {
-        guard !hasInitialized else { return }
+        print("Performing deferred initialization")
+        guard !hasInitialized else { 
+            print("Already initialized, skipping")
+            return 
+        }
         
         // If voice notes haven't been loaded yet, load them
         if voiceNotes.isEmpty {
-            loadVoiceNotes()
+            print("Loading voice notes during deferred initialization")
+            autoreleasepool {
+                loadVoiceNotes()
+            }
         }
         
-        // Setup speech recognition if needed
-        if speechRecognizer == nil {
-            setupSpeechRecognition()
-        }
+        // Don't set up speech recognition here - will be done on demand
         
         hasInitialized = true
+        print("Deferred initialization complete")
     }
     
     // MARK: - Voice Recording
     
     func startRecording(completion: @escaping (Bool) -> Void) {
+        print("Starting recording...")
         // Ensure initialization is complete before recording
         if !hasInitialized {
+            print("Performing initialization before recording")
             performDeferredInitialization()
         }
+        
+        // Setup speech recognition if needed - only when actually recording
+        if speechRecognizer == nil {
+            print("Setting up speech recognition before recording")
+            setupSpeechRecognition()
+        }
+        
         // Set up the recording session
         let session = AVAudioSession.sharedInstance()
         recordingSession = session
@@ -423,9 +447,10 @@ class VoiceNoteStore: ObservableObject {
     }
     
     private func loadVoiceNotes() {
+        print("loadVoiceNotes called")
         // Use autoreleasepool to help with memory management during JSON decoding
-        autoreleasepool {
-            let url = getVoiceNotesFileURL()
+        // Note: The caller should also use autoreleasepool when calling this method
+        let url = getVoiceNotesFileURL()
             
             if FileManager.default.fileExists(atPath: url.path) {
                 do {
@@ -434,14 +459,18 @@ class VoiceNoteStore: ObservableObject {
                     let data = fileHandle.readDataToEndOfFile()
                     try fileHandle.close()
                     
+                    print("Voice notes file size: \(data.count) bytes")
+                    
                     // Decode on a background thread if this is called from main thread
                     if Thread.isMainThread && data.count > 10_000 { // Only for large files
+                        print("Decoding large file on background thread")
                         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                             autoreleasepool {
                                 do {
                                     let decodedNotes = try JSONDecoder().decode([VoiceNote].self, from: data)
                                     DispatchQueue.main.async {
                                         self?.voiceNotes = decodedNotes
+                                        print("Voice notes decoded and set on main thread: \(decodedNotes.count) notes")
                                     }
                                 } catch {
                                     print("Failed to decode voice notes: \(error.localizedDescription)")
@@ -453,16 +482,18 @@ class VoiceNoteStore: ObservableObject {
                         }
                     } else {
                         // For smaller files or background threads, decode directly
+                        print("Decoding file directly")
                         voiceNotes = try JSONDecoder().decode([VoiceNote].self, from: data)
+                        print("Voice notes decoded directly: \(voiceNotes.count) notes")
                     }
                 } catch {
                     print("Failed to load voice notes: \(error.localizedDescription)")
                     voiceNotes = []
                 }
             } else {
+                print("No voice notes file found")
                 voiceNotes = []
             }
-        }
     }
     
     private func getVoiceNotesFileURL() -> URL {

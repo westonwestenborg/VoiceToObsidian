@@ -23,17 +23,20 @@ class ObsidianService {
         var vaultURL: URL?
         var didStartAccessing = false
         
-        if let bookmarkData = UserDefaults.standard.data(forKey: "ObsidianVaultBookmark") {
-            do {
-                var isStale = false
-                vaultURL = try URL(resolvingBookmarkData: bookmarkData, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
-                
-                if !isStale {
-                    didStartAccessing = vaultURL?.startAccessingSecurityScopedResource() ?? false
-                    print("Started accessing security-scoped resource: \(didStartAccessing)")
+        // Use autoreleasepool to help with memory management when resolving bookmarks
+        autoreleasepool {
+            if let bookmarkData = UserDefaults.standard.data(forKey: "ObsidianVaultBookmark") {
+                do {
+                    var isStale = false
+                    vaultURL = try URL(resolvingBookmarkData: bookmarkData, options: [.withoutUI], relativeTo: nil, bookmarkDataIsStale: &isStale)
+                    
+                    if !isStale {
+                        didStartAccessing = vaultURL?.startAccessingSecurityScopedResource() ?? false
+                        print("Started accessing security-scoped resource: \(didStartAccessing)")
+                    }
+                } catch {
+                    print("Error resolving bookmark: \(error.localizedDescription)")
                 }
-            } catch {
-                print("Error resolving bookmark: \(error.localizedDescription)")
             }
         }
         
@@ -100,17 +103,20 @@ class ObsidianService {
         var vaultURL: URL?
         var didStartAccessing = false
         
-        if let bookmarkData = UserDefaults.standard.data(forKey: "ObsidianVaultBookmark") {
-            do {
-                var isStale = false
-                vaultURL = try URL(resolvingBookmarkData: bookmarkData, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
-                
-                if !isStale {
-                    didStartAccessing = vaultURL?.startAccessingSecurityScopedResource() ?? false
-                    print("Started accessing security-scoped resource: \(didStartAccessing)")
+        // Use autoreleasepool to help with memory management when resolving bookmarks
+        autoreleasepool {
+            if let bookmarkData = UserDefaults.standard.data(forKey: "ObsidianVaultBookmark") {
+                do {
+                    var isStale = false
+                    vaultURL = try URL(resolvingBookmarkData: bookmarkData, options: [.withoutUI], relativeTo: nil, bookmarkDataIsStale: &isStale)
+                    
+                    if !isStale {
+                        didStartAccessing = vaultURL?.startAccessingSecurityScopedResource() ?? false
+                        print("Started accessing security-scoped resource: \(didStartAccessing)")
+                    }
+                } catch {
+                    print("Error resolving bookmark: \(error.localizedDescription)")
                 }
-            } catch {
-                print("Error resolving bookmark: \(error.localizedDescription)")
             }
         }
         

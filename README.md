@@ -1,6 +1,6 @@
 # Voice to Obsidian
 
-An iOS app that records voice memos, transcribes them, processes them with Claude AI, and saves them to your Obsidian vault.
+An iOS app that records voice memos, transcribes them, processes them with Claude AI, and saves them to your Obsidian vault. Features the Flexoki color palette for a warm, readable interface that matches the Obsidian aesthetic.
 
 ## Features
 
@@ -10,6 +10,8 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
 - Save voice notes as Markdown files in your Obsidian vault
 - Link voice notes in your daily note
 - Browse and play back past voice notes
+- Flexoki color palette for a warm, readable interface
+- Memory-optimized initialization for better performance
 
 ## Development History
 
@@ -34,6 +36,17 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
 5. **iOS Sandbox Permissions**
    - Implemented security-scoped bookmarks for file access outside the app sandbox
    - Properly managed resource access with startAccessingSecurityScopedResource and stopAccessingSecurityScopedResource
+
+6. **Memory Optimization**
+   - Implemented staged initialization to reduce memory pressure during app startup
+   - Added autoreleasepool blocks for memory-intensive operations
+   - Deferred heavy operations like speech recognition until needed
+   - Optimized security-scoped bookmark resolution
+
+7. **UI Enhancement**
+   - Implemented the Flexoki color palette for a warm, readable interface
+   - Created custom form components for better styling control
+   - Improved visual consistency across all screens
 
 ## Project Structure
 
@@ -71,7 +84,15 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
 - Transcription is done using file-based processing rather than live recognition for better stability
 - The app creates "Voice Notes" and "Attachments" directories in your Obsidian vault
 - Daily notes are updated with links to new voice notes
+- Memory-optimized initialization with staged loading to improve startup performance
+- Uses the Flexoki color palette for a consistent, warm visual identity
 
 ## License
 
-This project is for personal use only.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Credits
+
+- [Flexoki](https://stephango.com/flexoki) color palette by Steph Ango, used under MIT license
+- [Anthropic Claude API](https://www.anthropic.com/) for AI processing
+- [Obsidian](https://obsidian.md/) for note storage and organization

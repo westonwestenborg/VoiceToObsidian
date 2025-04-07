@@ -4,15 +4,9 @@ struct WaveformView: View {
     var isRecording: Bool
     var color: Color
     
-    // Animation properties
+    // Animation state
     @State private var phase: CGFloat = 0
-    @State private var amplitude: CGFloat = 1.0
-    
-    // Timer for animation
-    @State private var timer: Timer?
-    
-    // Number of bars in the waveform
-    private let barCount = 9
+    private let barCount = 25
     
     var body: some View {
         GeometryReader { geometry in
@@ -22,131 +16,89 @@ struct WaveformView: View {
                     .fill(Color.flexokiBackground2)
                     .frame(width: geometry.size.width, height: geometry.size.height)
                 
-                // Waveform visualization
-                HStack(spacing: geometry.size.width / CGFloat(barCount * 3)) {
+                // Audio bars visualization
+                HStack(spacing: 2) {
                     ForEach(0..<barCount, id: \.self) { index in
-                        WaveformBar(
+                        AudioBar(
                             index: index,
                             barCount: barCount,
                             phase: phase,
-                            amplitude: amplitude,
                             isRecording: isRecording,
+                            color: color,
                             size: geometry.size
                         )
-                        .fill(color)
                     }
                 }
-                .frame(width: geometry.size.width * 0.7)
-                
-                // Dots between bars
-                HStack(spacing: geometry.size.width / CGFloat(barCount * 3)) {
-                    ForEach(0..<(barCount - 1), id: \.self) { index in
-                        Circle()
-                            .fill(color.opacity(isRecording ? 0.8 : 0.5))
-                            .frame(width: 4, height: 4)
-                            .offset(x: geometry.size.width / CGFloat(barCount * 2))
-                    }
-                }
-                .frame(width: geometry.size.width * 0.7)
+                .frame(width: geometry.size.width * 0.8, height: geometry.size.height * 0.6)
             }
         }
         .aspectRatio(1, contentMode: .fit)
         .onAppear {
-            startAnimationIfNeeded()
-        }
-        .onChange(of: isRecording) { newValue in
-            startAnimationIfNeeded()
-        }
-        .onDisappear {
-            timer?.invalidate()
-            timer = nil
-        }
-    }
-    
-    private func startAnimationIfNeeded() {
-        timer?.invalidate()
-        
-        if isRecording {
-            // Create a repeating timer that updates the phase
-            timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+            // Start a continuous animation using a timer
+            let timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
                 withAnimation(.linear(duration: 0.05)) {
                     phase += 0.05
-                    amplitude = 0.7 + 0.3 * sin(phase * 2)
                 }
             }
-        } else {
-            // Reset animation state when not recording
-            withAnimation(.easeOut(duration: 0.3)) {
-                phase = 0
-                amplitude = 1.0
-            }
+            // Make sure the timer continues to fire when scrolling
+            RunLoop.current.add(timer, forMode: .common)
         }
     }
 }
 
-struct WaveformBar: Shape {
+struct AudioBar: View {
     let index: Int
     let barCount: Int
     let phase: CGFloat
-    let amplitude: CGFloat
     let isRecording: Bool
+    let color: Color
     let size: CGSize
     
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
+    var body: some View {
+        // Calculate animation properties based on position
+        let midPoint = Double(barCount) / 2.0
+        let distanceFromCenter = abs(Double(index) - midPoint)
+        let normalizedDistance = distanceFromCenter / midPoint
         
-        // Calculate the height of this bar
-        let normalizedIndex = CGFloat(index) / CGFloat(barCount - 1) // 0 to 1
-        let centerIndex = CGFloat(barCount - 1) / 2
-        let distanceFromCenter = abs(CGFloat(index) - centerIndex) / centerIndex // 0 at center, 1 at edges
+        // Create a wave effect by adjusting amplitude
+        let baseAmplitude = 0.8 - (normalizedDistance * 0.3)
         
-        // Create a symmetrical pattern with tallest bars in the center
-        let baseHeight = (1.0 - distanceFromCenter) * rect.height * 0.8
+        // Calculate the animated height
+        let wavePhase = phase + CGFloat(index) * 0.3
+        let sineValue = sin(wavePhase * 5)
         
-        // Add animation when recording
-        var barHeight = baseHeight
-        if isRecording {
-            // Add wave-like animation based on position and phase
-            let wavePhase = phase + CGFloat(index) * 0.3
-            barHeight = baseHeight * (0.7 + 0.3 * sin(wavePhase * 5))
-            
-            // Add some randomness for a more natural look
-            let randomFactor = 1.0 + 0.1 * sin(wavePhase * 11)
-            barHeight *= randomFactor
-        }
+        // Determine animation intensity based on recording state
+        let intensity: Double = isRecording ? 1.0 : 0.6
+        let heightMultiplier = baseAmplitude * (0.7 + 0.3 * Double(sineValue)) * intensity
+        let barHeight = size.height * 0.6 * CGFloat(heightMultiplier)
         
-        // Ensure height is within bounds
-        barHeight = min(max(barHeight, rect.height * 0.1), rect.height * 0.9)
-        
-        // Calculate bar width (thinner for a more elegant look)
-        let barWidth = rect.width * 0.6
-        
-        // Position the bar
-        let x = (rect.width - barWidth) / 2
-        let y = (rect.height - barHeight) / 2
-        
-        // Create the bar
-        path.addRoundedRect(
-            in: CGRect(x: x, y: y, width: barWidth, height: barHeight),
-            cornerSize: CGSize(width: barWidth / 2, height: barWidth / 2)
-        )
-        
-        return path
+        return RoundedRectangle(cornerRadius: 2)
+            .fill(color)
+            .frame(width: 4, height: barHeight)
+            .frame(height: size.height * 0.6, alignment: .center)
     }
 }
 
 struct WaveformView_Previews: PreviewProvider {
     static var previews: some View {
-        WaveformView(isRecording: true, color: .flexokiAccentBlue)
-            .frame(width: 250, height: 250)
-            .previewLayout(.sizeThatFits)
-            .padding()
-            .background(Color.flexokiBackground)
-        
-        WaveformView(isRecording: false, color: .flexokiAccentBlue)
-            .frame(width: 250, height: 250)
-            .previewLayout(.sizeThatFits)
-            .padding()
-            .background(Color.flexokiBackground)
+        Group {
+            WaveformView(isRecording: true, color: .flexokiAccentBlue)
+                .frame(width: 250, height: 250)
+                .previewLayout(.sizeThatFits)
+                .padding()
+                .background(Color.flexokiBackground)
+            
+            WaveformView(isRecording: false, color: .flexokiAccentBlue)
+                .frame(width: 250, height: 250)
+                .previewLayout(.sizeThatFits)
+                .padding()
+                .background(Color.flexokiBackground)
+                
+            WaveformView(isRecording: true, color: .flexokiAccentRed)
+                .frame(width: 250, height: 250)
+                .previewLayout(.sizeThatFits)
+                .padding()
+                .background(Color.flexokiBackground)
+        }
     }
 }

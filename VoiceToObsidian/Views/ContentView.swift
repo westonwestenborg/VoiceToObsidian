@@ -1,69 +1,70 @@
 import SwiftUI
 
+// Lightweight view that loads minimal content at startup
 struct ContentView: View {
     @EnvironmentObject var voiceNoteStore: VoiceNoteStore
     @State private var isRecording = false
     @State private var selectedTab = 0
+    @State private var isReady = false
     
     var body: some View {
-        // Configure global appearance for Forms and Lists
+        // Use a lightweight loading view until ready
         ZStack {
             Color.flexokiBackground.edgesIgnoringSafeArea(.all)
             
-            TabView(selection: $selectedTab) {
-            RecordView(isRecording: $isRecording)
-                .tabItem {
-                    Label("Record", systemImage: "mic")
+            if !isReady {
+                // Show a simple loading view
+                VStack {
+                    Text("Voice to Obsidian")
+                        .font(.largeTitle)
+                        .foregroundColor(Color.flexokiText)
+                        .padding()
+                    
+                    // Simple loading indicator
+                    Circle()
+                        .trim(from: 0, to: 0.7)
+                        .stroke(Color.flexokiAccentBlue, lineWidth: 3)
+                        .frame(width: 30, height: 30)
+                        .rotationEffect(Angle(degrees: isReady ? 0 : 360))
+                        .animation(Animation.linear(duration: 1).repeatForever(autoreverses: false), value: isReady)
                 }
-                .tag(0)
-            
-            VoiceNoteListView()
-                .tabItem {
-                    Label("Notes", systemImage: "list.bullet")
+                .onAppear {
+                    // Delay full initialization
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        isReady = true
+                    }
                 }
-                .tag(1)
-            
-            NavigationView {
-                SettingsView()
+            } else {
+                // Main content
+                TabView(selection: $selectedTab) {
+                    RecordView(isRecording: $isRecording)
+                        .tabItem {
+                            Label("Record", systemImage: "mic")
+                        }
+                        .tag(0)
+                    
+                    VoiceNoteListView()
+                        .tabItem {
+                            Label("Notes", systemImage: "list.bullet")
+                        }
+                        .tag(1)
+                    
+                    NavigationView {
+                        SettingsView()
+                    }
+                    .tabItem {
+                        Label("Settings", systemImage: "gear")
+                    }
+                    .tag(2)
+                }
+                .accentColor(Color.flexokiAccentBlue)
             }
-            .tabItem {
-                Label("Settings", systemImage: "gear")
-            }
-            .tag(2)
         }
-        .background(Color.flexokiBackground)
-        .accentColor(Color.flexokiAccentBlue)
-        }
-        .onAppear {
-            // Configure global appearance for the entire app
-            configureGlobalAppearance()
-        }
+        // No longer configuring appearance here, it's now centralized in VoiceToObsidianApp.swift
     }
 }
 
-// Configure global appearance settings
-func configureGlobalAppearance() {
-    // Table view appearance (affects Forms and Lists)
-    UITableView.appearance().backgroundColor = UIColor(Color.flexokiBackground)
-    UITableViewCell.appearance().backgroundColor = UIColor(Color.flexokiBackground2)
-    
-    // Navigation bar appearance
-    let navBarAppearance = UINavigationBarAppearance()
-    navBarAppearance.configureWithOpaqueBackground()
-    navBarAppearance.backgroundColor = UIColor(Color.flexokiBackground)
-    navBarAppearance.titleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
-    navBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
-    
-    UINavigationBar.appearance().standardAppearance = navBarAppearance
-    UINavigationBar.appearance().compactAppearance = navBarAppearance
-    UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
-    
-    // Form appearance
-    if #available(iOS 15.0, *) {
-        UITableView.appearance().sectionHeaderTopPadding = 0
-    }
-    UITableView.appearance().separatorColor = UIColor(Color.flexokiUI)
-}
+// UI appearance configuration has been moved to VoiceToObsidianApp.swift
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
