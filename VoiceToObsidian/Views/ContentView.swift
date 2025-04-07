@@ -1,4 +1,28 @@
 import SwiftUI
+import UIKit
+
+// Custom tab view style to ensure consistent tab bar appearance
+struct FlexokiTabViewStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                let appearance = UITabBarAppearance()
+                appearance.configureWithOpaqueBackground()
+                appearance.backgroundColor = UIColor(Color.flexokiBackground)
+                
+                UITabBar.appearance().standardAppearance = appearance
+                if #available(iOS 15.0, *) {
+                    UITabBar.appearance().scrollEdgeAppearance = appearance
+                }
+            }
+    }
+}
+
+extension View {
+    func flexokiTabStyle() -> some View {
+        modifier(FlexokiTabViewStyle())
+    }
+}
 
 // Lightweight view that loads minimal content at startup
 struct ContentView: View {
@@ -39,31 +63,26 @@ struct ContentView: View {
             } else {
                 // Main content
                 TabView(selection: $selectedTab) {
-                    NavigationView {
-                        RecordView(isRecording: $isRecording)
-                    }
-                    .tabItem {
-                        Label("Record", systemImage: "mic")
-                    }
-                    .tag(0)
+                    RecordView(isRecording: $isRecording)
+                        .tabItem {
+                            Label("Record", systemImage: "mic")
+                        }
+                        .tag(0)
                     
-                    NavigationView {
-                        VoiceNoteListView()
-                    }
-                    .tabItem {
-                        Label("Notes", systemImage: "list.bullet")
-                    }
-                    .tag(1)
+                    VoiceNoteListView()
+                        .tabItem {
+                            Label("Notes", systemImage: "list.bullet")
+                        }
+                        .tag(1)
                     
-                    NavigationView {
-                        SettingsView()
-                    }
-                    .tabItem {
-                        Label("Settings", systemImage: "gear")
-                    }
-                    .tag(2)
+                    SettingsView()
+                        .tabItem {
+                            Label("Settings", systemImage: "gear")
+                        }
+                        .tag(2)
                 }
                 .accentColor(Color.flexokiAccentBlue)
+                .flexokiTabStyle()
             }
         }
         // No longer configuring appearance here, it's now centralized in VoiceToObsidianApp.swift

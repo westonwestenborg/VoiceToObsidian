@@ -9,13 +9,12 @@ struct RecordView: View {
     @State private var showingProcessingAlert = false
     
     var body: some View {
-        ZStack {
-            // Background color
-            Color.flexokiBackground
-                .edgesIgnoringSafeArea(.all)
-        VStack(spacing: 16) {
-            // Empty space for navigation title
-            Spacer().frame(height: 0)
+        NavigationView {
+            ZStack {
+                // Background color
+                Color.flexokiBackground
+                    .edgesIgnoringSafeArea(.all)
+            VStack(spacing: 16) {
             Spacer()
             
             // Recording visualization with waveform
@@ -72,8 +71,9 @@ struct RecordView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Your voice note is being transcribed and processed...")
-        }
-        .navigationTitle("Record")
+            }
+            .navigationTitle("Record")
+            }
         }
     }
     

@@ -64,7 +64,8 @@ struct SettingsView: View {
     @State private var showingDirectoryPicker = false
     
     var body: some View {
-        FlexokiFormView {
+        NavigationView {
+            FlexokiFormView {
             // API Key Section
             FlexokiSectionView("Anthropic API") {
                 VStack(alignment: .leading, spacing: 16) {
@@ -199,6 +200,7 @@ struct SettingsView: View {
                 voiceNoteStore.setObsidianVaultPath(url.path)
                 showingVaultPathAlert = true
             })
+        }
         }
     }
 }
