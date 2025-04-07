@@ -1,32 +1,45 @@
 import Foundation
+import OSLog
 
 class AnthropicService {
     private var apiKey: String
     private let baseURL = "https://api.anthropic.com/v1/messages"
     
+    // Logger for AnthropicService
+    private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "AnthropicService")
+    
     init(apiKey: String = "") {
         self.apiKey = apiKey
+        logger.debug("AnthropicService initialized")
     }
     
     /// Updates the API key
     /// - Parameter key: The Anthropic API key
     func updateAPIKey(_ key: String) {
         self.apiKey = key
+        logger.debug("API key updated")
     }
     
     /// Processes a transcript with the Anthropic Claude API
     /// - Parameters:
     ///   - transcript: The original transcript to process
     ///   - completion: Completion handler with success status, cleaned transcript, and suggested title
+    /// - Note: This method is deprecated. Use the async version with AsyncBridge for better memory management.
+    @available(*, deprecated, message: "Use processTranscriptAsync(transcript:) async throws -> String with AsyncBridge instead")
     func processTranscript(_ transcript: String, completion: @escaping (Bool, String?, String?) -> Void) {
         guard !apiKey.isEmpty else {
-            print("Anthropic API key not set")
+            logger.error("Anthropic API key not set")
+            let error = AppError.anthropic(.apiKeyMissing)
+            // We can't directly handle the error here since this is a service class
+            // The caller will need to handle this error based on the false success status
             completion(false, nil, nil)
             return
         }
         
         // Create the request
         guard let url = URL(string: baseURL) else {
+            let error = AppError.anthropic(.requestCreationFailed)
+            print("Invalid URL: \(baseURL)")
             completion(false, nil, nil)
             return
         }
@@ -69,6 +82,7 @@ class AnthropicService {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         } catch {
+            let appError = AppError.anthropic(.requestCreationFailed)
             print("Error creating request body: \(error.localizedDescription)")
             completion(false, nil, nil)
             return
@@ -78,11 +92,15 @@ class AnthropicService {
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Error making API request: \(error.localizedDescription)")
+                let appError = AppError.anthropic(.networkError(error.localizedDescription))
+                print(appError.errorDescription ?? "Network error")
                 completion(false, nil, nil)
                 return
             }
             
             guard let data = data else {
+                let appError = AppError.anthropic(.invalidResponse)
+                print(appError.errorDescription ?? "No data received")
                 completion(false, nil, nil)
                 return
             }
@@ -128,10 +146,12 @@ class AnthropicService {
                         }
                     }
                 } else {
-                    print("Failed to parse JSON response")
+                    let appError = AppError.anthropic(.responseParsingFailed("Failed to parse JSON response"))
+                    print(appError.errorDescription ?? "Failed to parse JSON response")
                     completion(false, nil, nil)
                 }
             } catch {
+                let appError = AppError.anthropic(.responseParsingFailed(error.localizedDescription))
                 print("Error parsing API response: \(error.localizedDescription)")
                 completion(false, nil, nil)
             }

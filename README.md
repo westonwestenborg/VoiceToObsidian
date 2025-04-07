@@ -12,6 +12,8 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
 - Browse and play back past voice notes
 - Flexoki color palette for a warm, readable interface
 - Memory-optimized initialization for better performance
+- Swift Concurrency (async/await) for improved code readability and performance
+- Structured logging with OSLog for better debugging
 
 ## Development History
 
@@ -28,6 +30,12 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
 3. **Speech Recognition**
    - Implemented file-based transcription instead of live recognition for better stability
    - Added proper error handling and fallback mechanisms
+
+4. **Code Modernization**
+   - Refactored services to use Swift Concurrency (async/await) instead of callbacks
+   - Implemented centralized security management with SecurityManager
+   - Added structured logging with OSLog
+   - Optimized memory usage to address allocation errors during startup
 
 4. **Anthropic API Integration**
    - Fixed API headers and response parsing to match the current Claude API format

@@ -30,6 +30,10 @@
 		D403DE0F2DA3904C00C29CDB /* AccessibilityConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE0D2DA3904C00C29CDB /* AccessibilityConstants.swift */; };
 		D403DE102DA3904C00C29CDB /* FlexokiTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE0E2DA3904C00C29CDB /* FlexokiTheme.swift */; };
 		D403DE122DA3906200C29CDB /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE112DA3906200C29CDB /* AppCoordinator.swift */; };
+		D403DE142DA398BD00C29CDB /* ErrorBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE132DA398BD00C29CDB /* ErrorBannerView.swift */; };
+		D403DE162DA398CE00C29CDB /* ErrorHandling.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE152DA398CE00C29CDB /* ErrorHandling.swift */; };
+		D403DE192DA3991C00C29CDB /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE172DA3991C00C29CDB /* AppError.swift */; };
+		D403DE1B2DA39D0900C29CDB /* SecurityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE1A2DA39D0900C29CDB /* SecurityManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,6 +63,10 @@
 		D403DE0D2DA3904C00C29CDB /* AccessibilityConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityConstants.swift; sourceTree = "<group>"; };
 		D403DE0E2DA3904C00C29CDB /* FlexokiTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlexokiTheme.swift; sourceTree = "<group>"; };
 		D403DE112DA3906200C29CDB /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
+		D403DE132DA398BD00C29CDB /* ErrorBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorBannerView.swift; sourceTree = "<group>"; };
+		D403DE152DA398CE00C29CDB /* ErrorHandling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorHandling.swift; sourceTree = "<group>"; };
+		D403DE172DA3991C00C29CDB /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
+		D403DE1A2DA39D0900C29CDB /* SecurityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,6 +101,7 @@
 				00E7234567890123456789AB /* Services */,
 				00C2234567890123456789AB /* Info.plist */,
 				00C3234567890123456789AB /* LaunchScreen.storyboard */,
+				D403DE182DA3991C00C29CDB /* Errors */,
 			);
 			path = VoiceToObsidian;
 			sourceTree = "<group>";
@@ -108,6 +117,7 @@
 		00E4234567890123456789AB /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				D403DE132DA398BD00C29CDB /* ErrorBannerView.swift */,
 				D403DDFD2DA3444B00C29CDB /* WaveformView.swift */,
 				00B2234567890123456789AB /* ContentView.swift */,
 				00B3234567890123456789AB /* RecordView.swift */,
@@ -130,6 +140,7 @@
 		00E6234567890123456789AB /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				D403DE152DA398CE00C29CDB /* ErrorHandling.swift */,
 				D403DE072DA3646700C29CDB /* VoiceNoteCoordinator.swift */,
 				00B8234567890123456789AB /* VoiceNoteStore.swift */,
 			);
@@ -139,6 +150,7 @@
 		00E7234567890123456789AB /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				D403DE1A2DA39D0900C29CDB /* SecurityManager.swift */,
 				D403DE112DA3906200C29CDB /* AppCoordinator.swift */,
 				D403DE0B2DA3674000C29CDB /* KeychainManager.swift */,
 				D403DE012DA3643F00C29CDB /* RecordingManager.swift */,
@@ -166,6 +178,14 @@
 			children = (
 			);
 			path = Utilities;
+			sourceTree = "<group>";
+		};
+		D403DE182DA3991C00C29CDB /* Errors */ = {
+			isa = PBXGroup;
+			children = (
+				D403DE172DA3991C00C29CDB /* AppError.swift */,
+			);
+			path = Errors;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -238,11 +258,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				D403DE122DA3906200C29CDB /* AppCoordinator.swift in Sources */,
+				D403DE142DA398BD00C29CDB /* ErrorBannerView.swift in Sources */,
 				00A1234567890123456789AB /* VoiceToObsidianApp.swift in Sources */,
 				00A2234567890123456789AB /* ContentView.swift in Sources */,
 				D403DE0F2DA3904C00C29CDB /* AccessibilityConstants.swift in Sources */,
 				D403DE102DA3904C00C29CDB /* FlexokiTheme.swift in Sources */,
 				D403DDFE2DA3444B00C29CDB /* WaveformView.swift in Sources */,
+				D403DE1B2DA39D0900C29CDB /* SecurityManager.swift in Sources */,
 				D403DE002DA3497F00C29CDB /* SimpleFlexokiColors.swift in Sources */,
 				D403DE0C2DA3674000C29CDB /* KeychainManager.swift in Sources */,
 				00A3234567890123456789AB /* RecordView.swift in Sources */,
@@ -253,10 +275,12 @@
 				00A7234567890123456789AB /* VoiceNote.swift in Sources */,
 				00A8234567890123456789AB /* VoiceNoteStore.swift in Sources */,
 				00A9234567890123456789AB /* ObsidianService.swift in Sources */,
+				D403DE192DA3991C00C29CDB /* AppError.swift in Sources */,
 				D403DE042DA3643F00C29CDB /* TranscriptionManager.swift in Sources */,
 				D403DE052DA3643F00C29CDB /* VoiceNoteDataStore.swift in Sources */,
 				D403DE082DA3646700C29CDB /* VoiceNoteCoordinator.swift in Sources */,
 				D403DE062DA3643F00C29CDB /* RecordingManager.swift in Sources */,
+				D403DE162DA398CE00C29CDB /* ErrorHandling.swift in Sources */,
 				00AA234567890123456789AB /* AnthropicService.swift in Sources */,
 				00AB234567890123456789AB /* DocumentPicker.swift in Sources */,
 			);

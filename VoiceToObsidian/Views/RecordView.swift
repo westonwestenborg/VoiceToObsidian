@@ -5,9 +5,11 @@ import Combine
 struct RecordView: View {
     @EnvironmentObject var coordinator: VoiceNoteCoordinator
     @Binding var isRecording: Bool
-    @State private var showingErrorAlert = false
-    @State private var errorMessage = ""
     @State private var showingProcessingAlert = false
+    
+    // For direct error handling in this view
+    @State private var localErrorState: AppError?
+    @State private var isShowingLocalError: Bool = false
     
     var body: some View {
         NavigationView {
@@ -75,11 +77,7 @@ struct RecordView: View {
         } message: {
             Text("Your voice note is being transcribed and processed...")
         }
-        .alert("Recording Error", isPresented: $showingErrorAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(errorMessage)
-        }
+        .errorBanner(error: $localErrorState, isPresented: $isShowingLocalError)
         .onReceive(coordinator.$isProcessing) { isProcessing in
             // Update the processing alert based on the coordinator's state
             showingProcessingAlert = isProcessing
@@ -91,8 +89,17 @@ struct RecordView: View {
     
     private func startRecording() {
         // Call the coordinator to start recording
-        coordinator.startRecording()
-        isRecording = true
+        coordinator.startRecording { success, error in
+            if !success, let error = error as? AppError {
+                handleError(error)
+            } else if !success {
+                // If we got a non-AppError type error, convert it
+                let genericError = AppError.recording(.recordingFailed("Failed to start recording"))
+                handleError(genericError)
+            } else {
+                isRecording = true
+            }
+        }
     }
     
     private func stopRecording() {
@@ -100,10 +107,38 @@ struct RecordView: View {
         showingProcessingAlert = true
         
         // Stop recording and process the audio
-        coordinator.stopRecording()
+        coordinator.stopRecording { success, error in
+            // Hide the processing alert if there was an error
+            if !success {
+                DispatchQueue.main.async {
+                    self.showingProcessingAlert = false
+                    
+                    if let appError = error as? AppError {
+                        handleError(appError)
+                    } else if let error = error {
+                        // Convert generic error to AppError
+                        let genericError = AppError.general(error.localizedDescription)
+                        handleError(genericError)
+                    } else {
+                        // Fallback generic error
+                        let genericError = AppError.general("Failed to process recording")
+                        handleError(genericError)
+                    }
+                }
+            }
+        }
         
         // The coordinator will handle the processing and update its isProcessing state
         // We'll observe this in the .onReceive modifier
+    }
+    
+    /// Handle errors in this view
+    private func handleError(_ error: AppError) {
+        // For errors that should be displayed locally in this view
+        DispatchQueue.main.async {
+            self.localErrorState = error
+            self.isShowingLocalError = true
+        }
     }
     
     private func timeString(time: TimeInterval) -> String {
@@ -130,5 +165,6 @@ struct RecordView_Previews: PreviewProvider {
     static var previews: some View {
         RecordView(isRecording: .constant(false))
             .environmentObject(VoiceNoteCoordinator(loadImmediately: true))
+            .environmentObject(VoiceNoteStore(previewData: true))
     }
 }

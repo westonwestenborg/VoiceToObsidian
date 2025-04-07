@@ -3,14 +3,19 @@ import Combine
 import SwiftUI
 import Security
 import AVFoundation
+import OSLog
 
 /// Coordinates all voice note operations and services
-class VoiceNoteCoordinator: ObservableObject {
+class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     // Published properties for UI updates
     @Published var isRecording = false
     @Published var isProcessing = false
     @Published var recordingDuration: TimeInterval = 0
     @Published var transcriptionProgress: Float = 0
+    
+    // Error handling properties
+    @Published var errorState: AppError?
+    @Published var isShowingError: Bool = false
     
     // Backing variables for lazy services
     private var _recordingManager: RecordingManager?
@@ -60,62 +65,64 @@ class VoiceNoteCoordinator: ObservableObject {
         return _obsidianService!
     }
     
+    // Logger for VoiceNoteCoordinator
+    private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "VoiceNoteCoordinator")
+    
     // Configuration
     private var anthropicAPIKey: String = "" {
         didSet {
-            // Store API key securely in the keychain
-            do {
-                try KeychainManager.updateString(anthropicAPIKey, forKey: "AnthropicAPIKey")
-            } catch {
-                print("Failed to save API key to keychain: \(error)")
-            }
+            logger.debug("API key updated")
             anthropicService.updateAPIKey(anthropicAPIKey)
+            
+            // Store API key securely using SecurityManager
+            do {
+                try SecurityManager.storeAnthropicAPIKey(anthropicAPIKey)
+            } catch {
+                logger.error("Failed to save API key to keychain: \(error.localizedDescription)")
+                self.handleError(AppError.keychain(.unexpectedStatus(0)))
+            }
         }
     }
     
     private var obsidianVaultPath: String = "" {
         didSet {
-            // Store vault path in UserDefaults for compatibility
-            UserDefaults.standard.set(obsidianVaultPath, forKey: "ObsidianVaultPath")
-            
-            // Also store in keychain for better security
-            do {
-                try KeychainManager.updateString(obsidianVaultPath, forKey: "ObsidianVaultPath")
-            } catch {
-                print("Failed to save vault path to keychain: \(error)")
-            }
-            
+            logger.debug("Vault path updated")
             obsidianService.updateVaultPath(obsidianVaultPath)
+            
+            // Store vault path using SecurityManager
+            do {
+                try SecurityManager.storeObsidianVaultPath(obsidianVaultPath)
+            } catch {
+                logger.error("Failed to save vault path to keychain: \(error.localizedDescription)")
+                self.handleError(AppError.keychain(.unexpectedStatus(0)))
+            }
         }
     }
     
+    private var obsidianVaultBookmark: Data?
+    
     // Cancellables for Combine subscriptions
-    private var cancellables = Set<AnyCancellable>()
+    var cancellables = Set<AnyCancellable>()
     
     // Initializer
     init(loadImmediately: Bool = false) {
-        print("VoiceNoteCoordinator initialization started - minimal setup only")
+        logger.debug("VoiceNoteCoordinator initialization started - minimal setup only")
         
         // Initialize stored properties first
-        // Retrieve configuration values from Keychain/UserDefaults
+        // Retrieve configuration values using SecurityManager
         do {
-            self.anthropicAPIKey = try KeychainManager.getString(forKey: "AnthropicAPIKey") ?? ""
+            self.anthropicAPIKey = try SecurityManager.retrieveAnthropicAPIKey()
         } catch {
-            print("Failed to retrieve API key from keychain: \(error)")
+            logger.error("Failed to retrieve API key: \(error.localizedDescription)")
             self.anthropicAPIKey = ""  // Use empty string as fallback
         }
         
-        // Try to get vault path from keychain first, then fall back to UserDefaults
+        // Get vault path using SecurityManager
         do {
-            self.obsidianVaultPath = try KeychainManager.getString(forKey: "ObsidianVaultPath") ?? ""
-            if self.obsidianVaultPath.isEmpty {
-                // Fall back to UserDefaults for backward compatibility
-                self.obsidianVaultPath = UserDefaults.standard.string(forKey: "ObsidianVaultPath") ?? ""
-            }
+            self.obsidianVaultPath = try SecurityManager.retrieveObsidianVaultPath()
         } catch {
-            print("Failed to retrieve vault path from keychain: \(error)")
-            // Fall back to UserDefaults
-            self.obsidianVaultPath = UserDefaults.standard.string(forKey: "ObsidianVaultPath") ?? ""
+            logger.error("Failed to retrieve vault path: \(error.localizedDescription)")
+            self.obsidianVaultPath = ""
         }
         
         // If requested, preload services - normally we don't do this
@@ -142,8 +149,14 @@ class VoiceNoteCoordinator: ObservableObject {
     // MARK: - Public Methods - Recording
     
     /// Starts recording a voice note
-    func startRecording() {
-        guard !isRecording && !isProcessing else { return }
+    /// - Parameter completion: Completion handler with success status and error if any
+    func startRecording(completion: @escaping (Bool, Error?) -> Void = { _, _ in }) {
+        guard !isRecording && !isProcessing else {
+            let error = AppError.recording(.recordingFailed("Recording or processing already in progress"))
+            handleError(error)
+            completion(false, error)
+            return
+        }
         
         // Ensure bindings are set up before recording
         if cancellables.isEmpty {
@@ -155,27 +168,51 @@ class VoiceNoteCoordinator: ObservableObject {
             
             if success {
                 self.isRecording = true
+                completion(true, nil)
             } else {
                 // Handle recording failure
+                let error = AppError.recording(.recordingFailed("Failed to start recording"))
+                self.handleError(error)
                 print("Failed to start recording")
+                completion(false, error)
             }
         }
     }
     
     /// Stops recording and processes the voice note
-    func stopRecording() {
-        guard isRecording && !isProcessing else { return }
+    /// - Parameter completion: Completion handler with success status and error if any
+    func stopRecording(completion: @escaping (Bool, Error?) -> Void = { _, _ in }) {
+        guard isRecording else {
+            let error = AppError.recording(.recordingFailed("Not currently recording"))
+            handleError(error)
+            completion(false, error)
+            return
+        }
+        
+        guard !isProcessing else {
+            let error = AppError.recording(.recordingFailed("Already processing a recording"))
+            handleError(error)
+            completion(false, error)
+            return
+        }
         
         isProcessing = true
         
         recordingManager.stopRecording { [weak self] success, recordingURL, duration in
-            guard let self = self, success, let recordingURL = recordingURL else {
-                self?.isProcessing = false
+            guard let self = self else { return }
+            
+            if !success || recordingURL == nil {
+                self.isProcessing = false
+                let error = AppError.recording(.recordingFailed("Failed to stop recording or no recording URL"))
+                self.handleError(error)
+                completion(false, error)
                 return
             }
             
             self.isRecording = false
-            self.processRecording(recordingURL: recordingURL, duration: duration)
+            self.processRecording(recordingURL: recordingURL!, duration: duration) { success, error in
+                completion(success, error)
+            }
         }
     }
     
@@ -284,29 +321,35 @@ class VoiceNoteCoordinator: ObservableObject {
     /// - Parameters:
     ///   - recordingURL: The URL of the recording
     ///   - duration: The duration of the recording
-    private func processRecording(recordingURL: URL, duration: TimeInterval) {
+    private func processRecording(recordingURL: URL, duration: TimeInterval, completion: @escaping (Bool, Error?) -> Void = { _, _ in }) {
         // Step 1: Transcribe the recording
         transcriptionManager.transcribeAudioFile(at: recordingURL) { [weak self] success, transcript in
             guard let self = self else { return }
             
-            if success, let transcript = transcript {
-                // Step 2: Process with Claude API
-                self.processTranscriptWithClaude(
-                    recordingURL: recordingURL,
-                    transcript: transcript,
-                    duration: duration
-                )
-            } else {
+            if !success || transcript == nil {
                 // Handle transcription failure
                 print("Transcription failed")
                 self.isProcessing = false
+                
+                let error = AppError.transcription(.fileTranscriptionFailed("Failed to transcribe audio file"))
+                self.handleError(error)
+                completion(false, error)
                 
                 // Use a fallback transcript
                 let fallbackTranscript = "This is a fallback transcript. The actual speech recognition failed. Please check your microphone permissions and try again."
                 self.processTranscriptWithClaude(
                     recordingURL: recordingURL,
                     transcript: fallbackTranscript,
-                    duration: duration
+                    duration: duration,
+                    completion: completion
+                )
+            } else {
+                // Step 2: Process with Claude API
+                self.processTranscriptWithClaude(
+                    recordingURL: recordingURL,
+                    transcript: transcript!,
+                    duration: duration,
+                    completion: completion
                 )
             }
         }
@@ -317,7 +360,7 @@ class VoiceNoteCoordinator: ObservableObject {
     ///   - recordingURL: The URL of the recording
     ///   - transcript: The transcript to process
     ///   - duration: The duration of the recording
-    private func processTranscriptWithClaude(recordingURL: URL, transcript: String, duration: TimeInterval) {
+    private func processTranscriptWithClaude(recordingURL: URL, transcript: String, duration: TimeInterval, completion: @escaping (Bool, Error?) -> Void = { _, _ in }) {
         // Skip Claude processing if API key is not set
         if anthropicAPIKey.isEmpty {
             print("Anthropic API key not set, skipping Claude processing")
@@ -326,7 +369,8 @@ class VoiceNoteCoordinator: ObservableObject {
                 originalTranscript: transcript,
                 cleanedTranscript: transcript,
                 suggestedTitle: "Voice Note \(Date().formatted(.dateTime.month().day().year()))",
-                duration: duration
+                duration: duration,
+                completion: completion
             )
             return
         }
@@ -334,6 +378,13 @@ class VoiceNoteCoordinator: ObservableObject {
         // Process with Claude
         anthropicService.processTranscript(transcript) { [weak self] success, cleanedTranscript, suggestedTitle in
             guard let self = self else { return }
+            
+            if !success && !self.anthropicAPIKey.isEmpty {
+                // Only show error if API key is set but call failed
+                let error = AppError.anthropic(.networkError("Failed to process transcript with Anthropic API"))
+                self.handleError(error)
+                // We'll continue with the original transcript, but we've logged the error
+            }
             
             // If the API call fails, use the original transcript and a default title
             let finalTranscript = cleanedTranscript ?? transcript
@@ -352,7 +403,8 @@ class VoiceNoteCoordinator: ObservableObject {
                 originalTranscript: transcript,
                 cleanedTranscript: finalTranscript,
                 suggestedTitle: finalTitle,
-                duration: duration
+                duration: duration,
+                completion: completion
             )
         }
     }
@@ -388,7 +440,7 @@ class VoiceNoteCoordinator: ObservableObject {
     ///   - cleanedTranscript: The cleaned transcript
     ///   - suggestedTitle: The suggested title
     ///   - duration: The duration of the recording
-    private func createVoiceNote(recordingURL: URL, originalTranscript: String, cleanedTranscript: String, suggestedTitle: String, duration: TimeInterval) {
+    private func createVoiceNote(recordingURL: URL, originalTranscript: String, cleanedTranscript: String, suggestedTitle: String, duration: TimeInterval, completion: @escaping (Bool, Error?) -> Void = { _, _ in }) {
         let startTime = recordingManager.getRecordingStartTime() ?? Date()
         
         // Create voice note

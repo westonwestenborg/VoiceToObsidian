@@ -4,6 +4,7 @@ import MobileCoreServices
 import Combine
 import Security
 import UIKit
+import OSLog
 
 // Custom form components for Flexoki styling
 struct FlexokiFormView<Content: View>: View {
@@ -198,7 +199,7 @@ struct VaultPathSection: View {
                 Button(action: {
                     coordinator.clearObsidianVaultPath()
                     obsidianVaultPath = ""
-                    showingVaultPathAlert = true
+                    // This line is now handled in the try-catch block
                 }) {
                     HStack {
                         Image(systemName: "xmark.circle.fill")
@@ -269,8 +270,15 @@ struct ClearAllDataSection: View {
 // Main Settings View
 struct SettingsView: View {
     @EnvironmentObject var coordinator: VoiceNoteCoordinator
+    
+    // State variables for settings
     @State private var anthropicAPIKey = ""
     @State private var obsidianVaultPath = ""
+    
+    // App preferences
+    @State private var showTranscriptionProgress = true
+    @State private var useHighQualityRecording = true
+    
     @State private var isLoadingAPIKey = false
     @State private var isLoadingVaultPath = false
     @State private var showingDocumentPicker = false
@@ -279,6 +287,10 @@ struct SettingsView: View {
     @State private var showingVaultPathAlert = false
     @State private var showingClearAllAlert = false
     @State private var showingClearAllConfirmation = false
+    
+    // For local error handling
+    @State private var localErrorState: AppError?
+    @State private var isShowingLocalError: Bool = false
     
     var body: some View {
         NavigationView {
@@ -310,6 +322,7 @@ struct SettingsView: View {
             .onAppear {
                 loadSavedSettings()
             }
+            .errorBanner(error: $localErrorState, isPresented: $isShowingLocalError)
             .sheet(isPresented: $showingDocumentPicker) {
                 DocumentPicker { url in
                     handleVaultSelection(url)
@@ -349,18 +362,23 @@ struct SettingsView: View {
         }
     }
     
+    // Logger for SettingsView
+    private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "SettingsView")
+    
     private func loadSavedSettings() {
+        logger.debug("Loading saved settings")
+        
         // Load API Key
         isLoadingAPIKey = true
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                let apiKey = try KeychainManager.getString(forKey: "AnthropicAPIKey") ?? ""
+                let apiKey = try SecurityManager.retrieveAnthropicAPIKey()
                 DispatchQueue.main.async {
                     self.anthropicAPIKey = apiKey
                     self.isLoadingAPIKey = false
                 }
             } catch {
-                print("Failed to load API key: \(error)")
+                self.logger.error("Failed to load API key: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self.isLoadingAPIKey = false
                 }
@@ -371,14 +389,17 @@ struct SettingsView: View {
         isLoadingVaultPath = true
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                let path = try KeychainManager.getString(forKey: "ObsidianVaultPath") ?? ""
+                let path = try SecurityManager.retrieveObsidianVaultPath()
                 DispatchQueue.main.async {
                     self.obsidianVaultPath = path
                     self.isLoadingVaultPath = false
                 }
             } catch {
-                print("Failed to load vault path: \(error)")
+                self.logger.error("Failed to load vault path: \(error.localizedDescription)")
                 DispatchQueue.main.async {
+                    // Try to get the path using UserDefaults as fallback
+                    let path = UserDefaults.standard.string(forKey: "ObsidianVaultPath") ?? ""
+                    self.obsidianVaultPath = path
                     self.isLoadingVaultPath = false
                 }
             }
@@ -391,12 +412,43 @@ struct SettingsView: View {
         // Get the path string from the URL
         let path = url.path
         
-        // Save the path using the coordinator
-        coordinator.setObsidianVaultPath(path)
-        
-        // Update the UI
-        obsidianVaultPath = path
-        isLoadingVaultPath = false
+        // Try to create a security-scoped bookmark using SecurityManager
+        do {
+            // Start accessing the security-scoped resource
+            guard url.startAccessingSecurityScopedResource() else {
+                let error = AppError.securityScoped(.accessDenied)
+                handleError(error)
+                isLoadingVaultPath = false
+                return
+            }
+            
+            // Create and store the bookmark using SecurityManager
+            try SecurityManager.createAndStoreBookmark(for: url)
+            
+            // Save the path using the coordinator
+            coordinator.setObsidianVaultPath(path)
+            
+            // Update the UI
+            obsidianVaultPath = path
+            isLoadingVaultPath = false
+            showingVaultPathAlert = true
+            
+            // Stop accessing the security-scoped resource
+            SecurityManager.stopAccessingSecurityScopedResource(url: url)
+        } catch {
+            print("Failed to create security-scoped bookmark: \(error)")
+            let appError = AppError.securityScoped(.bookmarkCreationFailed)
+            handleError(appError)
+            isLoadingVaultPath = false
+        }
+    }
+    
+    /// Handle errors in this view
+    private func handleError(_ error: AppError) {
+        DispatchQueue.main.async {
+            self.localErrorState = error
+            self.isShowingLocalError = true
+        }
     }
 }
 

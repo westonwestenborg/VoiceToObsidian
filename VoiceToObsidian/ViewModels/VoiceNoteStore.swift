@@ -2,11 +2,17 @@ import Foundation
 import AVFoundation
 import Speech
 import Combine
+import SwiftUI
+import OSLog
 
-class VoiceNoteStore: ObservableObject {
+class VoiceNoteStore: ObservableObject, ErrorHandling {
     @Published var voiceNotes: [VoiceNote] = []
     @Published var isLoadingNotes: Bool = false
     @Published var loadedAllNotes: Bool = false
+    
+    // Error handling properties
+    @Published var errorState: AppError?
+    @Published var isShowingError: Bool = false
     
     private var audioRecorder: AVAudioRecorder?
     private var recordingSession: AVAudioSession?
@@ -24,6 +30,9 @@ class VoiceNoteStore: ObservableObject {
     // Path to Obsidian vault - to be set by the user
     private var obsidianVaultPath: String = UserDefaults.standard.string(forKey: "ObsidianVaultPath") ?? ""
     
+    // Logger for VoiceNoteStore
+    private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "VoiceNoteStore")
+    
     // Track whether we've completed initialization
     private var hasInitialized = false
     
@@ -33,15 +42,15 @@ class VoiceNoteStore: ObservableObject {
     private var cachedNoteCount: Int = 0
     
     init(previewData: Bool = false, lazyInit: Bool = false) {
-        print("VoiceNoteStore initialization started")
+        logger.debug("VoiceNoteStore initialization started")
         
         if previewData {
             voiceNotes = VoiceNote.sampleNotes
             hasInitialized = true
-            print("VoiceNoteStore initialized with preview data")
+            logger.debug("VoiceNoteStore initialized with preview data")
         } else if lazyInit {
             // Super lazy initialization - do nothing until explicitly needed
-            print("VoiceNoteStore using lazy initialization")
+            logger.debug("VoiceNoteStore using lazy initialization")
             // We'll load notes only when they're requested
         } else {
             // Only check if we have notes, but don't load them yet
@@ -76,6 +85,10 @@ class VoiceNoteStore: ObservableObject {
     
     // MARK: - Voice Recording
     
+    /// Starts recording a new voice note
+    /// - Parameter completion: Completion handler with success status
+    /// - Note: This method is deprecated. Use the async version with AsyncBridge for better memory management.
+    @available(*, deprecated, message: "Use startRecordingAsync() async throws -> Bool with AsyncBridge instead")
     func startRecording(completion: @escaping (Bool) -> Void) {
         print("Starting recording...")
         // Ensure initialization is complete before recording
@@ -101,15 +114,21 @@ class VoiceNoteStore: ObservableObject {
                 try session.setActive(true, options: .notifyOthersOnDeactivation)
                 self.startRecordingAudio(completion: completion)
             } catch {
-                print("Failed to set up recording session: \(error.localizedDescription)")
+                let appError = AppError.recording(.audioSessionSetupFailed(error.localizedDescription))
+                self.handleError(appError)
+                self.logger.error("Failed to set up recording session: \(error.localizedDescription)")
                 completion(false)
             }
         } else {
             // Request microphone permission
             session.requestRecordPermission { [weak self] allowed in
                 DispatchQueue.main.async {
-                    guard let self = self, allowed else {
-                        print("Microphone permission denied")
+                    guard let self = self else { return }
+                    
+                    if !allowed {
+                        let permissionError = AppError.recording(.permissionDenied)
+                        self.handleError(permissionError)
+                        self.logger.error("Microphone permission denied")
                         completion(false)
                         return
                     }
@@ -119,7 +138,9 @@ class VoiceNoteStore: ObservableObject {
                         try session.setActive(true, options: .notifyOthersOnDeactivation)
                         self.startRecordingAudio(completion: completion)
                     } catch {
-                        print("Failed to set up recording session after permission: \(error.localizedDescription)")
+                        let appError = AppError.recording(.audioSessionSetupFailed(error.localizedDescription))
+                        self.handleError(appError)
+                        self.logger.error("Failed to set up recording session after permission: \(error.localizedDescription)")
                         completion(false)
                     }
                 }
@@ -142,7 +163,14 @@ class VoiceNoteStore: ObservableObject {
         ]
         
         do {
-            audioRecorder = try AVAudioRecorder(url: currentRecordingURL!, settings: settings)
+            guard let recordingURL = currentRecordingURL else {
+                let error = AppError.recording(.audioFileCreationFailed)
+                handleError(error)
+                completion(false)
+                return
+            }
+            
+            audioRecorder = try AVAudioRecorder(url: recordingURL, settings: settings)
             audioRecorder?.record()
             recordingStartTime = Date()
             
@@ -151,11 +179,17 @@ class VoiceNoteStore: ObservableObject {
             
             completion(true)
         } catch {
+            let appError = AppError.recording(.recordingFailed(error.localizedDescription))
+            handleError(appError)
             print("Failed to start recording: \(error.localizedDescription)")
             completion(false)
         }
     }
     
+    /// Stops recording and processes the voice note
+    /// - Parameter completion: Completion handler with success status and the created voice note
+    /// - Note: This method is deprecated. Use the async version with AsyncBridge for better memory management.
+    @available(*, deprecated, message: "Use stopRecordingAsync() async throws -> VoiceNote? with AsyncBridge instead")
     func stopRecording(completion: @escaping (Bool, VoiceNote?) -> Void) {
         guard let recorder = audioRecorder, let recordingURL = currentRecordingURL, let startTime = recordingStartTime else {
             completion(false, nil)
@@ -176,7 +210,15 @@ class VoiceNoteStore: ObservableObject {
             // Process the transcript with Anthropic API
             // Create an instance of AnthropicService to process the transcript
             let anthropicService = AnthropicService(apiKey: self.anthropicAPIKey)
-            anthropicService.processTranscript(transcript) { success, cleanedTranscript, suggestedTitle in
+            anthropicService.processTranscript(transcript) { [weak self] success, cleanedTranscript, suggestedTitle in
+                guard let self = self else { return }
+                
+                if !success && !self.anthropicAPIKey.isEmpty {
+                    // Only show error if API key is set but call failed
+                    let error = AppError.anthropic(.networkError("Failed to process transcript with Anthropic API"))
+                    self.handleError(error)
+                }
+                
                 // If the API call fails, use the original transcript and a default title
                 let finalTranscript = cleanedTranscript ?? transcript
                 
@@ -276,13 +318,27 @@ class VoiceNoteStore: ObservableObject {
             speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
             
             // Request authorization for speech recognition
-            SFSpeechRecognizer.requestAuthorization { status in
-                guard status == .authorized else {
-                    print("Speech recognition authorization denied")
-                    return
+            SFSpeechRecognizer.requestAuthorization { [weak self] status in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    
+                    switch status {
+                    case .authorized:
+                        print("Speech recognition authorization granted")
+                    case .denied:
+                        let error = AppError.transcription(.speechRecognizerUnavailable)
+                        self.handleError(error)
+                        print("Speech recognition authorization denied")
+                    case .restricted:
+                        let error = AppError.transcription(.speechRecognizerUnavailable)
+                        self.handleError(error)
+                        print("Speech recognition restricted on this device")
+                    case .notDetermined:
+                        print("Speech recognition not determined")
+                    @unknown default:
+                        print("Unknown authorization status")
+                    }
                 }
-                // Authorization successful
-                print("Speech recognition authorization granted")
             }
         } // Close autoreleasepool
     }
@@ -290,6 +346,13 @@ class VoiceNoteStore: ObservableObject {
     private func startSpeechRecognition() {
         // Initialize speech recognizer
         speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+        
+        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
+            let error = AppError.transcription(.speechRecognizerUnavailable)
+            handleError(error)
+            print("Speech recognizer not available")
+            return
+        }
         
         // For development purposes, we'll use file-based transcription instead of live recognition
         print("Speech recognition initialized - will use file-based transcription")
@@ -382,6 +445,8 @@ class VoiceNoteStore: ObservableObject {
         
         let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
         guard let recognizer = recognizer, recognizer.isAvailable else {
+            let error = AppError.transcription(.speechRecognizerUnavailable)
+            handleError(error)
             print("Speech recognizer not available")
             completion(false, nil)
             return
