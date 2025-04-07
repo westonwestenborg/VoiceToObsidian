@@ -1,6 +1,9 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import MobileCoreServices
+import Combine
+import Security
+import UIKit
 
 // Custom form components for Flexoki styling
 struct FlexokiFormView<Content: View>: View {
@@ -40,40 +43,35 @@ struct FlexokiSectionView<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(title)
-                .font(.headline)
+                .font(.system(size: 20, weight: .bold))
                 .foregroundColor(Color.flexokiText)
                 .dynamicTypeSize(.small...(.accessibility5))
-                .padding(.horizontal, 16)
             
-            VStack(spacing: 8) {
-                content
-            }
-            .padding(16)
-            .background(Color.flexokiBackground2)
-            .cornerRadius(10)
+            content
+                .padding(16)
+                .background(Color.flexokiBackground2)
+                .cornerRadius(10)
         }
     }
 }
 
-struct SettingsView: View {
-    @EnvironmentObject var voiceNoteStore: VoiceNoteStore
-    @State private var anthropicAPIKey: String = UserDefaults.standard.string(forKey: "AnthropicAPIKey") ?? ""
-    @State private var obsidianVaultPath: String = UserDefaults.standard.string(forKey: "ObsidianVaultPath") ?? ""
-    @State private var showingAPIKeyAlert = false
-    @State private var showingVaultPathAlert = false
-    @State private var showingDirectoryPicker = false
+// API Key Section View Component
+struct APIKeySection: View {
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
+    @Binding var anthropicAPIKey: String
+    @Binding var isLoadingAPIKey: Bool
+    @Binding var showingAPIKeyAlert: Bool
+    @Binding var showingClearedAlert: Bool
     
     var body: some View {
-        NavigationView {
-            FlexokiFormView {
-            // API Key Section
-            FlexokiSectionView("Anthropic API") {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("API Key")
-                        .font(.subheadline)
-                        .foregroundColor(Color.flexokiText2)
-                        .dynamicTypeSize(.small...(.accessibility5))
-                    
+        FlexokiSectionView("Anthropic API") {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("API Key")
+                    .font(.subheadline)
+                    .foregroundColor(Color.flexokiText2)
+                    .dynamicTypeSize(.small...(.accessibility5))
+                
+                ZStack(alignment: .trailing) {
                     SecureField("Enter your Anthropic API key", text: $anthropicAPIKey)
                         .padding(8)
                         .background(Color.flexokiBackground)
@@ -86,11 +84,22 @@ struct SettingsView: View {
                         .disableAutocorrection(true)
                         .foregroundColor(Color.flexokiText)
                         .frame(minHeight: 44)
+                        .disabled(isLoadingAPIKey)
                     
+                    // Loading indicator
+                    if isLoadingAPIKey {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color.flexokiAccentBlue))
+                            .scaleEffect(0.7)
+                            .padding(.trailing, 12)
+                    }
+                }
+                
+                HStack(spacing: 8) {
                     Button(action: {
                         hideKeyboard()
                         if !anthropicAPIKey.isEmpty {
-                            voiceNoteStore.setAnthropicAPIKey(anthropicAPIKey)
+                            coordinator.setAnthropicAPIKey(anthropicAPIKey)
                             showingAPIKeyAlert = true
                         }
                     }) {
@@ -99,20 +108,51 @@ struct SettingsView: View {
                             .foregroundColor(Color.flexokiPaper)
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: 44)
+                            .padding(.horizontal, 16)
                             .background(Color.flexokiAccentBlue)
                             .cornerRadius(8)
                             .dynamicTypeSize(.small...(.accessibility5))
                     }
+                    .disabled(isLoadingAPIKey)
+                    .accessibilityHint("Securely saves your API key to the device")
+                    
+                    Button(action: {
+                        hideKeyboard()
+                        coordinator.clearAnthropicAPIKey()
+                        anthropicAPIKey = ""
+                        showingClearedAlert = true
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(Color.flexokiPaper)
+                            .frame(width: 44, height: 44)
+                            .background(Color.flexokiRed)
+                            .cornerRadius(8)
+                    }
+                    .disabled(isLoadingAPIKey || anthropicAPIKey.isEmpty)
+                    .accessibilityLabel("Clear API Key")
+                    .accessibilityHint("Removes the API key from the device")
                 }
             }
-            
-            // Obsidian Vault Section
-            FlexokiSectionView("Obsidian Vault") {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Vault Path")
-                        .font(.subheadline)
-                        .foregroundColor(Color.flexokiText2)
-                    
+        }
+    }
+}
+
+// Vault Path Section View Component
+struct VaultPathSection: View {
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
+    @Binding var obsidianVaultPath: String
+    @Binding var isLoadingVaultPath: Bool
+    @Binding var showingDocumentPicker: Bool
+    @Binding var showingVaultPathAlert: Bool
+    
+    var body: some View {
+        FlexokiSectionView("Obsidian Vault") {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Vault Path")
+                    .font(.subheadline)
+                    .foregroundColor(Color.flexokiText2)
+                
+                ZStack(alignment: .trailing) {
                     TextField("Path to your Obsidian vault", text: $obsidianVaultPath)
                         .padding(10)
                         .background(Color.flexokiBackground)
@@ -124,99 +164,250 @@ struct SettingsView: View {
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                         .foregroundColor(Color.flexokiText)
+                        .disabled(isLoadingVaultPath)
+                        .accessibilityLabel("Obsidian vault path")
+                        .accessibilityHint("The location where your voice notes will be saved")
                     
-                    Button(action: {
-                        showingDirectoryPicker = true
-                    }) {
-                        HStack {
-                            Image(systemName: "folder")
-                            Text("Select Vault Directory")
-                        }
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(Color.flexokiPaper)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.flexokiAccentBlue)
-                        .cornerRadius(8)
+                    // Loading indicator
+                    if isLoadingVaultPath {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color.flexokiAccentBlue))
+                            .scaleEffect(0.7)
+                            .padding(.trailing, 12)
+                            .accessibilityLabel("Loading vault path")
                     }
-                    
-                    Button(action: {
-                        hideKeyboard()
-                        if !obsidianVaultPath.isEmpty {
-                            voiceNoteStore.setObsidianVaultPath(obsidianVaultPath)
-                            showingVaultPathAlert = true
-                        }
-                    }) {
-                        Text("Save Vault Path")
+                }
+                
+                Button(action: {
+                    showingDocumentPicker = true
+                }) {
+                    HStack {
+                        Image(systemName: "folder")
+                        Text("Select Vault Directory")
+                    }
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color.flexokiPaper)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.flexokiAccentBlue)
+                    .cornerRadius(8)
+                    .dynamicTypeSize(.small...(.accessibility5))
+                }
+                .accessibilityHint("Opens a file browser to select your Obsidian vault location")
+                
+                Button(action: {
+                    coordinator.clearObsidianVaultPath()
+                    obsidianVaultPath = ""
+                    showingVaultPathAlert = true
+                }) {
+                    HStack {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(Color.flexokiRed)
+                        Text("Clear Vault Path")
+                            .foregroundColor(Color.flexokiRed)
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color.flexokiPaper)
-                            .frame(maxWidth: .infinity)
-                            .frame(minHeight: 44)
-                            .background(Color.flexokiAccentBlue)
-                            .cornerRadius(8)
-                            .dynamicTypeSize(.small...(.accessibility5))
                     }
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
+                    .background(Color.flexokiBackground)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.flexokiRed, lineWidth: 1)
+                    )
+                    .dynamicTypeSize(.small...(.accessibility5))
                 }
+                .disabled(isLoadingVaultPath || obsidianVaultPath.isEmpty)
+                .accessibilityHint("Removes the saved Obsidian vault location")
             }
-            
-            // About Section
-            FlexokiSectionView("About") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Voice to Obsidian")
-                        .font(.headline)
-                        .foregroundColor(Color.flexokiText)
-                        .dynamicTypeSize(.small...(.accessibility5))
-                    
-                    Text("Version 1.0")
-                        .font(.subheadline)
-                        .foregroundColor(Color.flexokiText2)
-                        .dynamicTypeSize(.small...(.accessibility5))
-                    
-                    Text("This app records voice memos, transcribes them, cleans them up using Anthropic's Claude API, and saves them to your Obsidian vault.")
-                        .font(.caption)
-                        .foregroundColor(Color.flexokiText2)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 8)
-                        .dynamicTypeSize(.small...(.accessibility5))
-                }
-                .padding(.vertical, 4)
-            }
-        }
-        .navigationTitle("Settings")
-        .alert("API Key Saved", isPresented: $showingAPIKeyAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Your Anthropic API key has been saved.")
-        }
-        .alert("Vault Path Saved", isPresented: $showingVaultPathAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Your Obsidian vault path has been saved.")
-        }
-        .sheet(isPresented: $showingDirectoryPicker) {
-            DocumentPicker(selectedURL: { url in
-                // Handle the selected directory URL
-                obsidianVaultPath = url.path
-                voiceNoteStore.setObsidianVaultPath(url.path)
-                showingVaultPathAlert = true
-            })
-        }
         }
     }
+}
+
+// Clear All Data Section View Component
+struct ClearAllDataSection: View {
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
+    @Binding var isLoadingAPIKey: Bool
+    @Binding var isLoadingVaultPath: Bool
+    @Binding var showingClearAllAlert: Bool
+    
+    var body: some View {
+        FlexokiSectionView("Data Management") {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Clear All Sensitive Data")
+                    .font(.subheadline)
+                    .foregroundColor(Color.flexokiText2)
+                    .dynamicTypeSize(.small...(.accessibility5))
+                
+                Button(action: {
+                    showingClearAllAlert = true
+                }) {
+                    HStack {
+                        Image(systemName: "lock.shield")
+                            .foregroundColor(Color.flexokiRed)
+                        Text("Clear All Sensitive Data")
+                            .foregroundColor(Color.flexokiRed)
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
+                    .background(Color.flexokiBackground)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.flexokiRed, lineWidth: 1)
+                    )
+                    .dynamicTypeSize(.small...(.accessibility5))
+                }
+                .disabled(isLoadingAPIKey || isLoadingVaultPath)
+                .accessibilityHint("Removes all API keys, vault paths, and security bookmarks from the device")
+            }
+        }
+    }
+}
+
+// Main Settings View
+struct SettingsView: View {
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
+    @State private var anthropicAPIKey = ""
+    @State private var obsidianVaultPath = ""
+    @State private var isLoadingAPIKey = false
+    @State private var isLoadingVaultPath = false
+    @State private var showingDocumentPicker = false
+    @State private var showingAPIKeyAlert = false
+    @State private var showingClearedAlert = false
+    @State private var showingVaultPathAlert = false
+    @State private var showingClearAllAlert = false
+    @State private var showingClearAllConfirmation = false
+    
+    var body: some View {
+        NavigationView {
+            FlexokiFormView {
+                // Use the extracted API Key Section component
+                APIKeySection(
+                    anthropicAPIKey: $anthropicAPIKey,
+                    isLoadingAPIKey: $isLoadingAPIKey,
+                    showingAPIKeyAlert: $showingAPIKeyAlert,
+                    showingClearedAlert: $showingClearedAlert
+                )
+                
+                // Use the extracted Vault Path Section component
+                VaultPathSection(
+                    obsidianVaultPath: $obsidianVaultPath,
+                    isLoadingVaultPath: $isLoadingVaultPath,
+                    showingDocumentPicker: $showingDocumentPicker,
+                    showingVaultPathAlert: $showingVaultPathAlert
+                )
+                
+                // Use the extracted Clear All Data Section component
+                ClearAllDataSection(
+                    isLoadingAPIKey: $isLoadingAPIKey,
+                    isLoadingVaultPath: $isLoadingVaultPath,
+                    showingClearAllAlert: $showingClearAllAlert
+                )
+            }
+            .navigationTitle("Settings")
+            .onAppear {
+                loadSavedSettings()
+            }
+            .sheet(isPresented: $showingDocumentPicker) {
+                DocumentPicker { url in
+                    handleVaultSelection(url)
+                }
+            }
+            .alert("API Key Saved", isPresented: $showingAPIKeyAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Your Anthropic API key has been securely saved.")
+            }
+            .alert("API Key Cleared", isPresented: $showingClearedAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Your Anthropic API key has been removed.")
+            }
+            .alert("Vault Path Cleared", isPresented: $showingVaultPathAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Your Obsidian vault path has been removed.")
+            }
+            .alert("Clear All Sensitive Data", isPresented: $showingClearAllAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Clear All", role: .destructive) {
+                    coordinator.clearAllSensitiveData()
+                    anthropicAPIKey = ""
+                    obsidianVaultPath = ""
+                    showingClearAllConfirmation = true
+                }
+            } message: {
+                Text("This will remove all API keys, vault paths, and security bookmarks. Are you sure?")
+            }
+            .alert("Data Cleared", isPresented: $showingClearAllConfirmation) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("All sensitive data has been removed from the app.")
+            }
+        }
+    }
+    
+    private func loadSavedSettings() {
+        // Load API Key
+        isLoadingAPIKey = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let apiKey = try KeychainManager.getString(forKey: "AnthropicAPIKey") ?? ""
+                DispatchQueue.main.async {
+                    self.anthropicAPIKey = apiKey
+                    self.isLoadingAPIKey = false
+                }
+            } catch {
+                print("Failed to load API key: \(error)")
+                DispatchQueue.main.async {
+                    self.isLoadingAPIKey = false
+                }
+            }
+        }
+        
+        // Load Vault Path
+        isLoadingVaultPath = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let path = try KeychainManager.getString(forKey: "ObsidianVaultPath") ?? ""
+                DispatchQueue.main.async {
+                    self.obsidianVaultPath = path
+                    self.isLoadingVaultPath = false
+                }
+            } catch {
+                print("Failed to load vault path: \(error)")
+                DispatchQueue.main.async {
+                    self.isLoadingVaultPath = false
+                }
+            }
+        }
+    }
+    
+    private func handleVaultSelection(_ url: URL) {
+        isLoadingVaultPath = true
+        
+        // Get the path string from the URL
+        let path = url.path
+        
+        // Save the path using the coordinator
+        coordinator.setObsidianVaultPath(path)
+        
+        // Update the UI
+        obsidianVaultPath = path
+        isLoadingVaultPath = false
+    }
+}
+
+// Helper function to hide the keyboard
+func hideKeyboard() {
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 }
 
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
-        NavigationView {
-            SettingsView()
-                .environmentObject(VoiceNoteStore())
-        }
-    }
-}
-
-// Helper extension to hide keyboard
-extension View {
-    func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        SettingsView()
+            .environmentObject(VoiceNoteCoordinator())
     }
 }

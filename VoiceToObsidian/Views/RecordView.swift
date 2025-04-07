@@ -1,11 +1,12 @@
 import SwiftUI
 import AVFoundation
+import Combine
 
 struct RecordView: View {
-    @EnvironmentObject var voiceNoteStore: VoiceNoteStore
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
     @Binding var isRecording: Bool
-    @State private var recordingTime: TimeInterval = 0
-    @State private var timer: Timer?
+    @State private var showingErrorAlert = false
+    @State private var errorMessage = ""
     @State private var showingProcessingAlert = false
     
     var body: some View {
@@ -38,11 +39,12 @@ struct RecordView: View {
             }
             
             // Timer display
-            Text(timeString(time: recordingTime))
+            Text(timeString(time: coordinator.recordingDuration))
                 .font(.system(size: 48, weight: .bold, design: .monospaced))
                 .foregroundColor(isRecording ? Color.flexokiAccentRed : Color.flexokiText)
                 .padding(.top, 16)
                 .dynamicTypeSize(.small...(.accessibility5))
+                .accessibilityLabel("Recording time: \(timeStringSpoken(time: coordinator.recordingDuration))")
             
             Spacer()
             
@@ -55,66 +57,53 @@ struct RecordView: View {
                 }
             }) {
                 Text(isRecording ? "Stop Recording" : "Start Recording")
-                    .font(.headline)
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(Color.flexokiPaper)
-                    .padding()
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: 44)
+                    .padding(.horizontal, 16)
                     .background(isRecording ? Color.flexokiAccentRed : Color.flexokiAccentBlue)
-                    .cornerRadius(10)
+                    .cornerRadius(8)
+                    .dynamicTypeSize(.small...(.accessibility5))
             }
+            .accessibilityHint(isRecording ? "Stops the current recording" : "Starts a new voice recording")
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
         .alert("Processing Voice Note", isPresented: $showingProcessingAlert) {
-            ProgressView()
             Button("OK", role: .cancel) {}
         } message: {
             Text("Your voice note is being transcribed and processed...")
-            }
+        }
+        .alert("Recording Error", isPresented: $showingErrorAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage)
+        }
+        .onReceive(coordinator.$isProcessing) { isProcessing in
+            // Update the processing alert based on the coordinator's state
+            showingProcessingAlert = isProcessing
+        }
             .navigationTitle("Record")
             }
         }
     }
     
     private func startRecording() {
+        // Call the coordinator to start recording
+        coordinator.startRecording()
         isRecording = true
-        recordingTime = 0
-        
-        // Start the timer for recording duration
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            recordingTime += 0.1
-        }
-        
-        // Call the audio recording service
-        voiceNoteStore.startRecording { success in
-            if !success {
-                isRecording = false
-                timer?.invalidate()
-                // TODO: Show error alert
-            }
-        }
     }
     
     private func stopRecording() {
         isRecording = false
-        timer?.invalidate()
         showingProcessingAlert = true
         
         // Stop recording and process the audio
-        voiceNoteStore.stopRecording { success, voiceNote in
-            showingProcessingAlert = false
-            
-            if success, let _ = voiceNote {
-                // Successfully processed voice note
-                // Reset the timer to 0 after successful processing
-                DispatchQueue.main.async {
-                    self.recordingTime = 0
-                }
-            } else {
-                // TODO: Show error alert
-            }
-        }
+        coordinator.stopRecording()
+        
+        // The coordinator will handle the processing and update its isProcessing state
+        // We'll observe this in the .onReceive modifier
     }
     
     private func timeString(time: TimeInterval) -> String {
@@ -123,11 +112,23 @@ struct RecordView: View {
         let tenths = Int((time - floor(time)) * 10)
         return String(format: "%02d:%02d.%01d", minutes, seconds, tenths)
     }
+    
+    /// Returns a spoken version of the time for accessibility
+    private func timeStringSpoken(time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        
+        if minutes > 0 {
+            return "\(minutes) minute\(minutes == 1 ? "" : "s") and \(seconds) second\(seconds == 1 ? "" : "s")"
+        } else {
+            return "\(seconds) second\(seconds == 1 ? "" : "s")"
+        }
+    }
 }
 
 struct RecordView_Previews: PreviewProvider {
     static var previews: some View {
         RecordView(isRecording: .constant(false))
-            .environmentObject(VoiceNoteStore())
+            .environmentObject(VoiceNoteCoordinator(loadImmediately: true))
     }
 }

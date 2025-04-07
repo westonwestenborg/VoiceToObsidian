@@ -21,6 +21,15 @@
 		D403DDF32DA33DA100C29CDB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D403DDF22DA33DA100C29CDB /* Assets.xcassets */; };
 		D403DDFE2DA3444B00C29CDB /* WaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DDFD2DA3444B00C29CDB /* WaveformView.swift */; };
 		D403DE002DA3497F00C29CDB /* SimpleFlexokiColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DDFF2DA3497F00C29CDB /* SimpleFlexokiColors.swift */; };
+		D403DE042DA3643F00C29CDB /* TranscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE022DA3643F00C29CDB /* TranscriptionManager.swift */; };
+		D403DE052DA3643F00C29CDB /* VoiceNoteDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE032DA3643F00C29CDB /* VoiceNoteDataStore.swift */; };
+		D403DE062DA3643F00C29CDB /* RecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE012DA3643F00C29CDB /* RecordingManager.swift */; };
+		D403DE082DA3646700C29CDB /* VoiceNoteCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE072DA3646700C29CDB /* VoiceNoteCoordinator.swift */; };
+		D403DE0A2DA3647B00C29CDB /* SpacingConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE092DA3647B00C29CDB /* SpacingConstants.swift */; };
+		D403DE0C2DA3674000C29CDB /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE0B2DA3674000C29CDB /* KeychainManager.swift */; };
+		D403DE0F2DA3904C00C29CDB /* AccessibilityConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE0D2DA3904C00C29CDB /* AccessibilityConstants.swift */; };
+		D403DE102DA3904C00C29CDB /* FlexokiTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE0E2DA3904C00C29CDB /* FlexokiTheme.swift */; };
+		D403DE122DA3906200C29CDB /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE112DA3906200C29CDB /* AppCoordinator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +50,15 @@
 		D403DDF22DA33DA100C29CDB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = VoiceToObsidian/Assets.xcassets; sourceTree = "<group>"; };
 		D403DDFD2DA3444B00C29CDB /* WaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformView.swift; sourceTree = "<group>"; };
 		D403DDFF2DA3497F00C29CDB /* SimpleFlexokiColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleFlexokiColors.swift; sourceTree = "<group>"; };
+		D403DE012DA3643F00C29CDB /* RecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingManager.swift; sourceTree = "<group>"; };
+		D403DE022DA3643F00C29CDB /* TranscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionManager.swift; sourceTree = "<group>"; };
+		D403DE032DA3643F00C29CDB /* VoiceNoteDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteDataStore.swift; sourceTree = "<group>"; };
+		D403DE072DA3646700C29CDB /* VoiceNoteCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteCoordinator.swift; sourceTree = "<group>"; };
+		D403DE092DA3647B00C29CDB /* SpacingConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacingConstants.swift; sourceTree = "<group>"; };
+		D403DE0B2DA3674000C29CDB /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
+		D403DE0D2DA3904C00C29CDB /* AccessibilityConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityConstants.swift; sourceTree = "<group>"; };
+		D403DE0E2DA3904C00C29CDB /* FlexokiTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlexokiTheme.swift; sourceTree = "<group>"; };
+		D403DE112DA3906200C29CDB /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,6 +130,7 @@
 		00E6234567890123456789AB /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				D403DE072DA3646700C29CDB /* VoiceNoteCoordinator.swift */,
 				00B8234567890123456789AB /* VoiceNoteStore.swift */,
 			);
 			path = ViewModels;
@@ -120,6 +139,11 @@
 		00E7234567890123456789AB /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				D403DE112DA3906200C29CDB /* AppCoordinator.swift */,
+				D403DE0B2DA3674000C29CDB /* KeychainManager.swift */,
+				D403DE012DA3643F00C29CDB /* RecordingManager.swift */,
+				D403DE022DA3643F00C29CDB /* TranscriptionManager.swift */,
+				D403DE032DA3643F00C29CDB /* VoiceNoteDataStore.swift */,
 				00B9234567890123456789AB /* ObsidianService.swift */,
 				00BA234567890123456789AB /* AnthropicService.swift */,
 			);
@@ -129,6 +153,9 @@
 		D403DDF62DA3440F00C29CDB /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				D403DE0D2DA3904C00C29CDB /* AccessibilityConstants.swift */,
+				D403DE0E2DA3904C00C29CDB /* FlexokiTheme.swift */,
+				D403DE092DA3647B00C29CDB /* SpacingConstants.swift */,
 				D403DDFF2DA3497F00C29CDB /* SimpleFlexokiColors.swift */,
 			);
 			path = Extensions;
@@ -210,17 +237,26 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D403DE122DA3906200C29CDB /* AppCoordinator.swift in Sources */,
 				00A1234567890123456789AB /* VoiceToObsidianApp.swift in Sources */,
 				00A2234567890123456789AB /* ContentView.swift in Sources */,
+				D403DE0F2DA3904C00C29CDB /* AccessibilityConstants.swift in Sources */,
+				D403DE102DA3904C00C29CDB /* FlexokiTheme.swift in Sources */,
 				D403DDFE2DA3444B00C29CDB /* WaveformView.swift in Sources */,
 				D403DE002DA3497F00C29CDB /* SimpleFlexokiColors.swift in Sources */,
+				D403DE0C2DA3674000C29CDB /* KeychainManager.swift in Sources */,
 				00A3234567890123456789AB /* RecordView.swift in Sources */,
+				D403DE0A2DA3647B00C29CDB /* SpacingConstants.swift in Sources */,
 				00A4234567890123456789AB /* VoiceNoteListView.swift in Sources */,
 				00A5234567890123456789AB /* VoiceNoteDetailView.swift in Sources */,
 				00A6234567890123456789AB /* SettingsView.swift in Sources */,
 				00A7234567890123456789AB /* VoiceNote.swift in Sources */,
 				00A8234567890123456789AB /* VoiceNoteStore.swift in Sources */,
 				00A9234567890123456789AB /* ObsidianService.swift in Sources */,
+				D403DE042DA3643F00C29CDB /* TranscriptionManager.swift in Sources */,
+				D403DE052DA3643F00C29CDB /* VoiceNoteDataStore.swift in Sources */,
+				D403DE082DA3646700C29CDB /* VoiceNoteCoordinator.swift in Sources */,
+				D403DE062DA3643F00C29CDB /* RecordingManager.swift in Sources */,
 				00AA234567890123456789AB /* AnthropicService.swift in Sources */,
 				00AB234567890123456789AB /* DocumentPicker.swift in Sources */,
 			);

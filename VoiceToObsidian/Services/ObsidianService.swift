@@ -1,4 +1,5 @@
 import Foundation
+import Security
 
 class ObsidianService {
     private let fileManager = FileManager.default
@@ -25,7 +26,30 @@ class ObsidianService {
         
         // Use autoreleasepool to help with memory management when resolving bookmarks
         autoreleasepool {
-            if let bookmarkData = UserDefaults.standard.data(forKey: "ObsidianVaultBookmark") {
+            // First try to get bookmark from keychain
+            var bookmarkData: Data? = nil
+            do {
+                bookmarkData = try KeychainManager.getData(forKey: "ObsidianVaultBookmark")
+            } catch {
+                print("Error retrieving bookmark from keychain: \(error.localizedDescription)")
+            }
+            
+            // Fall back to UserDefaults if not found in keychain
+            if bookmarkData == nil {
+                bookmarkData = UserDefaults.standard.data(forKey: "ObsidianVaultBookmark")
+                
+                // If found in UserDefaults but not in keychain, save to keychain for future use
+                if let data = bookmarkData {
+                    do {
+                        try KeychainManager.saveData(data, forKey: "ObsidianVaultBookmark")
+                        print("Migrated bookmark from UserDefaults to keychain")
+                    } catch {
+                        print("Failed to migrate bookmark to keychain: \(error)")
+                    }
+                }
+            }
+            
+            if let bookmarkData = bookmarkData {
                 do {
                     var isStale = false
                     vaultURL = try URL(resolvingBookmarkData: bookmarkData, options: [.withoutUI], relativeTo: nil, bookmarkDataIsStale: &isStale)
@@ -33,6 +57,8 @@ class ObsidianService {
                     if !isStale {
                         didStartAccessing = vaultURL?.startAccessingSecurityScopedResource() ?? false
                         print("Started accessing security-scoped resource: \(didStartAccessing)")
+                    } else {
+                        print("Bookmark is stale, need to recreate")
                     }
                 } catch {
                     print("Error resolving bookmark: \(error.localizedDescription)")
@@ -105,7 +131,30 @@ class ObsidianService {
         
         // Use autoreleasepool to help with memory management when resolving bookmarks
         autoreleasepool {
-            if let bookmarkData = UserDefaults.standard.data(forKey: "ObsidianVaultBookmark") {
+            // First try to get bookmark from keychain
+            var bookmarkData: Data? = nil
+            do {
+                bookmarkData = try KeychainManager.getData(forKey: "ObsidianVaultBookmark")
+            } catch {
+                print("Error retrieving bookmark from keychain: \(error.localizedDescription)")
+            }
+            
+            // Fall back to UserDefaults if not found in keychain
+            if bookmarkData == nil {
+                bookmarkData = UserDefaults.standard.data(forKey: "ObsidianVaultBookmark")
+                
+                // If found in UserDefaults but not in keychain, save to keychain for future use
+                if let data = bookmarkData {
+                    do {
+                        try KeychainManager.saveData(data, forKey: "ObsidianVaultBookmark")
+                        print("Migrated bookmark from UserDefaults to keychain")
+                    } catch {
+                        print("Failed to migrate bookmark to keychain: \(error)")
+                    }
+                }
+            }
+            
+            if let bookmarkData = bookmarkData {
                 do {
                     var isStale = false
                     vaultURL = try URL(resolvingBookmarkData: bookmarkData, options: [.withoutUI], relativeTo: nil, bookmarkDataIsStale: &isStale)
@@ -113,6 +162,8 @@ class ObsidianService {
                     if !isStale {
                         didStartAccessing = vaultURL?.startAccessingSecurityScopedResource() ?? false
                         print("Started accessing security-scoped resource: \(didStartAccessing)")
+                    } else {
+                        print("Bookmark is stale, need to recreate")
                     }
                 } catch {
                     print("Error resolving bookmark: \(error.localizedDescription)")

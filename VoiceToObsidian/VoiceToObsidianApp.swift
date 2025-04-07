@@ -1,33 +1,48 @@
 import SwiftUI
 import UIKit
 import AVFoundation
+import Combine
 
-// Ultra-minimal app implementation to reduce memory pressure
+// Streamlined app implementation with proper resource management
 @main
 struct VoiceToObsidianApp: App {
-    // Use StateObject only when the view appears, not during initialization
-    // Using a lazy property wrapper to further delay initialization
-    @StateObject private var voiceNoteStore = VoiceNoteStore(lazyInit: true)
-    @State private var isAppReady = false
+    // Use AppCoordinator to manage service lifecycle
+    @StateObject private var coordinator = AppCoordinator()
+    
+    // Basic UI state - minimal state to avoid memory pressure
     @State private var isFirstLaunch = true
     
     init() {
-        // Absolute minimal initialization - defer everything possible
-        print("App initialization started")
+        // Minimal app initialization
+        print("App initialization started - using lightweight approach")
         
-        // Disable unnecessary system services during launch
-        disableUnnecessaryServices()
+        // Reduce URLCache size for startup
+        URLCache.shared = URLCache(memoryCapacity: 100_000, diskCapacity: 1_000_000, directory: nil)
         
-        // Set memory warning notification
+        // Don't register notification observation here - moved to onAppear in the body
+    }
+    
+    // Set up memory warning notification handler - called from a non-escaping context
+    private func setupMemoryWarningHandler() {
+        // Store a reference to our coordinator to avoid capturing self
+        let coordinatorRef = coordinator
+        
+        // Set memory warning notification with cleanup
         NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, 
                                                object: nil, 
                                                queue: .main) { _ in
-            print("Memory warning received")
-            // Force memory cleanup
-            autoreleasepool {
-                URLCache.shared.removeAllCachedResponses()
-                if #available(iOS 15.0, *) {
-                    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            print("Memory warning received - performing cleanup")
+            
+            // Force memory cleanup without capturing self
+            DispatchQueue.global(qos: .utility).async {
+                autoreleasepool {
+                    // Clear URL cache
+                    URLCache.shared.removeAllCachedResponses()
+                    
+                    // Ask coordinator to clean up resources without capturing self
+                    DispatchQueue.main.async {
+                        coordinatorRef.cleanup()
+                    }
                 }
             }
         }
@@ -36,35 +51,33 @@ struct VoiceToObsidianApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                // Background color - use system color to reduce memory
+                // Background color
                 Color(UIColor.systemBackground)
                     .edgesIgnoringSafeArea(.all)
                 
-                if !isAppReady {
-                    // Ultra minimal loading view - no custom fonts or images
-                    Text("Loading...")
+                // Content based on app state
+                switch coordinator.appState {
+                case .initializing:
+                    // Show simple loading screen
+                    ProgressView("Loading...")
                         .onAppear {
-                            // Delay app initialization in stages
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                // Stage 1: Just show UI
-                                isAppReady = true
-                                
-                                // Stage 2: Configure minimal appearance after UI is shown
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    configureMinimalAppearance()
-                                }
-                            }
+                            // Start the coordinator's initialization process
+                            coordinator.startInitialization()
+                            
+                            // Set up memory warning handler
+                            setupMemoryWarningHandler()
                         }
-                } else {
-                    // Main content - only loaded after delay
+                    
+                case .uiReady, .ready:
+                    // Main content view
                     ContentView()
-                        .environmentObject(voiceNoteStore)
+                        .environmentObject(coordinator.voiceNoteCoordinator)
                         .transition(.opacity)
-                        .animation(.easeIn, value: isAppReady)
+                        .animation(.easeIn, value: coordinator.appState != .initializing)
                         .onAppear {
                             if isFirstLaunch {
-                                // Configure audio session with minimal settings
-                                configureMinimalAudioSession()
+                                // Do minimal first-launch setup
+                                configureAppearance()
                                 isFirstLaunch = false
                             }
                         }
@@ -73,79 +86,44 @@ struct VoiceToObsidianApp: App {
         }
     }
     
-    // Disable unnecessary system services during launch
-    private func disableUnnecessaryServices() {
-        // Minimize audio session initialization
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
-            try AVAudioSession.sharedInstance().setActive(false)
-        } catch {
-            print("Could not configure audio session: \(error)")
-        }
+    // Configure appearance (standard approach)
+    private func configureAppearance() {
+        // Basic appearance configuration
+        UINavigationBar.appearance().tintColor = UIColor.systemBlue
+        UITabBar.appearance().tintColor = UIColor.systemBlue
         
-        // Reduce URLCache size
-        URLCache.shared = URLCache(memoryCapacity: 100_000, diskCapacity: 1_000_000, directory: nil)
-    }
-    
-    // Configure minimal audio session when needed
-    private func configureMinimalAudioSession() {
-        DispatchQueue.global(qos: .utility).async {
-            do {
-                try AVAudioSession.sharedInstance().setPreferredIOBufferDuration(0.005)
-                print("Set minimal audio buffer size")
-            } catch {
-                print("Could not set preferred IO buffer duration: \(error)")
+        // More detailed appearance configuration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            autoreleasepool {
+                let navBarAppearance = UINavigationBarAppearance()
+                navBarAppearance.configureWithOpaqueBackground()
+                navBarAppearance.backgroundColor = UIColor(Color.flexokiBackground)
+                navBarAppearance.titleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
+                navBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
+                
+                UINavigationBar.appearance().standardAppearance = navBarAppearance
+                UINavigationBar.appearance().compactAppearance = navBarAppearance
+                UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
+                
+                let tabBarAppearance = UITabBarAppearance()
+                tabBarAppearance.configureWithOpaqueBackground()
+                tabBarAppearance.backgroundColor = UIColor(Color.flexokiBackground)
+                
+                UITabBar.appearance().standardAppearance = tabBarAppearance
+                if #available(iOS 15.0, *) {
+                    UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+                }
+                
+                UITableView.appearance().backgroundColor = UIColor(Color.flexokiBackground)
+                UITableViewCell.appearance().backgroundColor = UIColor(Color.flexokiBackground2)
+                
+                if #available(iOS 15.0, *) {
+                    UITableView.appearance().sectionHeaderTopPadding = 0
+                }
+                UITableView.appearance().separatorColor = UIColor(Color.flexokiUI)
             }
         }
     }
 }
 
-// Minimal appearance configuration to reduce memory pressure
-func configureMinimalAppearance() {
-    // Only set essential appearance properties
-    UINavigationBar.appearance().tintColor = UIColor.systemBlue
-    UITabBar.appearance().tintColor = UIColor.systemBlue
-    
-    // Configure full appearance only when needed, with a longer delay
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-        autoreleasepool {
-            configureFullAppearance()
-        }
-    }
-}
 
-// Full appearance configuration deferred to much later
-func configureFullAppearance() {
-    autoreleasepool {
-        // Configure navigation bar appearance
-        let navBarAppearance = UINavigationBarAppearance()
-        navBarAppearance.configureWithOpaqueBackground()
-        navBarAppearance.backgroundColor = UIColor(Color.flexokiBackground)
-        navBarAppearance.titleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
-        navBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
-        
-        UINavigationBar.appearance().standardAppearance = navBarAppearance
-        UINavigationBar.appearance().compactAppearance = navBarAppearance
-        UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
-        
-        // Configure tab bar appearance
-        let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithOpaqueBackground()
-        tabBarAppearance.backgroundColor = UIColor(Color.flexokiBackground)
-        
-        UITabBar.appearance().standardAppearance = tabBarAppearance
-        if #available(iOS 15.0, *) {
-            UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
-        }
-        
-        // Table view appearance (affects Forms and Lists) - moved from ContentView
-        UITableView.appearance().backgroundColor = UIColor(Color.flexokiBackground)
-        UITableViewCell.appearance().backgroundColor = UIColor(Color.flexokiBackground2)
-        
-        // Form appearance - moved from ContentView
-        if #available(iOS 15.0, *) {
-            UITableView.appearance().sectionHeaderTopPadding = 0
-        }
-        UITableView.appearance().separatorColor = UIColor(Color.flexokiUI)
-    }
-}

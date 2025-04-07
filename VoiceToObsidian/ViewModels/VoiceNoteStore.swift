@@ -5,6 +5,8 @@ import Combine
 
 class VoiceNoteStore: ObservableObject {
     @Published var voiceNotes: [VoiceNote] = []
+    @Published var isLoadingNotes: Bool = false
+    @Published var loadedAllNotes: Bool = false
     
     private var audioRecorder: AVAudioRecorder?
     private var recordingSession: AVAudioSession?
@@ -25,6 +27,11 @@ class VoiceNoteStore: ObservableObject {
     // Track whether we've completed initialization
     private var hasInitialized = false
     
+    // Pagination parameters
+    private var currentPage = 0
+    private let pageSize = 10
+    private var cachedNoteCount: Int = 0
+    
     init(previewData: Bool = false, lazyInit: Bool = false) {
         print("VoiceNoteStore initialization started")
         
@@ -35,22 +42,21 @@ class VoiceNoteStore: ObservableObject {
         } else if lazyInit {
             // Super lazy initialization - do nothing until explicitly needed
             print("VoiceNoteStore using lazy initialization")
+            // We'll load notes only when they're requested
         } else {
-            // Only load voice notes, defer everything else
-            // This makes the app launch faster while still showing content
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            // Only check if we have notes, but don't load them yet
+            DispatchQueue.global(qos: .utility).async { [weak self] in
                 autoreleasepool {
-                    print("Starting to load voice notes")
-                    self?.loadVoiceNotes()
-                    print("Voice notes loaded")
+                    guard let self = self else { return }
+                    // Just check if file exists and get metadata
+                    self.checkVoiceNotesFile()
                     
                     DispatchQueue.main.async {
-                        self?.hasInitialized = true
-                        print("VoiceNoteStore initialized with voice notes only")
+                        self.hasInitialized = true
+                        print("VoiceNoteStore initialized with metadata only")
                     }
                 }
             }
-            // No longer setting up speech recognition here - will be done on demand
         }
     }
     
@@ -61,15 +67,8 @@ class VoiceNoteStore: ObservableObject {
             return 
         }
         
-        // If voice notes haven't been loaded yet, load them
-        if voiceNotes.isEmpty {
-            print("Loading voice notes during deferred initialization")
-            autoreleasepool {
-                loadVoiceNotes()
-            }
-        }
-        
-        // Don't set up speech recognition here - will be done on demand
+        // Just check if we have notes, but don't load them yet
+        checkVoiceNotesFile()
         
         hasInitialized = true
         print("Deferred initialization complete")
@@ -434,66 +433,143 @@ class VoiceNoteStore: ObservableObject {
         }
     }
     
-    // MARK: - Persistence
+    // MARK: - Pagination and Loading
     
-    private func saveVoiceNotes() {
-        do {
-            let data = try JSONEncoder().encode(voiceNotes)
-            let url = getVoiceNotesFileURL()
-            try data.write(to: url)
-        } catch {
-            print("Failed to save voice notes: \(error.localizedDescription)")
+    /// Loads the next page of voice notes
+    func loadMoreVoiceNotes() {
+        guard !isLoadingNotes && !loadedAllNotes else { return }
+        
+        isLoadingNotes = true
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            autoreleasepool {
+                guard let self = self else { return }
+                
+                // Ensure initialization is complete
+                if !self.hasInitialized {
+                    self.performDeferredInitialization()
+                }
+                
+                self.loadVoiceNotesPage(page: self.currentPage)
+                
+                DispatchQueue.main.async {
+                    self.isLoadingNotes = false
+                }
+            }
         }
     }
     
-    private func loadVoiceNotes() {
-        print("loadVoiceNotes called")
-        // Use autoreleasepool to help with memory management during JSON decoding
-        // Note: The caller should also use autoreleasepool when calling this method
-        let url = getVoiceNotesFileURL()
-            
-            if FileManager.default.fileExists(atPath: url.path) {
+    /// Resets pagination and reloads notes from the beginning
+    func refreshVoiceNotes() {
+        currentPage = 0
+        loadedAllNotes = false
+        voiceNotes = []
+        loadMoreVoiceNotes()
+    }
+    
+    // MARK: - Persistence
+    
+    private func saveVoiceNotes() {
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            autoreleasepool {
+                guard let self = self else { return }
+                
                 do {
-                    // Use a file handle instead of loading entire file into memory at once
-                    let fileHandle = try FileHandle(forReadingFrom: url)
-                    let data = fileHandle.readDataToEndOfFile()
-                    try fileHandle.close()
+                    let data = try JSONEncoder().encode(self.voiceNotes)
+                    let url = self.getVoiceNotesFileURL()
+                    try data.write(to: url)
                     
-                    print("Voice notes file size: \(data.count) bytes")
-                    
-                    // Decode on a background thread if this is called from main thread
-                    if Thread.isMainThread && data.count > 10_000 { // Only for large files
-                        print("Decoding large file on background thread")
-                        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                            autoreleasepool {
-                                do {
-                                    let decodedNotes = try JSONDecoder().decode([VoiceNote].self, from: data)
-                                    DispatchQueue.main.async {
-                                        self?.voiceNotes = decodedNotes
-                                        print("Voice notes decoded and set on main thread: \(decodedNotes.count) notes")
-                                    }
-                                } catch {
-                                    print("Failed to decode voice notes: \(error.localizedDescription)")
-                                    DispatchQueue.main.async {
-                                        self?.voiceNotes = []
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // For smaller files or background threads, decode directly
-                        print("Decoding file directly")
-                        voiceNotes = try JSONDecoder().decode([VoiceNote].self, from: data)
-                        print("Voice notes decoded directly: \(voiceNotes.count) notes")
-                    }
+                    // Update cached count
+                    self.cachedNoteCount = self.voiceNotes.count
                 } catch {
-                    print("Failed to load voice notes: \(error.localizedDescription)")
-                    voiceNotes = []
+                    print("Failed to save voice notes: \(error.localizedDescription)")
                 }
-            } else {
-                print("No voice notes file found")
-                voiceNotes = []
             }
+        }
+    }
+    
+    /// Just checks if the voice notes file exists and gets its metadata
+    private func checkVoiceNotesFile() {
+        let url = getVoiceNotesFileURL()
+        
+        if FileManager.default.fileExists(atPath: url.path) {
+            do {
+                let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+                if let fileSize = attributes[.size] as? Int {
+                    print("Voice notes file exists, size: \(fileSize) bytes")
+                    
+                    // Estimate number of notes based on file size
+                    // This is a rough estimate - average note might be around 1KB
+                    let estimatedCount = max(1, fileSize / 1024)
+                    cachedNoteCount = estimatedCount
+                }
+            } catch {
+                print("Failed to get voice notes file attributes: \(error.localizedDescription)")
+                cachedNoteCount = 0
+            }
+        } else {
+            print("No voice notes file found")
+            cachedNoteCount = 0
+        }
+    }
+    
+    /// Loads a specific page of voice notes
+    private func loadVoiceNotesPage(page: Int) {
+        print("Loading voice notes page \(page)")
+        let url = getVoiceNotesFileURL()
+        
+        if FileManager.default.fileExists(atPath: url.path) {
+            do {
+                // Use a file handle for more efficient reading
+                let fileHandle = try FileHandle(forReadingFrom: url)
+                let data = fileHandle.readDataToEndOfFile()
+                try fileHandle.close()
+                
+                print("Voice notes file size: \(data.count) bytes")
+                
+                // Decode all notes (we'll implement true pagination in a future version)
+                let allNotes = try JSONDecoder().decode([VoiceNote].self, from: data)
+                
+                // Calculate pagination
+                let startIndex = page * pageSize
+                let endIndex = min(startIndex + pageSize, allNotes.count)
+                
+                // Check if we've reached the end
+                if startIndex >= allNotes.count {
+                    DispatchQueue.main.async { [weak self] in
+                        self?.loadedAllNotes = true
+                    }
+                    return
+                }
+                
+                // Get the subset of notes for this page
+                let pageNotes = Array(allNotes[startIndex..<endIndex])
+                
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    // Append to existing notes
+                    self.voiceNotes.append(contentsOf: pageNotes)
+                    self.currentPage += 1
+                    
+                    // Check if we've loaded all notes
+                    if endIndex >= allNotes.count {
+                        self.loadedAllNotes = true
+                    }
+                    
+                    print("Loaded page \(page) with \(pageNotes.count) notes. Total: \(self.voiceNotes.count)")
+                }
+            } catch {
+                print("Failed to load voice notes: \(error.localizedDescription)")
+                DispatchQueue.main.async { [weak self] in
+                    self?.loadedAllNotes = true
+                }
+            }
+        } else {
+            print("No voice notes file found")
+            DispatchQueue.main.async { [weak self] in
+                self?.loadedAllNotes = true
+            }
+        }
     }
     
     private func getVoiceNotesFileURL() -> URL {

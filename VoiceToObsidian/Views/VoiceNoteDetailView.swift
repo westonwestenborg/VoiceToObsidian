@@ -1,180 +1,53 @@
 import SwiftUI
 import AVFoundation
+import Combine
+import UIKit
 
 struct VoiceNoteDetailView: View {
     let voiceNote: VoiceNote
-    @EnvironmentObject var voiceNoteStore: VoiceNoteStore
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
     @State private var isPlaying = false
     @State private var currentTime: TimeInterval = 0
-    @State private var timer: Timer?
     @State private var audioPlayer: AVAudioPlayer?
     @State private var showingOriginalTranscript = false
     
     var body: some View {
-        ScrollView {
-            ZStack {
-                // Background color
-                Color.flexokiBackground
-                    .edgesIgnoringSafeArea(.all)
-            VStack(alignment: .leading, spacing: 24) {
-                // Title
-                Text(voiceNote.title)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .dynamicTypeSize(.small...(.accessibility5))
-                
-                // Date and duration info
-                HStack {
-                    Label(formattedDate(voiceNote.creationDate), systemImage: "calendar")
-                        .foregroundColor(Color.flexokiText2)
-                        .dynamicTypeSize(.small...(.accessibility5))
-                    
-                    Spacer()
-                    
-                    Label(formattedDuration(voiceNote.duration), systemImage: "clock")
-                        .foregroundColor(Color.flexokiText2)
-                        .dynamicTypeSize(.small...(.accessibility5))
-                }
-                .font(.subheadline)
-                
-                // Audio player controls
-                VStack {
-                    // Progress bar
-                    ProgressView(value: currentTime, total: voiceNote.duration)
-                        .progressViewStyle(LinearProgressViewStyle())
-                        .padding(.vertical, 16)
-                    
-                    // Time display
-                    HStack {
-                        Text(formatTimeString(currentTime))
-                            .font(.caption)
-                            .monospacedDigit()
-                            .dynamicTypeSize(.small...(.accessibility5))
-                        
-                        Spacer()
-                        
-                        Text(formatTimeString(voiceNote.duration))
-                            .font(.caption)
-                            .monospacedDigit()
-                            .dynamicTypeSize(.small...(.accessibility5))
-                    }
-                    
-                    // Playback controls
-                    HStack {
-                        Button(action: {
-                            if isPlaying {
-                                pauseAudio()
-                            } else {
-                                playAudio()
-                            }
-                        }) {
-                            Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                .resizable()
-                                .frame(width: 44, height: 44)
-                                .foregroundColor(Color.flexokiAccentBlue)
-                        }
-                        
-                        Button(action: {
-                            stopAudio()
-                        }) {
-                            Image(systemName: "stop.circle.fill")
-                                .resizable()
-                                .frame(width: 44, height: 44)
-                                .foregroundColor(Color.flexokiAccentRed)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-                }
-                .padding(16)
-                .background(Color.flexokiBackground2)
-                .cornerRadius(10)
-                
-                // Transcript section
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Transcript")
-                            .font(.headline)
-                            .dynamicTypeSize(.small...(.accessibility5))
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            showingOriginalTranscript.toggle()
-                        }) {
-                            Text(showingOriginalTranscript ? "Show Cleaned" : "Show Original")
-                                .font(.caption)
-                                .foregroundColor(Color.flexokiAccentBlue)
-                                .dynamicTypeSize(.small...(.accessibility5))
-                        }
-                        .frame(minHeight: 44)
-                    }
-                    
-                    if showingOriginalTranscript {
-                        Text(voiceNote.originalTranscript)
-                            .padding(16)
-                            .background(Color.flexokiBackground2)
-                            .cornerRadius(8)
-                            .dynamicTypeSize(.small...(.accessibility5))
-                    } else {
-                        Text(voiceNote.cleanedTranscript)
-                            .padding(16)
-                            .background(Color.flexokiBackground2)
-                            .cornerRadius(8)
-                            .dynamicTypeSize(.small...(.accessibility5))
-                    }
-                }
-                
-                // Obsidian link
-                if let obsidianPath = voiceNote.obsidianPath {
-                    VStack(alignment: .leading) {
-                        Text("Obsidian Note")
-                            .font(.headline)
-                            .dynamicTypeSize(.small...(.accessibility5))
-                        
-                        Button(action: {
-                            // TODO: Open Obsidian note if possible
-                            // This would require a URL scheme or other method
-                        }) {
-                            HStack {
-                                Image(systemName: "doc.text")
-                                Text(obsidianPath)
-                                    .lineLimit(1)
-                                    .dynamicTypeSize(.small...(.accessibility5))
-                                Spacer()
-                                Image(systemName: "arrow.up.right.square")
-                            }
-                            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-                            .background(Color.flexokiBackground2)
-                            .cornerRadius(8)
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-            }
-        }
-        .background(Color.flexokiBackground)
-        .navigationBarTitle("", displayMode: .inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    // TODO: Share options for the voice note
-                }) {
-                    Image(systemName: "square.and.arrow.up")
-                }
-            }
-        }
-        .onAppear {
-            setupAudioPlayer()
-        }
-        .onDisappear {
-            stopAudio()
-        }
+        // Extract the content into a separate view to reduce complexity
+        DetailContentView(voiceNote: voiceNote, isPlaying: $isPlaying, currentTime: $currentTime, audioPlayer: $audioPlayer, showingOriginalTranscript: $showingOriginalTranscript)
     }
     
+    // Helper functions for formatting time
+    private func formatTimeString(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+    
+    private func formatTimeStringSpoken(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        
+        if minutes > 0 {
+            return "\(minutes) minute\(minutes == 1 ? "" : "s") and \(seconds) second\(seconds == 1 ? "" : "s")"
+        } else {
+            return "\(seconds) second\(seconds == 1 ? "" : "s")"
+        }
+    }
+}
+
+// Separate view to break up complex expressions
+struct DetailContentView: View {
+    let voiceNote: VoiceNote
+    @Binding var isPlaying: Bool
+    @Binding var currentTime: TimeInterval
+    @Binding var audioPlayer: AVAudioPlayer?
+    @Binding var showingOriginalTranscript: Bool
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
+    
+    // Add timer as a state property so it can be modified
+    @State private var timer: Timer? = nil
+    
+    // Audio playback functions
     private func setupAudioPlayer() {
         guard let audioURL = voiceNote.audioURL else { return }
         
@@ -219,6 +92,7 @@ struct VoiceNoteDetailView: View {
         timer?.invalidate()
     }
     
+    // Helper functions for formatting time
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -226,24 +100,246 @@ struct VoiceNoteDetailView: View {
         return formatter.string(from: date)
     }
     
-    private func formattedDuration(_ duration: TimeInterval) -> String {
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        return String(format: "%d:%02d", minutes, seconds)
+    private func formattedDateSpoken(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
     
+    private func formattedDuration(_ duration: TimeInterval) -> String {
+        return formatTimeString(duration)
+    }
+    
+    private func formattedDurationSpoken(_ duration: TimeInterval) -> String {
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return "\(minutes) minutes and \(seconds) seconds"
+    }
+    
+    // Helper functions for formatting time
     private func formatTimeString(_ time: TimeInterval) -> String {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: "%d:%02d", minutes, seconds)
     }
+    
+    private func formatTimeStringSpoken(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        
+        if minutes > 0 {
+            return "\(minutes) minute\(minutes == 1 ? "" : "s") and \(seconds) second\(seconds == 1 ? "" : "s")"
+        } else {
+            return "\(seconds) second\(seconds == 1 ? "" : "s")"
+        }
+    }
+    
+    var body: some View {
+        ScrollView {
+            ZStack {
+                // Background color
+                Color.flexokiBackground
+                    .edgesIgnoringSafeArea(.all)
+                
+                VStack(alignment: .leading, spacing: 24) {
+                    // Title
+                    Text(voiceNote.title)
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(Color.flexokiText)
+                        .dynamicTypeSize(.small...(.accessibility5))
+                
+                    // Date and duration info
+                    HStack {
+                        Label(formattedDate(voiceNote.creationDate), systemImage: "calendar")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(Color.flexokiText2)
+                            .dynamicTypeSize(.small...(.accessibility5))
+                            .accessibilityLabel("Recorded on \(formattedDateSpoken(voiceNote.creationDate))")
+                    
+                        Spacer()
+                    
+                        Label(formattedDuration(voiceNote.duration), systemImage: "clock")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(Color.flexokiText2)
+                            .dynamicTypeSize(.small...(.accessibility5))
+                            .accessibilityLabel("Duration: \(formattedDurationSpoken(voiceNote.duration))")
+                    }
+                
+                    // Audio player controls
+                    VStack {
+                        // Progress bar
+                        ProgressView(value: currentTime, total: voiceNote.duration)
+                            .progressViewStyle(LinearProgressViewStyle())
+                            .padding(.vertical, 16)
+                    
+                        // Time display
+                        HStack {
+                            Text(formatTimeString(currentTime))
+                                .font(.caption)
+                                .monospacedDigit()
+                                .dynamicTypeSize(.small...(.accessibility5))
+                                .accessibilityLabel("Current position: \(formatTimeStringSpoken(currentTime))")
+                        
+                            Spacer()
+                        
+                            Text(formatTimeString(voiceNote.duration))
+                                .font(.caption)
+                                .monospacedDigit()
+                                .dynamicTypeSize(.small...(.accessibility5))
+                                .accessibilityLabel("Total duration: \(formatTimeStringSpoken(voiceNote.duration))")
+                        }
+                    
+                        // Playback controls
+                        HStack {
+                            Button(action: {
+                                if isPlaying {
+                                    pauseAudio()
+                                } else {
+                                    playAudio()
+                                }
+                            }) {
+                                Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                    .resizable()
+                                    .frame(width: 44, height: 44)
+                                    .foregroundColor(Color.flexokiAccentBlue)
+                            }
+                            .accessibilityLabel(isPlaying ? "Pause audio" : "Play audio")
+                        
+                            Button(action: {
+                                stopAudio()
+                            }) {
+                                Image(systemName: "stop.circle.fill")
+                                    .resizable()
+                                    .frame(width: 44, height: 44)
+                                    .foregroundColor(Color.flexokiAccentRed)
+                            }
+                            .accessibilityLabel("Stop audio")
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
+                    }
+                    .padding(16)
+                    .background(Color.flexokiBackground2)
+                    .cornerRadius(10)
+                
+                    // Transcript section
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Transcript")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(Color.flexokiText)
+                                .dynamicTypeSize(.small...(.accessibility5))
+                        
+                            Spacer()
+                            
+                            Button(action: {
+                                showingOriginalTranscript.toggle()
+                            }) {
+                                Text(showingOriginalTranscript ? "Show Cleaned" : "Show Original")
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(Color.flexokiAccentBlue)
+                                    .dynamicTypeSize(.small...(.accessibility5))
+                            }
+                            .frame(minHeight: 44)
+                            .accessibilityLabel(showingOriginalTranscript ? "Show cleaned transcript" : "Show original transcript")
+                            .accessibilityHint(showingOriginalTranscript ? "Switch to the AI-cleaned version of the transcript" : "Switch to the original unedited transcript")
+                        }
+                    
+                        if showingOriginalTranscript {
+                            Text(voiceNote.originalTranscript)
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(Color.flexokiText)
+                                .dynamicTypeSize(.small...(.accessibility5))
+                                .padding(16)
+                                .background(Color.flexokiBackground2)
+                                .cornerRadius(8)
+                                .accessibilityLabel("Original transcript: \(voiceNote.originalTranscript)")
+                        } else {
+                            Text(voiceNote.cleanedTranscript)
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(Color.flexokiText)
+                                .dynamicTypeSize(.small...(.accessibility5))
+                                .padding(16)
+                                .background(Color.flexokiBackground2)
+                                .cornerRadius(8)
+                                .accessibilityLabel("Cleaned transcript: \(voiceNote.cleanedTranscript)")
+                        }
+                    }
+                
+                    // Obsidian link
+                    if let obsidianPath = voiceNote.obsidianPath {
+                        VStack(alignment: .leading) {
+                            Text("Obsidian Note")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(Color.flexokiText)
+                                .dynamicTypeSize(.small...(.accessibility5))
+                        
+                            Button(action: {
+                                // TODO: Open Obsidian note if possible
+                                // This would require a URL scheme or other method
+                            }) {
+                                HStack {
+                                    Image(systemName: "doc.text")
+                                    Text(obsidianPath)
+                                        .lineLimit(1)
+                                        .dynamicTypeSize(.small...(.accessibility5))
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right.square")
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 16)
+                                .background(Color.flexokiBackground2)
+                                .cornerRadius(8)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+        }
+        .background(Color.flexokiBackground)
+        .navigationBarTitle("", displayMode: .inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    // Share the voice note using UIActivityViewController
+                    if let audioURL = voiceNote.audioURL {
+                        let activityVC = UIActivityViewController(activityItems: [audioURL], applicationActivities: nil)
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                           let rootViewController = windowScene.windows.first?.rootViewController {
+                            rootViewController.present(activityVC, animated: true)
+                        }
+                    }
+                }) {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
+        }
+        .onAppear {
+            setupAudioPlayer()
+        }
+        .onDisappear {
+            stopAudio()
+        }
+    }
 }
 
 struct VoiceNoteDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        NavigationView {
-            VoiceNoteDetailView(voiceNote: VoiceNote.sampleNote)
-                .environmentObject(VoiceNoteStore())
+        // Create a sample voice note for preview
+        let sampleVoiceNote = VoiceNote(
+            title: "Sample Voice Note",
+            originalTranscript: "This is the original transcript of the voice note.",
+            cleanedTranscript: "This is the cleaned transcript of the voice note.",
+            duration: 120, // 2 minutes
+            audioFilename: "sample.m4a"
+        )
+        
+        return NavigationView {
+            VoiceNoteDetailView(voiceNote: sampleVoiceNote)
+                .environmentObject(VoiceNoteCoordinator())
         }
     }
 }

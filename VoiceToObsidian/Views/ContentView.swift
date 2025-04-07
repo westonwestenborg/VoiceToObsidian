@@ -18,11 +18,7 @@ struct FlexokiTabViewStyle: ViewModifier {
     }
 }
 
-extension View {
-    func flexokiTabStyle() -> some View {
-        modifier(FlexokiTabViewStyle())
-    }
-}
+// We're keeping the FlexokiTabViewStyle modifier but not using the extension method
 
 // Lightweight view that loads minimal content at startup
 struct ContentView: View {
@@ -82,7 +78,7 @@ struct ContentView: View {
                         .tag(2)
                 }
                 .accentColor(Color.flexokiAccentBlue)
-                .flexokiTabStyle()
+                .modifier(FlexokiTabViewStyle())
             }
         }
         // No longer configuring appearance here, it's now centralized in VoiceToObsidianApp.swift
