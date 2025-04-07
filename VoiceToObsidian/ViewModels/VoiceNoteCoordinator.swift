@@ -125,6 +125,9 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             self.obsidianVaultPath = ""
         }
         
+        // Always set up bindings between services
+        setupBindings()
+        
         // If requested, preload services - normally we don't do this
         if loadImmediately {
             print("Preloading services as requested (not recommended)")
@@ -134,9 +137,6 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             _ = dataStore
             _ = anthropicService
             _ = obsidianService
-            
-            // Set up bindings between services
-            setupBindings()
         }
         
         print("VoiceNoteCoordinator initialized - services will load on demand")
@@ -158,10 +158,8 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             return
         }
         
-        // Ensure bindings are set up before recording
-        if cancellables.isEmpty {
-            setupBindings()
-        }
+        // Bindings are now set up in the initializer
+        // No need to check here anymore
         
         recordingManager.startRecording { [weak self] success in
             guard let self = self else { return }
@@ -203,6 +201,8 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             
             if !success || recordingURL == nil {
                 self.isProcessing = false
+                // Reset the recording duration on error
+                self.recordingManager.resetRecordingDuration()
                 let error = AppError.recording(.recordingFailed("Failed to stop recording or no recording URL"))
                 self.handleError(error)
                 completion(false, error)
@@ -334,6 +334,8 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                 let error = AppError.transcription(.fileTranscriptionFailed("Failed to transcribe audio file"))
                 self.handleError(error)
                 completion(false, error)
+                
+                // Note: We don't reset the recording duration here because we're still going to use the fallback transcript
                 
                 // Use a fallback transcript
                 let fallbackTranscript = "This is a fallback transcript. The actual speech recognition failed. Please check your microphone permissions and try again."
@@ -478,6 +480,8 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                     // Update state
                     DispatchQueue.main.async {
                         self.isProcessing = false
+                        // Reset the recording duration after processing is complete
+                        self.recordingManager.resetRecordingDuration()
                     }
                 }
             }
@@ -490,6 +494,8 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             // Update state
             DispatchQueue.main.async {
                 self.isProcessing = false
+                // Reset the recording duration after processing is complete
+                self.recordingManager.resetRecordingDuration()
             }
         }
     }

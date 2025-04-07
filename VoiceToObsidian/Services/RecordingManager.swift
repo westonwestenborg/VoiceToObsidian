@@ -83,9 +83,11 @@ class RecordingManager: ObservableObject {
         recorder.stop()
         audioRecorder = nil
         
-        // Stop the duration timer
-        durationTimer?.invalidate()
-        durationTimer = nil
+        // Stop the duration timer properly
+        if let timer = durationTimer {
+            timer.invalidate()
+            durationTimer = nil
+        }
         
         // Calculate recording duration
         let duration = recorder.currentTime
@@ -93,8 +95,8 @@ class RecordingManager: ObservableObject {
         // Update state
         isRecording = false
         
-        // Reset the recording duration to 0
-        recordingDuration = 0
+        // Keep the recording duration displayed until processing is complete
+        // We'll reset it later with resetRecordingDuration()
         
         // Return the recording URL and duration
         completion(true, recordingURL, duration)
@@ -110,6 +112,12 @@ class RecordingManager: ObservableObject {
     /// - Returns: The start time of the current recording, if any
     func getRecordingStartTime() -> Date? {
         return recordingStartTime
+    }
+    
+    /// Resets the recording duration to zero
+    /// Call this after processing is complete
+    func resetRecordingDuration() {
+        recordingDuration = 0
     }
     
     // MARK: - Private Methods
@@ -134,10 +142,16 @@ class RecordingManager: ObservableObject {
             recordingStartTime = Date()
             
             // Start a timer to update the recording duration
+            // Make sure the timer runs on the main thread and updates the published property
             durationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
                 guard let self = self, let recorder = self.audioRecorder else { return }
-                self.recordingDuration = recorder.currentTime
+                DispatchQueue.main.async {
+                    self.recordingDuration = recorder.currentTime
+                }
             }
+            
+            // Ensure the timer is added to the main run loop
+            RunLoop.main.add(durationTimer!, forMode: .common)
             
             // Update state
             isRecording = true

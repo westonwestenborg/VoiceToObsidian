@@ -455,14 +455,17 @@ class ObsidianService {
         let dateString = dateFormatter.string(from: voiceNote.creationDate)
         
         // Generate markdown without repeating the title (since the filename will be the title)
+        // Using Option 3: Keep the property in YAML for structured queries and add a proper backlink in the body
         let markdown = """
         ---
         date: \(dateString)
         duration: \(formatDuration(voiceNote.duration))
-        daily: [[\(dailyNoteDate)]]
+        daily: "\(dailyNoteDate)"  # Store as plain text for clean YAML
         ---
         
         ![[Attachments/\(voiceNote.audioFilename)]]
+        
+        > Related to daily note: [[\(dailyNoteDate)]]
         
         ## Transcript
         

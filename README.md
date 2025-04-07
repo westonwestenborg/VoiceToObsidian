@@ -85,13 +85,27 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
    - Select your Obsidian vault directory
 4. Start recording voice memos!
 
+### Obsidian Setup
+
+1. **Backlinks**: The app creates proper backlinks between your voice notes and daily notes. To view these connections:
+   - Enable the Backlinks core plugin in Obsidian (Settings → Core plugins → Backlinks)
+   - Open the right sidebar and click the Backlinks icon to see all notes linking to the current note
+
+2. **Dataview Support** (Optional): For advanced users who want to query their voice notes:
+   - Install the [Dataview plugin](https://github.com/blacksmithgu/obsidian-dataview) from the Community plugins
+   - Voice notes include YAML frontmatter with properties like `date`, `duration`, and `daily` that can be queried
+   - Example query to list all voice notes: ```dataview
+table duration, daily from "Voice Notes"
+```
+
 ## Technical Notes
 
 - The app uses security-scoped bookmarks to maintain access to the Obsidian vault between app launches
 - Voice recordings are saved in the app's Documents directory
 - Transcription is done using file-based processing rather than live recognition for better stability
 - The app creates "Voice Notes" and "Attachments" directories in your Obsidian vault
-- Daily notes are updated with links to new voice notes
+- Voice notes include both YAML frontmatter properties and proper Obsidian backlinks to daily notes
+- Backlinks ensure your voice notes appear in the graph view and backlinks panel
 - Memory-optimized initialization with staged loading to improve startup performance
 - Uses the Flexoki color palette for a consistent, warm visual identity
 
