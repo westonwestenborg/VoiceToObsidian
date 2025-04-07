@@ -39,17 +39,21 @@ struct ContentView: View {
             } else {
                 // Main content
                 TabView(selection: $selectedTab) {
-                    RecordView(isRecording: $isRecording)
-                        .tabItem {
-                            Label("Record", systemImage: "mic")
-                        }
-                        .tag(0)
+                    NavigationView {
+                        RecordView(isRecording: $isRecording)
+                    }
+                    .tabItem {
+                        Label("Record", systemImage: "mic")
+                    }
+                    .tag(0)
                     
-                    VoiceNoteListView()
-                        .tabItem {
-                            Label("Notes", systemImage: "list.bullet")
-                        }
-                        .tag(1)
+                    NavigationView {
+                        VoiceNoteListView()
+                    }
+                    .tabItem {
+                        Label("Notes", systemImage: "list.bullet")
+                    }
+                    .tag(1)
                     
                     NavigationView {
                         SettingsView()

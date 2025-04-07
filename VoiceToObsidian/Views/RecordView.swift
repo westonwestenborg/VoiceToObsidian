@@ -14,6 +14,8 @@ struct RecordView: View {
             Color.flexokiBackground
                 .edgesIgnoringSafeArea(.all)
         VStack(spacing: 16) {
+            // Empty space for navigation title
+            Spacer().frame(height: 0)
             Spacer()
             
             // Recording visualization with waveform
@@ -71,6 +73,7 @@ struct RecordView: View {
         } message: {
             Text("Your voice note is being transcribed and processed...")
         }
+        .navigationTitle("Record")
         }
     }
     
