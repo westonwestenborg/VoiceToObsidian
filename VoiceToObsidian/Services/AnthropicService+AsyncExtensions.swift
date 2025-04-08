@@ -13,7 +13,6 @@ extension AnthropicService {
     /// - Parameter transcript: The original transcript to process
     /// - Returns: The cleaned transcript
     /// - Throws: AppError if processing fails
-    @available(iOS 15.0, *)
     func processTranscriptAsync(transcript: String) async throws -> String {
         asyncLogger.debug("Processing transcript with Anthropic API using async/await")
         
@@ -132,7 +131,6 @@ extension AnthropicService {
     /// - Parameter transcript: The original transcript to process
     /// - Returns: A tuple containing the cleaned transcript and suggested title
     /// - Throws: AppError if processing fails
-    @available(iOS 15.0, *)
     func processTranscriptWithTitleAsync(transcript: String) async throws -> (transcript: String, title: String) {
         asyncLogger.debug("Processing transcript with title using Anthropic API")
         

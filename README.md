@@ -32,7 +32,8 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
    - Added proper error handling and fallback mechanisms
 
 4. **Code Modernization**
-   - Refactored services to use Swift Concurrency (async/await) instead of callbacks
+   - Fully standardized on Swift Concurrency (async/await) with no callback-based methods
+   - Removed legacy bridging code for a cleaner, more maintainable codebase
    - Implemented centralized security management with SecurityManager
    - Added structured logging with OSLog
    - Optimized memory usage to address allocation errors during startup

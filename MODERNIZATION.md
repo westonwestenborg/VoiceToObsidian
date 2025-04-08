@@ -1,134 +1,70 @@
-# VoiceToObsidian Modernization
+# VoiceToObsidian Future Modernization Tasks
 
-This document outlines the modernization efforts made to the VoiceToObsidian app to improve performance, memory management, and code quality.
+This document outlines the future modernization tasks for the VoiceToObsidian app to further improve performance, maintainability, and user experience.
 
-## Key Improvements
+## Planned Improvements
 
-### 1. Swift Concurrency Implementation
+### 1. Custom Property Wrappers
 
-We've modernized the codebase by implementing Swift Concurrency (async/await) patterns to replace callback-based code. This provides several benefits:
+Implement custom property wrappers to improve code organization and security:
 
-- Improved readability with linear code flow
-- Better memory management with fewer retained closures
-- Reduced nesting and complexity
-- Enhanced error handling
+- `@SecureString`: For secure storage of sensitive strings like API keys
+- `@SecureBookmark`: For managing security-scoped bookmarks
+- `@UserDefault`: For simplified access to UserDefaults values
 
-All major services now have async/await implementations:
+### 2. Enhanced Error Handling
 
-- `ObsidianService`
-- `AnthropicService`
-- `VoiceNoteStore`
+Improve error handling throughout the app:
 
-### 2. Improved Security Management
+- Implement more granular error types for better debugging
+- Add user-friendly error recovery suggestions
+- Create a centralized error reporting system
 
-We've enhanced security management through centralized services:
+### 3. Testing Infrastructure
 
-- `SecurityManager`: For securely storing sensitive data in the Keychain
-- Consistent error handling for security operations
-- Improved bookmark management for file access
+Add comprehensive testing to ensure app stability:
 
-These improvements provide:
-- Better organization of security-related code
-- Consistent access patterns
-- Improved error handling
-- Enhanced security for sensitive data
+- Implement unit tests for core functionality
+- Add UI tests for critical user flows
+- Create mock services for isolated testing
 
-> **Note**: We've designed custom property wrappers (`SecureString`, `SecureBookmark`, etc.) but they're currently disabled due to integration issues. These will be implemented in a future update.
+### 4. Performance Optimizations
 
-### 3. Structured Logging
+Further optimize app performance:
 
-We've replaced print statements with OSLog for structured, efficient logging:
+- Implement background processing for large audio files
+- Add caching for frequently accessed data
+- Optimize memory usage during transcription
 
-- Category-based logging for better filtering
-- Improved performance compared to print statements
-- Privacy-aware logging that respects sensitive data
+### 5. Enhanced Accessibility
 
-### 4. Backward Compatibility
+Improve accessibility features:
 
-To maintain compatibility with iOS 14 and earlier, we've:
+- Add proper VoiceOver support throughout the app
+- Implement Dynamic Type for all text elements
+- Ensure sufficient color contrast for all UI elements
+- Add haptic feedback for important actions
 
-- Kept legacy callback-based methods (marked as deprecated)
-- Created an `AsyncBridge` utility to bridge between async/await and callback patterns
-- Used availability checks to select the appropriate implementation at runtime
+### 6. CI/CD Pipeline
 
-## Memory Optimization
+Set up continuous integration and deployment:
 
-To address the memory allocation error during startup (`malloc: xzm: failed to initialize deferred reclamation buffer (46)`), we've:
+- Automated testing on pull requests
+- Automated builds for TestFlight distribution
+- Code quality checks and linting
 
-1. Implemented lazy initialization of services
-2. Used proper memory management techniques in resource-intensive operations
-3. Replaced `DispatchQueue` with `Task` for better memory efficiency
-4. Deferred resource-intensive operations until they're needed
-5. Added explicit capture semantics in closures
-6. Simplified complex asynchronous code with linear async/await patterns
+### 7. SwiftUI Previews
 
-## File Structure
+Add SwiftUI previews for all views to improve development workflow:
 
-- **PropertyWrappers/**: Contains custom property wrappers
-- **Services/**: Core services with both async and legacy implementations
-- **ViewModels/**: View models with async extensions
-- **Utilities/**: Helper utilities like AsyncBridge
-- **Extensions/**: Swift extensions
+- Create preview providers for all SwiftUI views
+- Add sample data for realistic previews
+- Implement multiple preview configurations (light/dark mode, different device sizes)
 
-## Usage Guidelines
+### 8. Documentation
 
-### Using Async/Await (iOS 15+)
+Improve code documentation:
 
-```swift
-// Example: Creating a voice note file
-do {
-    let result = try await obsidianService.createVoiceNoteFile(for: voiceNote)
-    // Handle success
-} catch {
-    // Handle error
-}
-```
-
-### Using AsyncBridge (All iOS versions)
-
-```swift
-// Example: Processing a transcript
-anthropicService.processTranscriptWithBridge(transcript) { success, cleanedTranscript, title in
-    if success, let cleanedTranscript = cleanedTranscript {
-        // Handle success
-    } else {
-        // Handle error
-    }
-}
-```
-
-### Using SecurityManager
-
-```swift
-// Storing secure data
-try SecurityManager.storeAnthropicAPIKey(apiKey)
-
-// Retrieving secure data
-let apiKey = try SecurityManager.retrieveAnthropicAPIKey()
-
-// Managing bookmarks
-let result = try SecurityManager.resolveBookmark()
-let url = result.url
-let didStartAccessing = result.didStartAccessing
-```
-
-## Future Improvements
-
-1. Implement lazy loading of voice notes with pagination
-2. Consider using background tasks for heavy processing
-3. Profile with Instruments to identify any remaining memory hotspots
-4. Add unit tests for async implementations
-5. Properly implement custom property wrappers for secure storage and preferences
-6. Create a more comprehensive error recovery system
-
-## Property Wrapper Implementation Plan
-
-We've designed custom property wrappers (`SecureString`, `SecureBookmark`, etc.) but encountered integration issues. To implement them properly in the future:
-
-1. Create a separate Swift file for each property wrapper type
-2. Ensure they're properly imported in all files that use them
-3. Fix the binding issues with SwiftUI
-4. Add comprehensive unit tests for each wrapper
-5. Implement proper error handling and recovery
-
-This will further improve code organization and reduce duplication while maintaining the security benefits of our current approach.
+- Add comprehensive DocC documentation
+- Create architecture diagrams
+- Document key workflows and decisions

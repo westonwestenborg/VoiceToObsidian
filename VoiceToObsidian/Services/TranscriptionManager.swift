@@ -25,6 +25,52 @@ class TranscriptionManager: ObservableObject {
     
     // MARK: - Public Methods
     
+    /// Transcribes an audio file using async/await
+    /// - Parameter audioURL: The URL of the audio file to transcribe
+    /// - Returns: The transcript text if successful, nil otherwise
+    /// - Throws: Error if transcription fails
+    func transcribeAudioFileAsync(at audioURL: URL) async throws -> String {
+        print("Starting async transcription of file: \(audioURL.path)")
+        
+        // Update UI state on main thread
+        await MainActor.run {
+            isTranscribing = true
+            transcriptionProgress = 0
+        }
+        
+        // Setup speech recognition on first use
+        if speechRecognizer == nil {
+            setupSpeechRecognition()
+        }
+        
+        // Request authorization using continuation
+        let authStatus = await withCheckedContinuation { continuation in
+            SFSpeechRecognizer.requestAuthorization { status in
+                continuation.resume(returning: status)
+            }
+        }
+        
+        // Check authorization status
+        guard authStatus == .authorized else {
+            print("Speech recognition not authorized")
+            await MainActor.run {
+                isTranscribing = false
+            }
+            throw NSError(domain: "TranscriptionManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Speech recognition not authorized"])
+        }
+        
+        // Perform transcription using continuation
+        return try await withCheckedThrowingContinuation { continuation in
+            performTranscription(of: audioURL) { success, transcript in
+                if success, let transcript = transcript {
+                    continuation.resume(returning: transcript)
+                } else {
+                    continuation.resume(throwing: NSError(domain: "TranscriptionManager", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to transcribe audio"]))
+                }
+            }
+        }
+    }
+    
     /// Transcribes an audio file
     /// - Parameters:
     ///   - audioURL: The URL of the audio file to transcribe

@@ -20,28 +20,46 @@ class AnthropicService {
         logger.debug("API key updated")
     }
     
-    /// Processes a transcript with the Anthropic Claude API
-    /// - Parameters:
-    ///   - transcript: The original transcript to process
-    ///   - completion: Completion handler with success status, cleaned transcript, and suggested title
-    /// - Note: This method is deprecated. Use the async version with AsyncBridge for better memory management.
-    @available(*, deprecated, message: "Use processTranscriptAsync(transcript:) async throws -> String with AsyncBridge instead")
-    func processTranscript(_ transcript: String, completion: @escaping (Bool, String?, String?) -> Void) {
+    // Deprecated callback-based method removed - using async version only
+    
+    /// Parses the LLM response to extract the title and cleaned transcript
+    /// - Parameter response: The raw response from the LLM
+    /// - Returns: A tuple containing the title and cleaned transcript
+    private func parseResponse(_ response: String) -> (String?, String?) {
+        // Extract title
+        var title: String? = nil
+        if let titleRange = response.range(of: "TITLE: ", options: .caseInsensitive),
+           let endOfTitleRange = response.range(of: "\n\n", options: [], range: titleRange.upperBound..<response.endIndex) {
+            title = String(response[titleRange.upperBound..<endOfTitleRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        
+        // Extract cleaned transcript
+        var cleanedTranscript: String? = nil
+        if let transcriptRange = response.range(of: "CLEANED TRANSCRIPT:", options: .caseInsensitive) {
+            cleanedTranscript = String(response[transcriptRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        
+        return (title, cleanedTranscript)
+    }
+    
+    // MARK: - Async Methods
+    
+    /// Processes a transcript with the Anthropic Claude API using async/await
+    /// - Parameter transcript: The original transcript to process
+    /// - Returns: The cleaned transcript
+    /// - Throws: AppError if processing fails
+    func processTranscriptAsync(transcript: String) async throws -> String {
+        logger.debug("Processing transcript with Anthropic API using async/await")
+        
         guard !apiKey.isEmpty else {
             logger.error("Anthropic API key not set")
-            let error = AppError.anthropic(.apiKeyMissing)
-            // We can't directly handle the error here since this is a service class
-            // The caller will need to handle this error based on the false success status
-            completion(false, nil, nil)
-            return
+            throw AppError.anthropic(.apiKeyMissing)
         }
         
         // Create the request
         guard let url = URL(string: baseURL) else {
-            let error = AppError.anthropic(.requestCreationFailed)
-            print("Invalid URL: \(baseURL)")
-            completion(false, nil, nil)
-            return
+            logger.error("Invalid URL: \(self.baseURL)")
+            throw AppError.anthropic(.requestCreationFailed)
         }
         
         var request = URLRequest(url: url)
@@ -49,9 +67,8 @@ class AnthropicService {
         request.addValue("application/json", forHTTPHeaderField: "content-type")
         request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
-        // Note: According to the docs, we only need x-api-key, not Authorization
         
-        // Create the request body
+        // Create the request body with the same prompt as the original method
         let promptText = """
         I have a voice memo transcript that needs to be cleaned up. Please:
         
@@ -82,101 +99,185 @@ class AnthropicService {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         } catch {
-            let appError = AppError.anthropic(.requestCreationFailed)
-            print("Error creating request body: \(error.localizedDescription)")
-            completion(false, nil, nil)
-            return
+            logger.error("Error creating request body: \(error.localizedDescription)")
+            throw AppError.anthropic(.requestCreationFailed)
         }
         
-        // Make the request
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("Error making API request: \(error.localizedDescription)")
-                let appError = AppError.anthropic(.networkError(error.localizedDescription))
-                print(appError.errorDescription ?? "Network error")
-                completion(false, nil, nil)
-                return
+        // Make the request using async/await
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            // Check for HTTP errors
+            guard let httpResponse = response as? HTTPURLResponse else {
+                logger.error("Invalid HTTP response")
+                throw AppError.anthropic(.invalidResponse)
             }
             
-            guard let data = data else {
-                let appError = AppError.anthropic(.invalidResponse)
-                print(appError.errorDescription ?? "No data received")
-                completion(false, nil, nil)
-                return
-            }
-            
-            do {
-                // Print the raw response for debugging
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("Raw API response: \(responseString.prefix(200))...")
-                }
+            // Check status code
+            guard (200...299).contains(httpResponse.statusCode) else {
+                logger.error("HTTP error: \(httpResponse.statusCode)")
                 
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    // Based on the documentation, the response format should be:
-                    // { "content": [ { "text": "...", "type": "text" } ], ... }
-                    if let content = json["content"] as? [[String: Any]],
-                       let firstContent = content.first,
-                       let text = firstContent["text"] as? String {
-                        
-                        print("Successfully parsed API response")
-                        // Parse the response to extract title and cleaned transcript
-                        let (title, cleanedTranscript) = self.parseResponse(text)
-                        
-                        if let title = title, let cleanedTranscript = cleanedTranscript {
-                            print("Extracted title: \(title)")
-                            print("Extracted transcript length: \(cleanedTranscript.count) characters")
-                            
-                            DispatchQueue.main.async {
-                                completion(true, cleanedTranscript, title)
-                            }
-                        } else {
-                            print("Failed to extract title or transcript from response")
-                            // If parsing fails, use the original text and a default title
-                            let defaultTitle = "Voice Note \(DateFormatUtil.shared.formatTimestamp(date: Date()))" 
-                            DispatchQueue.main.async {
-                                completion(true, text, defaultTitle)
-                            }
-                        }
-                    } else {
-                        print("Unexpected API response format: \(json)")
-                        // If we can't parse the response properly, use the transcript as is
-                        let title = "Voice Note \(DateFormatUtil.shared.formatTimestamp(date: Date()))" 
-                        DispatchQueue.main.async {
-                            completion(true, transcript, title)
-                        }
-                    }
+                // Try to extract error message from response
+                if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let errorMessage = errorJson["error"] as? [String: Any],
+                   let message = errorMessage["message"] as? String {
+                    throw AppError.anthropic(.networkError(message))
                 } else {
-                    let appError = AppError.anthropic(.responseParsingFailed("Failed to parse JSON response"))
-                    print(appError.errorDescription ?? "Failed to parse JSON response")
-                    completion(false, nil, nil)
+                    throw AppError.anthropic(.networkError("HTTP \(httpResponse.statusCode)"))
                 }
-            } catch {
-                let appError = AppError.anthropic(.responseParsingFailed(error.localizedDescription))
-                print("Error parsing API response: \(error.localizedDescription)")
-                completion(false, nil, nil)
+            }
+            
+            // Parse the response
+            if let responseString = String(data: data, encoding: .utf8) {
+                logger.debug("Received API response: \(responseString.prefix(100))...")
+            }
+            
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let content = json["content"] as? [[String: Any]],
+                  let firstContent = content.first,
+                  let text = firstContent["text"] as? String else {
+                logger.error("Failed to parse API response")
+                throw AppError.anthropic(.responseParsingFailed("Invalid response format"))
+            }
+            
+            // Parse the response to extract title and cleaned transcript
+            let (title, cleanedTranscript) = self.parseResponse(text)
+            
+            if let cleanedTranscript = cleanedTranscript {
+                logger.debug("Successfully processed transcript with Anthropic API")
+                return cleanedTranscript
+            } else {
+                // If we couldn't extract the cleaned transcript, return the original text
+                logger.warning("Could not extract cleaned transcript, using original response")
+                return text
+            }
+        } catch {
+            if let appError = error as? AppError {
+                logger.error("AppError: \(appError.localizedDescription)")
+                throw appError
+            } else {
+                logger.error("Error processing transcript: \(error.localizedDescription)")
+                throw AppError.anthropic(.networkError(error.localizedDescription))
             }
         }
-        
-        task.resume()
     }
     
-    /// Parses the LLM response to extract the title and cleaned transcript
-    /// - Parameter response: The raw response from the LLM
-    /// - Returns: A tuple containing the title and cleaned transcript
-    private func parseResponse(_ response: String) -> (String?, String?) {
-        // Extract title
-        var title: String? = nil
-        if let titleRange = response.range(of: "TITLE: ", options: .caseInsensitive),
-           let endOfTitleRange = response.range(of: "\n\n", options: [], range: titleRange.upperBound..<response.endIndex) {
-            title = String(response[titleRange.upperBound..<endOfTitleRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+    /// Processes a transcript with the Anthropic Claude API using async/await and returns both title and transcript
+    /// - Parameter transcript: The original transcript to process
+    /// - Returns: A tuple containing the cleaned transcript and suggested title
+    /// - Throws: AppError if processing fails
+    func processTranscriptWithTitleAsync(transcript: String) async throws -> (transcript: String, title: String) {
+        logger.debug("Processing transcript with title using Anthropic API")
+        
+        guard !apiKey.isEmpty else {
+            logger.error("Anthropic API key not set")
+            throw AppError.anthropic(.apiKeyMissing)
         }
         
-        // Extract cleaned transcript
-        var cleanedTranscript: String? = nil
-        if let transcriptRange = response.range(of: "CLEANED TRANSCRIPT:", options: .caseInsensitive) {
-            cleanedTranscript = String(response[transcriptRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        // Create the request
+        guard let url = URL(string: baseURL) else {
+            logger.error("Invalid URL: \(self.baseURL)")
+            throw AppError.anthropic(.requestCreationFailed)
         }
         
-        return (title, cleanedTranscript)
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "content-type")
+        request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
+        
+        // Create the request body with the same prompt as the original method
+        let promptText = """
+        I have a voice memo transcript that needs to be cleaned up. Please:
+        
+        1. Remove filler words (um, uh, like, etc.)
+        2. Fix any grammatical errors or repetitions
+        3. Format the text in a clear, readable way
+        4. Suggest a concise title for this note (max 5-7 words)
+        
+        Original transcript:
+        \(transcript)
+        
+        Please respond in the following format:
+        
+        TITLE: [Your suggested title]
+        
+        CLEANED TRANSCRIPT:
+        [The cleaned up transcript]
+        """
+        
+        let requestBody: [String: Any] = [
+            "model": "claude-3-7-sonnet-20250219",
+            "max_tokens": 10000,
+            "messages": [
+                ["role": "user", "content": promptText]
+            ]
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            logger.error("Error creating request body: \(error.localizedDescription)")
+            throw AppError.anthropic(.requestCreationFailed)
+        }
+        
+        // Make the request using async/await
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            // Check for HTTP errors
+            guard let httpResponse = response as? HTTPURLResponse else {
+                logger.error("Invalid HTTP response")
+                throw AppError.anthropic(.invalidResponse)
+            }
+            
+            // Check status code
+            guard (200...299).contains(httpResponse.statusCode) else {
+                logger.error("HTTP error: \(httpResponse.statusCode)")
+                
+                // Try to extract error message from response
+                if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let errorMessage = errorJson["error"] as? [String: Any],
+                   let message = errorMessage["message"] as? String {
+                    throw AppError.anthropic(.networkError(message))
+                } else {
+                    throw AppError.anthropic(.networkError("HTTP \(httpResponse.statusCode)"))
+                }
+            }
+            
+            // Parse the response
+            if let responseString = String(data: data, encoding: .utf8) {
+                logger.debug("Received API response: \(responseString.prefix(100))...")
+            }
+            
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let content = json["content"] as? [[String: Any]],
+                  let firstContent = content.first,
+                  let text = firstContent["text"] as? String else {
+                logger.error("Failed to parse API response")
+                throw AppError.anthropic(.responseParsingFailed("Invalid response format"))
+            }
+            
+            // Parse the response to extract title and cleaned transcript
+            let (title, cleanedTranscript) = self.parseResponse(text)
+            
+            if let cleanedTranscript = cleanedTranscript, let title = title {
+                logger.debug("Successfully processed transcript with title")
+                return (transcript: cleanedTranscript, title: title)
+            } else {
+                // If we couldn't extract the title or cleaned transcript, use defaults
+                logger.warning("Could not extract title or cleaned transcript, using defaults")
+                let defaultTitle = "Voice Note \(DateFormatUtil.shared.formatTimestamp(date: Date()))"
+                return (transcript: text, title: title ?? defaultTitle)
+            }
+        } catch {
+            if let appError = error as? AppError {
+                logger.error("AppError: \(appError.localizedDescription)")
+                throw appError
+            } else {
+                logger.error("Error processing transcript: \(error.localizedDescription)")
+                throw AppError.anthropic(.networkError(error.localizedDescription))
+            }
+        }
     }
 }

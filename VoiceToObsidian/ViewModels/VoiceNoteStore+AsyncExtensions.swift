@@ -16,7 +16,6 @@ extension VoiceNoteStore {
     /// Start recording using async/await pattern
     /// - Returns: Boolean indicating success
     /// - Throws: AppError if recording fails
-    @available(iOS 15.0, *)
     func startRecordingAsync() async throws -> Bool {
         asyncLogger.debug("Starting recording with async/await")
         
@@ -52,7 +51,6 @@ extension VoiceNoteStore {
     /// - Parameter session: The AVAudioSession to set up
     /// - Returns: Boolean indicating success
     /// - Throws: AppError if setup fails
-    @available(iOS 15.0, *)
     private func setupRecordingSession(session: AVAudioSession) async throws -> Bool {
         do {
             try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
@@ -71,7 +69,6 @@ extension VoiceNoteStore {
     /// Start recording audio with async/await
     /// - Returns: Boolean indicating success
     /// - Throws: AppError if recording fails
-    @available(iOS 15.0, *)
     private func startRecordingAudioAsync() async throws -> Bool {
         // Create a unique filename for the recording
         let audioFilename = "\(UUID().uuidString).m4a"
@@ -121,7 +118,6 @@ extension VoiceNoteStore {
     /// Stop recording using async/await pattern
     /// - Returns: The recorded voice note
     /// - Throws: AppError if stopping recording fails
-    @available(iOS 15.0, *)
     func stopRecordingAsync() async throws -> VoiceNote? {
         asyncLogger.debug("Stopping recording with async/await")
         
@@ -247,7 +243,6 @@ extension VoiceNoteStore {
     /// - Parameter voiceNote: The voice note to process
     /// - Returns: The processed voice note
     /// - Throws: AppError if processing fails
-    @available(iOS 15.0, *)
     func processWithAnthropicAsync(voiceNote: VoiceNote) async throws -> VoiceNote {
         asyncLogger.debug("Processing voice note with Anthropic API using async/await")
         

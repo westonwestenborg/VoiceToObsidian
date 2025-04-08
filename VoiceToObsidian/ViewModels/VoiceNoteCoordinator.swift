@@ -158,20 +158,30 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             return
         }
         
-        // Bindings are now set up in the initializer
-        // No need to check here anymore
-        
-        recordingManager.startRecording { [weak self] success in
-            guard let self = self else { return }
-            
-            if success {
-                self.isRecording = true
-                completion(true, nil)
-            } else {
-                // Handle recording failure
-                let error = AppError.recording(.recordingFailed("Failed to start recording"))
-                self.handleError(error)
-                print("Failed to start recording")
+        // Use async/await with Task
+        Task {
+            do {
+                // Call the async version directly
+                let success = try await recordingManager.startRecordingAsync()
+                
+                if success {
+                    await MainActor.run {
+                        self.isRecording = true
+                    }
+                    completion(true, nil)
+                } else {
+                    let error = AppError.recording(.recordingFailed("Failed to start recording"))
+                    await MainActor.run {
+                        self.handleError(error)
+                    }
+                    print("Failed to start recording")
+                    completion(false, error)
+                }
+            } catch {
+                await MainActor.run {
+                    self.handleError(AppError.recording(.recordingFailed(error.localizedDescription)))
+                }
+                print("Error starting recording: \(error.localizedDescription)")
                 completion(false, error)
             }
         }
@@ -196,22 +206,46 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         
         isProcessing = true
         
-        recordingManager.stopRecording { [weak self] success, recordingURL, duration in
-            guard let self = self else { return }
-            
-            if !success || recordingURL == nil {
-                self.isProcessing = false
-                // Reset the recording duration on error
-                self.recordingManager.resetRecordingDuration()
-                let error = AppError.recording(.recordingFailed("Failed to stop recording or no recording URL"))
-                self.handleError(error)
+        // Use async/await with Task
+        Task {
+            do {
+                // Call the async version directly
+                let voiceNote = try await recordingManager.stopRecordingAsync()
+                
+                if let voiceNote = voiceNote {
+                    await MainActor.run {
+                        self.isRecording = false
+                    }
+                    
+                    // Process the voice note
+                    let duration = voiceNote.duration
+                    let recordingURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                        .appendingPathComponent(voiceNote.audioFilename)
+                    
+                    // Process the recording
+                    await self.processRecordingAsync(recordingURL: recordingURL, voiceNote: voiceNote)
+                    completion(true, nil)
+                } else {
+                    await MainActor.run {
+                        self.isProcessing = false
+                        // Reset the recording duration on error
+                        self.recordingManager.resetRecordingDuration()
+                    }
+                    let error = AppError.recording(.recordingFailed("Failed to stop recording"))
+                    await MainActor.run {
+                        self.handleError(error)
+                    }
+                    completion(false, error)
+                }
+            } catch {
+                await MainActor.run {
+                    self.isProcessing = false
+                    // Reset the recording duration on error
+                    self.recordingManager.resetRecordingDuration()
+                    self.handleError(AppError.recording(.recordingFailed(error.localizedDescription)))
+                }
+                print("Error stopping recording: \(error.localizedDescription)")
                 completion(false, error)
-                return
-            }
-            
-            self.isRecording = false
-            self.processRecording(recordingURL: recordingURL!, duration: duration) { success, error in
-                completion(success, error)
             }
         }
     }
@@ -357,6 +391,86 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         }
     }
     
+    /// Process a recording asynchronously
+    /// - Parameters:
+    ///   - recordingURL: The URL of the recording
+    ///   - voiceNote: The voice note to process
+    private func processRecordingAsync(recordingURL: URL, voiceNote: VoiceNote) async {
+        do {
+            // First, transcribe the audio file
+            var processedVoiceNote = voiceNote
+            
+            do {
+                // Use the async version of the transcription manager
+                let transcript = try await transcriptionManager.transcribeAudioFileAsync(at: recordingURL)
+                
+                // Update the voice note with the transcript
+                processedVoiceNote.originalTranscript = transcript
+            } catch {
+                print("Error transcribing audio: \(error.localizedDescription)")
+                // Continue with empty transcript
+            }
+            
+            // Process with Anthropic API if key is set and we have a transcript
+            if !anthropicAPIKey.isEmpty && !processedVoiceNote.originalTranscript.isEmpty {
+                do {
+                    // Use the async version of the Anthropic service
+                    // Process transcript and get title in one call
+                    let result = try await anthropicService.processTranscriptWithTitleAsync(transcript: processedVoiceNote.originalTranscript)
+                    processedVoiceNote.cleanedTranscript = result.transcript
+                    processedVoiceNote.title = result.title
+                    // Successfully processed with Anthropic
+                } catch {
+                    // Log the error but continue with the original voice note
+                    await MainActor.run {
+                        if !self.anthropicAPIKey.isEmpty {
+                            // Only show error if API key is set but call failed
+                            let appError = AppError.anthropic(.networkError("Failed to process transcript with Anthropic API"))
+                            self.handleError(appError)
+                        }
+                    }
+                    print("Error processing with Anthropic: \(error.localizedDescription)")
+                }
+            } else if !processedVoiceNote.originalTranscript.isEmpty {
+                // If we have a transcript but no Anthropic API key, use the original transcript
+                processedVoiceNote.cleanedTranscript = processedVoiceNote.originalTranscript
+                // Using original transcript as cleaned transcript
+            }
+            
+            // Save to Obsidian if path is set
+            if !obsidianVaultPath.isEmpty {
+                do {
+                    // Copy audio file to Obsidian vault
+                    let audioSuccess = try await obsidianService.copyAudioFileToVault(from: recordingURL)
+                    print("Audio file copy result: \(audioSuccess)")
+                    
+                    // Create markdown note in Obsidian vault
+                    let result = try await obsidianService.createVoiceNoteFile(for: processedVoiceNote)
+                    print("Note creation result: \(result.success), path: \(result.path ?? "none")")
+                    
+                    if result.success, let path = result.path {
+                        processedVoiceNote.obsidianPath = path
+                    }
+                } catch {
+                    print("Error saving to Obsidian: \(error.localizedDescription)")
+                }
+            }
+            
+            // Add to data store
+            await MainActor.run {
+                dataStore.addVoiceNote(processedVoiceNote)
+                self.isProcessing = false
+                recordingManager.resetRecordingDuration()
+            }
+        } catch {
+            await MainActor.run {
+                self.isProcessing = false
+                recordingManager.resetRecordingDuration()
+                self.handleError(AppError.transcription(.recognitionFailed(error.localizedDescription)))
+            }
+        }
+    }
+    
     /// Processes a transcript with the Claude API
     /// - Parameters:
     ///   - recordingURL: The URL of the recording
@@ -377,35 +491,47 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             return
         }
         
-        // Process with Claude
-        anthropicService.processTranscript(transcript) { [weak self] success, cleanedTranscript, suggestedTitle in
-            guard let self = self else { return }
-            
-            if !success && !self.anthropicAPIKey.isEmpty {
-                // Only show error if API key is set but call failed
-                let error = AppError.anthropic(.networkError("Failed to process transcript with Anthropic API"))
-                self.handleError(error)
-                // We'll continue with the original transcript, but we've logged the error
+        // Process with Claude using async/await
+        Task {
+            do {
+                // Use the async version directly
+                let result = try await anthropicService.processTranscriptWithTitleAsync(transcript: transcript)
+                
+                print("Final title: \(result.title)")
+                print("Using transcript: cleaned by Claude")
+                
+                self.createVoiceNote(
+                    recordingURL: recordingURL,
+                    originalTranscript: transcript,
+                    cleanedTranscript: result.transcript,
+                    suggestedTitle: result.title,
+                    duration: duration,
+                    completion: completion
+                )
+            } catch {
+                // Handle error but continue with original transcript
+                if !self.anthropicAPIKey.isEmpty {
+                    // Only show error if API key is set but call failed
+                    let appError = AppError.anthropic(.networkError("Failed to process transcript with Anthropic API"))
+                    await MainActor.run {
+                        self.handleError(appError)
+                    }
+                }
+                print("Error processing with Claude: \(error.localizedDescription)")
+                
+                // Generate a default title
+                let dateString = DateFormatUtil.shared.formatTimestamp(date: Date())
+                let defaultTitle = "Voice Note \(dateString)"
+                
+                self.createVoiceNote(
+                    recordingURL: recordingURL,
+                    originalTranscript: transcript,
+                    cleanedTranscript: transcript,
+                    suggestedTitle: defaultTitle,
+                    duration: duration,
+                    completion: completion
+                )
             }
-            
-            // If the API call fails, use the original transcript and a default title
-            let finalTranscript = cleanedTranscript ?? transcript
-            
-            // Generate a default title if needed
-            let dateString = DateFormatUtil.shared.formatTimestamp(date: Date())
-            let finalTitle = suggestedTitle ?? "Voice Note \(dateString)"
-            
-            print("Final title: \(finalTitle)")
-            print("Using transcript: \(success ? "cleaned by Claude" : "original")")
-            
-            self.createVoiceNote(
-                recordingURL: recordingURL,
-                originalTranscript: transcript,
-                cleanedTranscript: finalTranscript,
-                suggestedTitle: finalTitle,
-                duration: duration,
-                completion: completion
-            )
         }
     }
     
@@ -453,47 +579,59 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             audioFilename: recordingURL.lastPathComponent
         )
         
-        // Check if Obsidian vault path is set
-        if !obsidianVaultPath.isEmpty {
-            print("Saving to Obsidian vault at: \(obsidianVaultPath)")
-            
-            // First copy the audio file to the Obsidian vault
-            obsidianService.copyAudioFileToVault(from: recordingURL) { [weak self] audioSuccess in
-                guard let self = self else { return }
+        // Use async/await with Task
+        Task {
+            // Check if Obsidian vault path is set
+            if !obsidianVaultPath.isEmpty {
+                print("Saving to Obsidian vault at: \(obsidianVaultPath)")
                 
-                print("Audio file copy result: \(audioSuccess)")
-                
-                // Then create the markdown note
-                self.obsidianService.createVoiceNoteFile(for: voiceNote) { noteSuccess, obsidianPath in
-                    print("Note creation result: \(noteSuccess), path: \(obsidianPath ?? "none")")
+                do {
+                    // First copy the audio file to the Obsidian vault using async version
+                    let audioSuccess = try await obsidianService.copyAudioFileToVault(from: recordingURL)
+                    print("Audio file copy result: \(audioSuccess)")
+                    
+                    // Then create the markdown note using async version
+                    let result = try await obsidianService.createVoiceNoteFile(for: voiceNote)
+                    print("Note creation result: \(result.success), path: \(result.path ?? "none")")
                     
                     var updatedVoiceNote = voiceNote
-                    if noteSuccess, let path = obsidianPath {
+                    if result.success, let path = result.path {
                         updatedVoiceNote.obsidianPath = path
                     }
                     
                     // Add to store
-                    self.dataStore.addVoiceNote(updatedVoiceNote)
-                    
-                    // Update state
-                    DispatchQueue.main.async {
+                    await MainActor.run {
+                        self.dataStore.addVoiceNote(updatedVoiceNote)
                         self.isProcessing = false
                         // Reset the recording duration after processing is complete
                         self.recordingManager.resetRecordingDuration()
                     }
+                    
+                    completion(true, nil)
+                } catch {
+                    print("Error saving to Obsidian: \(error.localizedDescription)")
+                    
+                    // Still add the voice note to the store even if Obsidian integration fails
+                    await MainActor.run {
+                        self.dataStore.addVoiceNote(voiceNote)
+                        self.isProcessing = false
+                        self.recordingManager.resetRecordingDuration()
+                    }
+                    
+                    completion(true, error) // We still consider this a success for the voice note creation
                 }
-            }
-        } else {
-            print("Obsidian vault path not set, skipping Obsidian integration")
-            
-            // Still add to store
-            dataStore.addVoiceNote(voiceNote)
-            
-            // Update state
-            DispatchQueue.main.async {
-                self.isProcessing = false
-                // Reset the recording duration after processing is complete
-                self.recordingManager.resetRecordingDuration()
+            } else {
+                print("Obsidian vault path not set, skipping Obsidian integration")
+                
+                // Still add to store
+                await MainActor.run {
+                    self.dataStore.addVoiceNote(voiceNote)
+                    self.isProcessing = false
+                    // Reset the recording duration after processing is complete
+                    self.recordingManager.resetRecordingDuration()
+                }
+                
+                completion(true, nil)
             }
         }
     }
