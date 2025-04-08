@@ -38,21 +38,21 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
    - Added structured logging with OSLog
    - Optimized memory usage to address allocation errors during startup
 
-4. **Anthropic API Integration**
+5. **Anthropic API Integration**
    - Fixed API headers and response parsing to match the current Claude API format
    - Added detailed logging and error handling
 
-5. **iOS Sandbox Permissions**
+6. **iOS Sandbox Permissions**
    - Implemented security-scoped bookmarks for file access outside the app sandbox
    - Properly managed resource access with startAccessingSecurityScopedResource and stopAccessingSecurityScopedResource
 
-6. **Memory Optimization**
+7. **Memory Optimization**
    - Implemented staged initialization to reduce memory pressure during app startup
    - Added autoreleasepool blocks for memory-intensive operations
    - Deferred heavy operations like speech recognition until needed
    - Optimized security-scoped bookmark resolution
 
-7. **UI Enhancement**
+8. **UI Enhancement**
    - Implemented the Flexoki color palette for a warm, readable interface
    - Created custom form components for better styling control
    - Improved visual consistency across all screens
@@ -90,6 +90,7 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
 
 1. **Backlinks**: The app creates proper backlinks between your voice notes and daily notes. To view these connections:
    - Enable the Backlinks core plugin in Obsidian (Settings → Core plugins → Backlinks)
+   - Enable the Daily Notes plugin (or be okay with the app creating one for you)
    - Open the right sidebar and click the Backlinks icon to see all notes linking to the current note
 
 2. **Dataview Support** (Optional): For advanced users who want to query their voice notes:
