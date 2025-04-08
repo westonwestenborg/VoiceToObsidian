@@ -34,6 +34,7 @@
 		D403DE162DA398CE00C29CDB /* ErrorHandling.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE152DA398CE00C29CDB /* ErrorHandling.swift */; };
 		D403DE192DA3991C00C29CDB /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE172DA3991C00C29CDB /* AppError.swift */; };
 		D403DE1B2DA39D0900C29CDB /* SecurityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE1A2DA39D0900C29CDB /* SecurityManager.swift */; };
+		D4D971AD2DA4E93400A6BB89 /* DateFormattingExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4D971AC2DA4E93400A6BB89 /* DateFormattingExtensions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -67,6 +68,7 @@
 		D403DE152DA398CE00C29CDB /* ErrorHandling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorHandling.swift; sourceTree = "<group>"; };
 		D403DE172DA3991C00C29CDB /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
 		D403DE1A2DA39D0900C29CDB /* SecurityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityManager.swift; sourceTree = "<group>"; };
+		D4D971AC2DA4E93400A6BB89 /* DateFormattingExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormattingExtensions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -176,6 +178,7 @@
 		D403DDFA2DA3442300C29CDB /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				D4D971AC2DA4E93400A6BB89 /* DateFormattingExtensions.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -277,6 +280,7 @@
 				00A9234567890123456789AB /* ObsidianService.swift in Sources */,
 				D403DE192DA3991C00C29CDB /* AppError.swift in Sources */,
 				D403DE042DA3643F00C29CDB /* TranscriptionManager.swift in Sources */,
+				D4D971AD2DA4E93400A6BB89 /* DateFormattingExtensions.swift in Sources */,
 				D403DE052DA3643F00C29CDB /* VoiceNoteDataStore.swift in Sources */,
 				D403DE082DA3646700C29CDB /* VoiceNoteCoordinator.swift in Sources */,
 				D403DE062DA3643F00C29CDB /* RecordingManager.swift in Sources */,

@@ -434,9 +434,7 @@ class ObsidianService {
     /// - Parameter duration: The duration to format
     /// - Returns: A formatted string (e.g., "2:35")
     private func formatDuration(_ duration: TimeInterval) -> String {
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        return String(format: "%d:%02d", minutes, seconds)
+        return DateFormatUtil.shared.formatTimeShort(duration)
     }
     
     // MARK: - Private Methods
@@ -446,13 +444,10 @@ class ObsidianService {
     /// - Returns: Markdown content as a string
     private func generateMarkdownContent(for voiceNote: VoiceNote) -> String {
         // Get today's date in the format YYYY-MM-DD for linking to daily note
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let dailyNoteDate = dateFormatter.string(from: Date())
+        let dailyNoteDate = DateFormatUtil.shared.formatTimestamp(date: Date()).prefix(10)
         
         // Format the creation timestamp
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        let dateString = dateFormatter.string(from: voiceNote.creationDate)
+        let dateString = DateFormatUtil.shared.formatTimestamp(date: voiceNote.creationDate)
         
         // Generate markdown without repeating the title (since the filename will be the title)
         // Using Option 3: Keep the property in YAML for structured queries and add a proper backlink in the body

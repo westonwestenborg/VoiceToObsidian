@@ -2,6 +2,7 @@ import SwiftUI
 import AVFoundation
 import Combine
 import UIKit
+import Foundation
 
 struct VoiceNoteDetailView: View {
     let voiceNote: VoiceNote
@@ -14,24 +15,6 @@ struct VoiceNoteDetailView: View {
     var body: some View {
         // Extract the content into a separate view to reduce complexity
         DetailContentView(voiceNote: voiceNote, isPlaying: $isPlaying, currentTime: $currentTime, audioPlayer: $audioPlayer, showingOriginalTranscript: $showingOriginalTranscript)
-    }
-    
-    // Helper functions for formatting time
-    private func formatTimeString(_ time: TimeInterval) -> String {
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-    
-    private func formatTimeStringSpoken(_ time: TimeInterval) -> String {
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
-        
-        if minutes > 0 {
-            return "\(minutes) minute\(minutes == 1 ? "" : "s") and \(seconds) second\(seconds == 1 ? "" : "s")"
-        } else {
-            return "\(seconds) second\(seconds == 1 ? "" : "s")"
-        }
     }
 }
 
@@ -92,49 +75,6 @@ struct DetailContentView: View {
         timer?.invalidate()
     }
     
-    // Helper functions for formatting time
-    private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-    
-    private func formattedDateSpoken(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-    
-    private func formattedDuration(_ duration: TimeInterval) -> String {
-        return formatTimeString(duration)
-    }
-    
-    private func formattedDurationSpoken(_ duration: TimeInterval) -> String {
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        return "\(minutes) minutes and \(seconds) seconds"
-    }
-    
-    // Helper functions for formatting time
-    private func formatTimeString(_ time: TimeInterval) -> String {
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-    
-    private func formatTimeStringSpoken(_ time: TimeInterval) -> String {
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
-        
-        if minutes > 0 {
-            return "\(minutes) minute\(minutes == 1 ? "" : "s") and \(seconds) second\(seconds == 1 ? "" : "s")"
-        } else {
-            return "\(seconds) second\(seconds == 1 ? "" : "s")"
-        }
-    }
-    
     var body: some View {
         ScrollView {
             ZStack {
@@ -151,19 +91,19 @@ struct DetailContentView: View {
                 
                     // Date and duration info
                     HStack {
-                        Label(formattedDate(voiceNote.creationDate), systemImage: "calendar")
+                        Label(DateFormatUtil.shared.formattedDate(voiceNote.creationDate), systemImage: "calendar")
                             .font(.system(size: 14, weight: .regular))
                             .foregroundColor(Color.flexokiText2)
                             .dynamicTypeSize(.small...(.accessibility5))
-                            .accessibilityLabel("Recorded on \(formattedDateSpoken(voiceNote.creationDate))")
+                            .accessibilityLabel("Recorded on \(DateFormatUtil.shared.formattedDateSpoken(voiceNote.creationDate))")
                     
                         Spacer()
                     
-                        Label(formattedDuration(voiceNote.duration), systemImage: "clock")
+                        Label(DateFormatUtil.shared.formatTimeShort(voiceNote.duration), systemImage: "clock")
                             .font(.system(size: 14, weight: .regular))
                             .foregroundColor(Color.flexokiText2)
                             .dynamicTypeSize(.small...(.accessibility5))
-                            .accessibilityLabel("Duration: \(formattedDurationSpoken(voiceNote.duration))")
+                            .accessibilityLabel("Duration: \(DateFormatUtil.shared.formatTimeSpoken(voiceNote.duration))")
                     }
                 
                     // Audio player controls
@@ -175,19 +115,19 @@ struct DetailContentView: View {
                     
                         // Time display
                         HStack {
-                            Text(formatTimeString(currentTime))
+                            Text(DateFormatUtil.shared.formatTimeShort(currentTime))
                                 .font(.caption)
                                 .monospacedDigit()
                                 .dynamicTypeSize(.small...(.accessibility5))
-                                .accessibilityLabel("Current position: \(formatTimeStringSpoken(currentTime))")
+                                .accessibilityLabel("Current position: \(DateFormatUtil.shared.formatTimeSpoken(currentTime))")
                         
                             Spacer()
                         
-                            Text(formatTimeString(voiceNote.duration))
+                            Text(DateFormatUtil.shared.formatTimeShort(voiceNote.duration))
                                 .font(.caption)
                                 .monospacedDigit()
                                 .dynamicTypeSize(.small...(.accessibility5))
-                                .accessibilityLabel("Total duration: \(formatTimeStringSpoken(voiceNote.duration))")
+                                .accessibilityLabel("Total duration: \(DateFormatUtil.shared.formatTimeSpoken(voiceNote.duration))")
                         }
                     
                         // Playback controls

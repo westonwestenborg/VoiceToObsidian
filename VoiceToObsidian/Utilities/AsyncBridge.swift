@@ -60,7 +60,7 @@ enum AsyncBridge {
     /// - Parameter operation: The operation to run
     /// - Returns: The result of the operation
     @available(iOS 15.0, *)
-    static func withOptimizedMemory<T>(operation: () async throws -> T) async throws -> T {
+    static func withOptimizedMemory<T>(operation: @escaping () async throws -> T) async throws -> T {
         return try await autoreleasepool {
             try await operation()
         }
@@ -76,7 +76,9 @@ extension VoiceNoteStore {
         AsyncBridge.executeWithFallback(
             asyncWork: { 
                 if #available(iOS 15.0, *) {
-                    return try await self.startRecordingAsync()
+                    // Call the async method directly
+                    let success = try await self.startRecording()
+                    return success
                 } else {
                     // This should never be called on iOS 15+
                     throw AppError.general("Async version not available")
@@ -104,15 +106,17 @@ extension VoiceNoteStore {
         AsyncBridge.executeWithFallback(
             asyncWork: { 
                 if #available(iOS 15.0, *) {
-                    return try await self.stopRecordingAsync()
+                    // Call the async method directly
+                    let voiceNote = try await self.stopRecording()
+                    return voiceNote
                 } else {
                     // This should never be called on iOS 15+
                     throw AppError.general("Async version not available")
                 }
             },
             callbackWork: { callback in
-                self.stopRecording { voiceNote in
-                    callback(voiceNote != nil ? .success(voiceNote) : .failure(AppError.recording(.recordingFailed("Failed to stop recording"))))
+                self.stopRecording { success, voiceNote in
+                    callback(success && voiceNote != nil ? .success(voiceNote) : .failure(AppError.recording(.recordingFailed("Failed to stop recording"))))
                 }
             },
             completion: { result in
@@ -141,7 +145,8 @@ extension AnthropicService {
         AsyncBridge.executeWithFallback(
             asyncWork: { 
                 if #available(iOS 15.0, *) {
-                    let result = try await self.processTranscriptWithTitleAsync(transcript: transcript)
+                    // Call the async method directly
+                    let result = try await self.processTranscript(transcript: transcript)
                     return (true, result.transcript, result.title)
                 } else {
                     // This should never be called on iOS 15+

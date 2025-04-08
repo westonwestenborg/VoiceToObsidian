@@ -161,7 +161,7 @@ extension VoiceNoteStore {
             // Create a voice note
             let voiceNote = VoiceNote(
                 id: UUID(),
-                title: formatTimestamp(date: startTime),
+                title: DateFormatUtil.shared.formatTimestamp(date: startTime),
                 transcript: transcript,
                 cleanedTranscript: transcript,
                 duration: duration,
@@ -339,12 +339,5 @@ extension VoiceNoteStore {
         }
     }
     
-    /// Format a date as a timestamp string
-    /// - Parameter date: The date to format
-    /// - Returns: Formatted timestamp string
-    private func formatTimestamp(date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        return formatter.string(from: date)
-    }
+
 }

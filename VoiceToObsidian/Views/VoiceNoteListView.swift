@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import Foundation
 
 struct VoiceNoteListView: View {
     @EnvironmentObject var coordinator: VoiceNoteCoordinator
@@ -155,7 +156,7 @@ struct VoiceNoteRow: View {
             HStack {
                 Image(systemName: "calendar")
                     .foregroundColor(Color.flexokiText2)
-                Text(formattedDate(voiceNote.creationDate))
+                Text(DateFormatUtil.shared.formattedDate(voiceNote.creationDate))
                     .font(.system(size: 14, weight: .regular))
                     .foregroundColor(Color.flexokiText2)
                     .dynamicTypeSize(.small...(.accessibility5))
@@ -164,7 +165,7 @@ struct VoiceNoteRow: View {
                 
                 Image(systemName: "clock")
                     .foregroundColor(Color.flexokiText2)
-                Text(formattedDuration(voiceNote.duration))
+                Text(DateFormatUtil.shared.formatTimeShort(voiceNote.duration))
                     .font(.system(size: 14, weight: .regular))
                     .foregroundColor(Color.flexokiText2)
                     .dynamicTypeSize(.small...(.accessibility5))
@@ -173,39 +174,10 @@ struct VoiceNoteRow: View {
         }
         .padding(.vertical, Spacing.tight)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Voice note: \(voiceNote.title), recorded on \(formattedDateSpoken(voiceNote.creationDate)), duration: \(formattedDurationSpoken(voiceNote.duration))")
+        .accessibilityLabel("Voice note: \(voiceNote.title), recorded on \(DateFormatUtil.shared.formattedDateSpoken(voiceNote.creationDate)), duration: \(DateFormatUtil.shared.formatTimeSpoken(voiceNote.duration))")
     }
     
-    private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-    
-    private func formattedDateSpoken(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-    
-    private func formattedDuration(_ duration: TimeInterval) -> String {
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-    
-    private func formattedDurationSpoken(_ duration: TimeInterval) -> String {
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        
-        if minutes > 0 {
-            return "\(minutes) minute\(minutes == 1 ? "" : "s") and \(seconds) second\(seconds == 1 ? "" : "s")"
-        } else {
-            return "\(seconds) second\(seconds == 1 ? "" : "s")"
-        }
-    }
+
 }
 
 struct VoiceNoteListView_Previews: PreviewProvider {

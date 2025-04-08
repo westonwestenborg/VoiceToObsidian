@@ -223,9 +223,7 @@ class VoiceNoteStore: ObservableObject, ErrorHandling {
                 let finalTranscript = cleanedTranscript ?? transcript
                 
                 // Generate a default title if needed
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
-                let dateString = dateFormatter.string(from: Date())
+                let dateString = DateFormatUtil.shared.formatTimestamp(date: Date())
                 let finalTitle = suggestedTitle ?? "Voice Note \(dateString)"
                 
                 print("Final title: \(finalTitle)")

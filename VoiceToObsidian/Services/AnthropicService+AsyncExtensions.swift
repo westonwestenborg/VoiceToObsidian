@@ -221,7 +221,7 @@ extension AnthropicService {
                 return (transcript: cleanedTranscript, title: title)
             } else {
                 // If we couldn't extract the title or transcript, use defaults
-                let defaultTitle = "Voice Note \(Date().formatted(.dateTime.month().day().year()))"
+                let defaultTitle = "Voice Note \(DateFormatUtil.shared.formatTimestamp(date: Date()))"
                 asyncLogger.warning("Could not extract title or transcript, using defaults")
                 return (transcript: text, title: defaultTitle)
             }

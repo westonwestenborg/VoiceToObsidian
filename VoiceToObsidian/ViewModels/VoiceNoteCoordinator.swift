@@ -370,7 +370,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                 recordingURL: recordingURL,
                 originalTranscript: transcript,
                 cleanedTranscript: transcript,
-                suggestedTitle: "Voice Note \(Date().formatted(.dateTime.month().day().year()))",
+                suggestedTitle: "Voice Note \(DateFormatUtil.shared.formatTimestamp(date: Date()))",
                 duration: duration,
                 completion: completion
             )
@@ -392,9 +392,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             let finalTranscript = cleanedTranscript ?? transcript
             
             // Generate a default title if needed
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
-            let dateString = dateFormatter.string(from: Date())
+            let dateString = DateFormatUtil.shared.formatTimestamp(date: Date())
             let finalTitle = suggestedTitle ?? "Voice Note \(dateString)"
             
             print("Final title: \(finalTitle)")

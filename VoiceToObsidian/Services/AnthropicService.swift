@@ -132,7 +132,7 @@ class AnthropicService {
                         } else {
                             print("Failed to extract title or transcript from response")
                             // If parsing fails, use the original text and a default title
-                            let defaultTitle = "Voice Note \(Date().formatted(.dateTime.month().day().year()))" 
+                            let defaultTitle = "Voice Note \(DateFormatUtil.shared.formatTimestamp(date: Date()))" 
                             DispatchQueue.main.async {
                                 completion(true, text, defaultTitle)
                             }
@@ -140,7 +140,7 @@ class AnthropicService {
                     } else {
                         print("Unexpected API response format: \(json)")
                         // If we can't parse the response properly, use the transcript as is
-                        let title = "Voice Note \(Date().formatted(.dateTime.month().day().year()))" 
+                        let title = "Voice Note \(DateFormatUtil.shared.formatTimestamp(date: Date()))" 
                         DispatchQueue.main.async {
                             completion(true, transcript, title)
                         }
