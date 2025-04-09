@@ -51,9 +51,15 @@ private final class PreferencesHelper {
 
 // MARK: - AppPreference Property Wrapper
 
-/// A property wrapper for app preferences that provides a consistent interface
-/// for storing and retrieving user preferences with SwiftUI integration.
-/// This is a generic wrapper that can be used for any type supported by UserDefaults.
+/// A property wrapper for storing non-sensitive data in UserDefaults.
+///
+/// Usage:
+/// ```swift
+/// @AppPreference(wrappedValue: false, "show_welcome_screen")
+/// private var showWelcomeScreen: Bool
+/// ```
+/// This will automatically load and store values in UserDefaults.
+/// For sensitive data, use @SecureStorage instead.
 @propertyWrapper
 struct AppPreference<T> {
     private let key: String

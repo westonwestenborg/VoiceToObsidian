@@ -12,21 +12,14 @@ private final class SecureStorageHelper {
     /// Read data from secure storage
     /// - Parameters:
     ///   - key: The key to read
-    ///   - useFallback: Whether to use UserDefaults as fallback
     /// - Returns: The data if found, nil otherwise
-    static func readData(forKey key: String, useFallback: Bool = true) -> Data? {
-        // Try to retrieve from Keychain first
+    static func readData(forKey key: String) -> Data? {
         do {
             if let data = try KeychainManager.getData(forKey: key) {
                 return data
             }
         } catch {
             logger.error("Failed to retrieve \(key) from keychain: \(error.localizedDescription)")
-        }
-        
-        // Fall back to UserDefaults if enabled
-        if useFallback {
-            return UserDefaults.standard.data(forKey: key)
         }
         
         return nil
@@ -36,30 +29,18 @@ private final class SecureStorageHelper {
     /// - Parameters:
     ///   - data: The data to write
     ///   - key: The key to write to
-    ///   - useFallback: Whether to use UserDefaults as fallback
-    static func writeData(_ data: Data?, forKey key: String, useFallback: Bool = true) {
+    static func writeData(_ data: Data?, forKey key: String) {
         if let data = data {
             do {
-                // Store in Keychain
                 try KeychainManager.saveData(data, forKey: key)
-                
-                // Also store in UserDefaults if fallback is enabled
-                if useFallback {
-                    UserDefaults.standard.set(data, forKey: key)
-                }
             } catch {
                 logger.error("Failed to store \(key) in keychain: \(error.localizedDescription)")
             }
         } else {
-            // Remove from both storages
             do {
                 try KeychainManager.deleteData(forKey: key)
             } catch {
                 logger.error("Failed to delete \(key) from keychain: \(error.localizedDescription)")
-            }
-            
-            if useFallback {
-                UserDefaults.standard.removeObject(forKey: key)
             }
         }
     }
@@ -69,10 +50,9 @@ private final class SecureStorageHelper {
     ///   - type: The type to decode
     ///   - key: The key to read
     ///   - defaultValue: The default value if not found
-    ///   - useFallback: Whether to use UserDefaults as fallback
     /// - Returns: The decoded value or default value
-    static func readCodable<T: Codable>(_ type: T.Type, forKey key: String, defaultValue: T, useFallback: Bool = true) -> T {
-        guard let data = readData(forKey: key, useFallback: useFallback) else {
+    static func readCodable<T: Codable>(_ type: T.Type, forKey key: String, defaultValue: T) -> T {
+        guard let data = readData(forKey: key) else {
             return defaultValue
         }
         
@@ -89,12 +69,11 @@ private final class SecureStorageHelper {
     /// - Parameters:
     ///   - value: The value to encode
     ///   - key: The key to write to
-    ///   - useFallback: Whether to use UserDefaults as fallback
-    static func writeCodable<T: Codable>(_ value: T, forKey key: String, useFallback: Bool = true) {
+    static func writeCodable<T: Codable>(_ value: T, forKey key: String) {
         do {
             let encoder = JSONEncoder()
             let data = try encoder.encode(value)
-            writeData(data, forKey: key, useFallback: useFallback)
+            writeData(data, forKey: key)
         } catch {
             logger.error("Failed to encode \(key): \(error.localizedDescription)")
         }
@@ -105,15 +84,14 @@ private final class SecureStorageHelper {
     ///   - type: The type to bind
     ///   - key: The key to bind to
     ///   - defaultValue: The default value if not found
-    ///   - useFallback: Whether to use UserDefaults as fallback
     /// - Returns: A binding to the value
-    static func createBinding<T: Codable>(_ type: T.Type, forKey key: String, defaultValue: T, useFallback: Bool = true) -> Binding<T> {
+    static func createBinding<T: Codable>(_ type: T.Type, forKey key: String, defaultValue: T) -> Binding<T> {
         return Binding(
             get: {
-                return readCodable(type, forKey: key, defaultValue: defaultValue, useFallback: useFallback)
+                return readCodable(type, forKey: key, defaultValue: defaultValue)
             },
             set: { newValue in
-                writeCodable(newValue, forKey: key, useFallback: useFallback)
+                writeCodable(newValue, forKey: key)
             }
         )
     }
@@ -121,15 +99,14 @@ private final class SecureStorageHelper {
     /// Create a binding for optional Data
     /// - Parameters:
     ///   - key: The key to bind to
-    ///   - useFallback: Whether to use UserDefaults as fallback
     /// - Returns: A binding to the data
-    static func createDataBinding(forKey key: String, useFallback: Bool = true) -> Binding<Data?> {
+    static func createDataBinding(forKey key: String) -> Binding<Data?> {
         return Binding(
             get: {
-                return readData(forKey: key, useFallback: useFallback)
+                return readData(forKey: key)
             },
             set: { newValue in
-                writeData(newValue, forKey: key, useFallback: useFallback)
+                writeData(newValue, forKey: key)
             }
         )
     }
@@ -137,43 +114,56 @@ private final class SecureStorageHelper {
 
 // MARK: - SecureStorage Property Wrapper
 
-/// A property wrapper for securely storing values in the Keychain with UserDefaults fallback.
-/// This is a generic wrapper that can be used for any Codable type.
+/// A property wrapper that securely stores Codable data in the iOS Keychain.
+///
+/// Usage:
+/// ```swift
+/// @SecureStorage(wrappedValue: "", key: "user_auth_token")
+/// private var authToken: String
+/// ```
+/// This will automatically load `authToken` from the Keychain or store it when changed.
+/// Internally, it relies on `KeychainManager` for all read/write operations.
+/// Note: No fallback to `UserDefaults` is used.
 @propertyWrapper
 struct SecureStorage<T: Codable> {
     private let key: String
     private let defaultValue: T
-    private let useUserDefaultsFallback: Bool
     
-    init(wrappedValue: T, key: String, useUserDefaultsFallback: Bool = true) {
+    init(wrappedValue: T, key: String) {
         self.key = key
         self.defaultValue = wrappedValue
-        self.useUserDefaultsFallback = useUserDefaultsFallback
         
         // Initialize with default value if not already set
-        if SecureStorageHelper.readData(forKey: key, useFallback: useUserDefaultsFallback) == nil {
-            SecureStorageHelper.writeCodable(wrappedValue, forKey: key, useFallback: useUserDefaultsFallback)
+        if SecureStorageHelper.readData(forKey: key) == nil {
+            SecureStorageHelper.writeCodable(wrappedValue, forKey: key)
         }
     }
     
     var wrappedValue: T {
         get {
-            return SecureStorageHelper.readCodable(T.self, forKey: key, defaultValue: defaultValue, useFallback: useUserDefaultsFallback)
+            return SecureStorageHelper.readCodable(T.self, forKey: key, defaultValue: defaultValue)
         }
         set {
-            SecureStorageHelper.writeCodable(newValue, forKey: key, useFallback: useUserDefaultsFallback)
+            SecureStorageHelper.writeCodable(newValue, forKey: key)
         }
     }
     
     var projectedValue: Binding<T> {
-        return SecureStorageHelper.createBinding(T.self, forKey: key, defaultValue: defaultValue, useFallback: useUserDefaultsFallback)
+        return SecureStorageHelper.createBinding(T.self, forKey: key, defaultValue: defaultValue)
     }
 }
 
 // MARK: - SecureBookmark Property Wrapper
 
-/// A property wrapper for storing bookmark data securely in the Keychain with UserDefaults fallback.
-/// This wrapper is specifically designed for security-scoped bookmarks.
+/// A property wrapper for storing security-scoped bookmarks in the iOS Keychain.
+///
+/// Usage:
+/// ```swift
+/// @SecureBookmark(key: "obsidian_vault_bookmark")
+/// private var vaultBookmark: Data?
+/// ```
+/// This will automatically load and store folder bookmarks in the Keychain.
+/// No fallback to UserDefaults is used.
 @propertyWrapper
 struct SecureBookmark {
     private let key: String

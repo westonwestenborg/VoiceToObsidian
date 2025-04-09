@@ -2,8 +2,13 @@ import SwiftUI
 import UniformTypeIdentifiers
 import MobileCoreServices
 import Security
+import OSLog
+
+// Import BookmarkManager for secure bookmark storage
+import VoiceToObsidian
 
 struct DocumentPicker: UIViewControllerRepresentable {
+    private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "DocumentPicker")
     var selectedURL: (URL) -> Void
     
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
@@ -40,18 +45,11 @@ struct DocumentPicker: UIViewControllerRepresentable {
                 // since we need to write to the Obsidian vault
                 let bookmarkData = try url.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
                 
-                // Store in UserDefaults for backward compatibility
-                UserDefaults.standard.set(bookmarkData, forKey: "ObsidianVaultBookmark")
-                
-                // Store in Keychain for enhanced security
-                do {
-                    try KeychainManager.saveData(bookmarkData, forKey: "ObsidianVaultBookmark")
-                    print("Created security-scoped bookmark and saved to keychain for: \(url.path)")
-                } catch {
-                    print("Failed to save bookmark to keychain: \(error)")
-                }
+                // Store the bookmark using the BookmarkManager
+                BookmarkManager.shared.setObsidianVaultBookmark(bookmarkData)
+                parent.logger.info("Created security-scoped bookmark for: \(url.path)")
             } catch {
-                print("Failed to create bookmark: \(error.localizedDescription)")
+                parent.logger.error("Failed to create bookmark: \(error.localizedDescription)")
             }
             
             // Stop accessing if we started

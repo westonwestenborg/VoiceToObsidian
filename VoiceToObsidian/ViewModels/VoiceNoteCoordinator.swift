@@ -5,6 +5,9 @@ import Security
 import AVFoundation
 import OSLog
 
+// Import BookmarkManager for secure bookmark storage
+import VoiceToObsidian
+
 /// The VoiceNoteCoordinator is the primary orchestrator for the entire voice note lifecycle.
 /// It coordinates all operations related to recording, transcription, processing with Anthropic,
 /// and integration with Obsidian. This class serves as the central point of coordination between
@@ -311,13 +314,8 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             obsidianService.updateVaultPath("")
         }
         
-        // Clear any data that might not be handled by property wrappers
-        do {
-            try KeychainManager.deleteData(forKey: "ObsidianVaultBookmark")
-            UserDefaults.standard.removeObject(forKey: "ObsidianVaultBookmark")
-        } catch {
-            errors["ObsidianVaultBookmark"] = error
-        }
+        // Clear the vault bookmark using the BookmarkManager
+        BookmarkManager.shared.clearObsidianVaultBookmark()
         
         if !errors.isEmpty {
             print("Some errors occurred while clearing sensitive data: \(errors)")
