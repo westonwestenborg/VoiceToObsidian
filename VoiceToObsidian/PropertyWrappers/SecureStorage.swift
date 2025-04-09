@@ -1,16 +1,19 @@
 import Foundation
 import SwiftUI
+import OSLog
 
-/// A property wrapper for securely storing values in the Keychain with UserDefaults fallback
+/// A property wrapper for securely storing values in the Keychain with UserDefaults fallback.
+/// This is a generic wrapper that can be used for any Codable type.
 @propertyWrapper
 struct SecureStorage<T: Codable> {
     private let key: String
     private let defaultValue: T
     private let useUserDefaultsFallback: Bool
+    private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "SecureStorage")
     
-    init(key: String, defaultValue: T, useUserDefaultsFallback: Bool = true) {
+    init(wrappedValue: T, key: String, useUserDefaultsFallback: Bool = true) {
         self.key = key
-        self.defaultValue = defaultValue
+        self.defaultValue = wrappedValue
         self.useUserDefaultsFallback = useUserDefaultsFallback
     }
     
@@ -23,7 +26,7 @@ struct SecureStorage<T: Codable> {
                     return try decoder.decode(T.self, from: data)
                 }
             } catch {
-                print("Failed to retrieve \(key) from keychain: \(error)")
+                logger.error("Failed to retrieve \(key) from keychain: \(error.localizedDescription)")
             }
             
             // Fall back to UserDefaults if enabled
@@ -33,7 +36,7 @@ struct SecureStorage<T: Codable> {
                     do {
                         return try decoder.decode(T.self, from: data)
                     } catch {
-                        print("Failed to decode \(key) from UserDefaults: \(error)")
+                        logger.error("Failed to decode \(key) from UserDefaults: \(error.localizedDescription)")
                     }
                 }
             }
@@ -54,72 +57,25 @@ struct SecureStorage<T: Codable> {
                     UserDefaults.standard.set(data, forKey: key)
                 }
             } catch {
-                print("Failed to store \(key) in keychain: \(error)")
+                logger.error("Failed to store \(key) in keychain: \(error.localizedDescription)")
             }
         }
+    }
+    
+    var projectedValue: Binding<T> {
+        Binding(
+            get: { wrappedValue },
+            set: { wrappedValue = $0 }
+        )
     }
 }
 
-/// A property wrapper for securely storing strings in the Keychain with UserDefaults fallback
-@propertyWrapper
-struct SecureString {
-    private let key: String
-    private let defaultValue: String
-    private let useUserDefaultsFallback: Bool
-    
-    init(key: String, defaultValue: String = "", useUserDefaultsFallback: Bool = true) {
-        self.key = key
-        self.defaultValue = defaultValue
-        self.useUserDefaultsFallback = useUserDefaultsFallback
-    }
-    
-    var wrappedValue: String {
-        get {
-            // Try to retrieve from Keychain first
-            do {
-                if let value = try KeychainManager.getString(forKey: key) {
-                    return value
-                }
-            } catch {
-                print("Failed to retrieve \(key) from keychain: \(error)")
-            }
-            
-            // Fall back to UserDefaults if enabled
-            if useUserDefaultsFallback {
-                if let value = UserDefaults.standard.string(forKey: key) {
-                    // Migrate to Keychain for future use
-                    do {
-                        try KeychainManager.saveString(value, forKey: key)
-                    } catch {
-                        print("Failed to migrate \(key) to keychain: \(error)")
-                    }
-                    return value
-                }
-            }
-            
-            // Return default value if not found
-            return defaultValue
-        }
-        set {
-            do {
-                // Store in Keychain
-                try KeychainManager.updateString(newValue, forKey: key)
-                
-                // Also store in UserDefaults if fallback is enabled
-                if useUserDefaultsFallback {
-                    UserDefaults.standard.set(newValue, forKey: key)
-                }
-            } catch {
-                print("Failed to store \(key) in keychain: \(error)")
-            }
-        }
-    }
-}
-
-/// A property wrapper for storing bookmark data securely
+/// A property wrapper for storing bookmark data securely in the Keychain with UserDefaults fallback.
+/// This wrapper is specifically designed for security-scoped bookmarks.
 @propertyWrapper
 struct SecureBookmark {
     private let key: String
+    private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "SecureBookmark")
     
     init(key: String) {
         self.key = key
@@ -133,7 +89,7 @@ struct SecureBookmark {
                     return data
                 }
             } catch {
-                print("Error retrieving bookmark from keychain: \(error)")
+                logger.error("Error retrieving bookmark from keychain: \(error.localizedDescription)")
             }
             
             // Fall back to UserDefaults if not found in keychain
@@ -143,9 +99,9 @@ struct SecureBookmark {
             if let data = data {
                 do {
                     try KeychainManager.saveData(data, forKey: key)
-                    print("Migrated bookmark from UserDefaults to keychain")
+                    logger.info("Migrated bookmark from UserDefaults to keychain")
                 } catch {
-                    print("Failed to migrate bookmark to keychain: \(error)")
+                    logger.error("Failed to migrate bookmark to keychain: \(error.localizedDescription)")
                 }
             }
             
@@ -160,67 +116,17 @@ struct SecureBookmark {
                     // Also store in UserDefaults for backward compatibility
                     UserDefaults.standard.set(newValue, forKey: key)
                 } catch {
-                    print("Failed to store bookmark in keychain: \(error)")
+                    logger.error("Failed to store bookmark in keychain: \(error.localizedDescription)")
                 }
             } else {
                 // Remove from both storages
                 do {
                     try KeychainManager.deleteData(forKey: key)
                 } catch {
-                    print("Failed to delete bookmark from keychain: \(error)")
+                    logger.error("Failed to delete bookmark from keychain: \(error.localizedDescription)")
                 }
                 UserDefaults.standard.removeObject(forKey: key)
             }
         }
-    }
-}
-
-/// A property wrapper for AppStorage with a projected value for binding
-@propertyWrapper
-struct AppPreference<T> {
-    @AppStorage private var storage: T
-    
-    init(wrappedValue: T, _ key: String, store: UserDefaults? = nil) where T: RawRepresentable, T.RawValue == String {
-        self._storage = AppStorage(wrappedValue: wrappedValue, key)
-    }
-    
-    init(wrappedValue: T, _ key: String, store: UserDefaults? = nil) where T: RawRepresentable, T.RawValue == Int {
-        self._storage = AppStorage(wrappedValue: wrappedValue, key)
-    }
-    
-    init(wrappedValue: T, _ key: String, store: UserDefaults? = nil) where T == Bool {
-        self._storage = AppStorage(wrappedValue: wrappedValue, key)
-    }
-    
-    init(wrappedValue: T, _ key: String, store: UserDefaults? = nil) where T == Int {
-        self._storage = AppStorage(wrappedValue: wrappedValue, key)
-    }
-    
-    init(wrappedValue: T, _ key: String, store: UserDefaults? = nil) where T == Double {
-        self._storage = AppStorage(wrappedValue: wrappedValue, key)
-    }
-    
-    init(wrappedValue: T, _ key: String, store: UserDefaults? = nil) where T == String {
-        self._storage = AppStorage(wrappedValue: wrappedValue, key)
-    }
-    
-    init(wrappedValue: T, _ key: String, store: UserDefaults? = nil) where T == URL {
-        self._storage = AppStorage(wrappedValue: wrappedValue, key)
-    }
-    
-    init(wrappedValue: T, _ key: String, store: UserDefaults? = nil) where T == Data {
-        self._storage = AppStorage(wrappedValue: wrappedValue, key)
-    }
-    
-    var wrappedValue: T {
-        get { storage }
-        set { storage = newValue }
-    }
-    
-    var projectedValue: Binding<T> {
-        Binding(
-            get: { wrappedValue },
-            set: { wrappedValue = $0 }
-        )
     }
 }
