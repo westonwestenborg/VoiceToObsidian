@@ -165,6 +165,5 @@ struct RecordView_Previews: PreviewProvider {
     static var previews: some View {
         RecordView(isRecording: .constant(false))
             .environmentObject(VoiceNoteCoordinator(loadImmediately: true))
-            .environmentObject(VoiceNoteStore(previewData: true))
     }
 }

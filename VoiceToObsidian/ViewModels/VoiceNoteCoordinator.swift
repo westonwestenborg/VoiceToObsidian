@@ -5,7 +5,20 @@ import Security
 import AVFoundation
 import OSLog
 
-/// Coordinates all voice note operations and services
+/// The VoiceNoteCoordinator is the primary orchestrator for the entire voice note lifecycle.
+/// It coordinates all operations related to recording, transcription, processing with Anthropic,
+/// and integration with Obsidian. This class serves as the central point of coordination between
+/// various services and the UI.
+///
+/// Responsibilities:
+/// - Recording voice notes via RecordingManager
+/// - Transcribing audio via TranscriptionManager
+/// - Processing transcripts via AnthropicService
+/// - Saving notes to Obsidian via ObsidianService
+/// - Delegating data persistence to VoiceNoteStore
+///
+/// The coordinator uses lazy initialization for its services to minimize memory usage
+/// until each service is actually needed.
 class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     // Published properties for UI updates
     @Published var isRecording = false
@@ -20,7 +33,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     // Backing variables for lazy services
     private var _recordingManager: RecordingManager?
     private var _transcriptionManager: TranscriptionManager?
-    private var _dataStore: VoiceNoteDataStore?
+    private var _voiceNoteStore: VoiceNoteStore?
     private var _anthropicService: AnthropicService?
     private var _obsidianService: ObsidianService?
     
@@ -41,12 +54,12 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         return _transcriptionManager!
     }
     
-    private var dataStore: VoiceNoteDataStore {
-        if _dataStore == nil {
-            print("Lazily creating VoiceNoteDataStore")
-            _dataStore = VoiceNoteDataStore(preloadData: false)
+    private var voiceNoteStore: VoiceNoteStore {
+        if _voiceNoteStore == nil {
+            print("Lazily creating VoiceNoteStore")
+            _voiceNoteStore = VoiceNoteStore(previewData: false, lazyInit: true)
         }
-        return _dataStore!
+        return _voiceNoteStore!
     }
     
     private var anthropicService: AnthropicService {
@@ -134,7 +147,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             // Force initialization of services
             _ = recordingManager
             _ = transcriptionManager
-            _ = dataStore
+            _ = voiceNoteStore
             _ = anthropicService
             _ = obsidianService
         }
@@ -157,6 +170,13 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             completion(false, error)
             return
         }
+        
+        // Force initialization of the recording manager and ensure bindings are set up
+        // This ensures the recording duration updates will be properly forwarded
+        let _ = recordingManager
+        
+        // Reset the recording duration before starting
+        recordingDuration = 0
         
         // Use async/await with Task
         Task {
@@ -254,18 +274,18 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     
     /// Loads more voice notes (pagination)
     func loadMoreVoiceNotes() {
-        dataStore.loadMoreVoiceNotes()
+        voiceNoteStore.loadMoreVoiceNotes()
     }
     
     /// Refreshes the voice notes list
     func refreshVoiceNotes() {
-        dataStore.refreshVoiceNotes()
+        voiceNoteStore.refreshVoiceNotes()
     }
     
     /// Deletes a voice note
     /// - Parameter voiceNote: The voice note to delete
     func deleteVoiceNote(_ voiceNote: VoiceNote) {
-        dataStore.deleteVoiceNote(voiceNote)
+        voiceNoteStore.deleteVoiceNote(voiceNote)
     }
     
     // MARK: - Public Methods - Configuration
@@ -458,7 +478,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             
             // Add to data store
             await MainActor.run {
-                dataStore.addVoiceNote(processedVoiceNote)
+                voiceNoteStore.addVoiceNote(processedVoiceNote)
                 self.isProcessing = false
                 recordingManager.resetRecordingDuration()
             }
@@ -548,7 +568,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         // Force nil all optionals to release memory
         _recordingManager = nil
         _transcriptionManager = nil
-        _dataStore = nil
+        _voiceNoteStore = nil
         _anthropicService = nil
         _obsidianService = nil
         
@@ -601,7 +621,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                     
                     // Add to store
                     await MainActor.run {
-                        self.dataStore.addVoiceNote(updatedVoiceNote)
+                        self.voiceNoteStore.addVoiceNote(updatedVoiceNote)
                         self.isProcessing = false
                         // Reset the recording duration after processing is complete
                         self.recordingManager.resetRecordingDuration()
@@ -613,7 +633,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                     
                     // Still add the voice note to the store even if Obsidian integration fails
                     await MainActor.run {
-                        self.dataStore.addVoiceNote(voiceNote)
+                        self.voiceNoteStore.addVoiceNote(voiceNote)
                         self.isProcessing = false
                         self.recordingManager.resetRecordingDuration()
                     }
@@ -625,7 +645,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                 
                 // Still add to store
                 await MainActor.run {
-                    self.dataStore.addVoiceNote(voiceNote)
+                    self.voiceNoteStore.addVoiceNote(voiceNote)
                     self.isProcessing = false
                     // Reset the recording duration after processing is complete
                     self.recordingManager.resetRecordingDuration()
@@ -642,16 +662,16 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
 extension VoiceNoteCoordinator {
     /// Gets all voice notes
     var voiceNotes: [VoiceNote] {
-        dataStore.voiceNotes
+        voiceNoteStore.voiceNotes
     }
     
     /// Checks if notes are currently loading
     var isLoadingNotes: Bool {
-        dataStore.isLoadingNotes
+        voiceNoteStore.isLoadingNotes
     }
     
     /// Checks if all notes have been loaded
     var loadedAllNotes: Bool {
-        dataStore.loadedAllNotes
+        voiceNoteStore.loadedAllNotes
     }
 }
