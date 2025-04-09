@@ -88,40 +88,54 @@ struct RecordView: View {
     }
     
     private func startRecording() {
-        // Call the coordinator to start recording
-        coordinator.startRecording { success, error in
-            if !success, let error = error as? AppError {
-                handleError(error)
-            } else if !success {
-                // If we got a non-AppError type error, convert it
-                let genericError = AppError.recording(.recordingFailed("Failed to start recording"))
-                handleError(genericError)
-            } else {
-                isRecording = true
+        // Use Task to call the async method
+        Task {
+            do {
+                // Call the async version directly
+                let success = try await coordinator.startRecordingAsync()
+                if success {
+                    // Update UI on the main thread
+                    await MainActor.run {
+                        isRecording = true
+                    }
+                }
+            } catch {
+                // Handle errors
+                await MainActor.run {
+                    if let appError = error as? AppError {
+                        handleError(appError)
+                    } else {
+                        // Convert generic error to AppError
+                        let genericError = AppError.recording(.recordingFailed("Failed to start recording"))
+                        handleError(genericError)
+                    }
+                }
             }
         }
     }
     
     private func stopRecording() {
+        // Update UI state immediately
         isRecording = false
         showingProcessingAlert = true
         
-        // Stop recording and process the audio
-        coordinator.stopRecording { success, error in
-            // Hide the processing alert if there was an error
-            if !success {
-                DispatchQueue.main.async {
+        // Use Task to call the async method
+        Task {
+            do {
+                // Call the async version directly
+                let success = try await coordinator.stopRecordingAsync()
+                // The coordinator will handle the processing and update its isProcessing state
+                // We'll observe this in the .onReceive modifier
+            } catch {
+                // Handle errors and hide the processing alert
+                await MainActor.run {
                     self.showingProcessingAlert = false
                     
                     if let appError = error as? AppError {
                         handleError(appError)
-                    } else if let error = error {
+                    } else {
                         // Convert generic error to AppError
                         let genericError = AppError.general(error.localizedDescription)
-                        handleError(genericError)
-                    } else {
-                        // Fallback generic error
-                        let genericError = AppError.general("Failed to process recording")
                         handleError(genericError)
                     }
                 }
@@ -135,7 +149,7 @@ struct RecordView: View {
     /// Handle errors in this view
     private func handleError(_ error: AppError) {
         // For errors that should be displayed locally in this view
-        DispatchQueue.main.async {
+        Task { @MainActor in
             self.localErrorState = error
             self.isShowingLocalError = true
         }

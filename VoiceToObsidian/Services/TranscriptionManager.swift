@@ -75,30 +75,16 @@ class TranscriptionManager: ObservableObject {
     /// - Parameters:
     ///   - audioURL: The URL of the audio file to transcribe
     ///   - completion: Completion handler with success status and transcript
+    @available(*, deprecated, message: "Use async/await transcribeAudioFileAsync(at:) instead")
     func transcribeAudioFile(at audioURL: URL, completion: @escaping (Bool, String?) -> Void) {
-        print("Starting transcription of file: \(audioURL.path)")
-        isTranscribing = true
-        transcriptionProgress = 0
-        
-        // Setup speech recognition on first use
-        if speechRecognizer == nil {
-            setupSpeechRecognition()
-        }
-        
-        // Make sure speech recognition is authorized
-        SFSpeechRecognizer.requestAuthorization { [weak self] status in
-            guard let self = self else { return }
-            
-            guard status == .authorized else {
-                print("Speech recognition not authorized")
-                DispatchQueue.main.async {
-                    self.isTranscribing = false
-                    completion(false, nil)
-                }
-                return
+        Task {
+            do {
+                let transcript = try await transcribeAudioFileAsync(at: audioURL)
+                completion(true, transcript)
+            } catch {
+                print("Error in transcribeAudioFile: \(error)")
+                completion(false, nil)
             }
-            
-            self.performTranscription(of: audioURL, completion: completion)
         }
     }
     

@@ -346,10 +346,16 @@ struct SettingsView: View {
             .alert("Clear All Sensitive Data", isPresented: $showingClearAllAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("Clear All", role: .destructive) {
-                    coordinator.clearAllSensitiveData()
-                    anthropicAPIKey = ""
-                    obsidianVaultPath = ""
-                    showingClearAllConfirmation = true
+                    Task {
+                        let _ = await coordinator.clearAllSensitiveDataAsync()
+                        // These updates are redundant since the coordinator already updates these values,
+                        // but we'll keep them to ensure the UI is updated
+                        await MainActor.run {
+                            anthropicAPIKey = ""
+                            obsidianVaultPath = ""
+                            showingClearAllConfirmation = true
+                        }
+                    }
                 }
             } message: {
                 Text("This will remove all API keys, vault paths, and security bookmarks. Are you sure?")

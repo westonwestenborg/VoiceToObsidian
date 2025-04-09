@@ -68,7 +68,7 @@ class AnthropicService {
         request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
         
-        // Create the request body with the same prompt as the original method
+        // Create the request body with the prompt for transcript cleaning
         let promptText = """
         I have a voice memo transcript that needs to be cleaned up. Please:
         
@@ -186,7 +186,7 @@ class AnthropicService {
         request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
         
-        // Create the request body with the same prompt as the original method
+        // Create the request body with the prompt for transcript cleaning and title generation
         let promptText = """
         I have a voice memo transcript that needs to be cleaned up. Please:
         

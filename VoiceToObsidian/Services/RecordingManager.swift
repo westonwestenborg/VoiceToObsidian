@@ -22,7 +22,12 @@ class RecordingManager: ObservableObject {
     }
     
     deinit {
-        stopRecording(completion: { _, _, _ in })
+        // Use Task to call the async method in deinit
+        Task {
+            do {
+                _ = try? await stopRecordingAsync()
+            }
+        }
         durationTimer?.invalidate()
     }
     
@@ -58,44 +63,19 @@ class RecordingManager: ObservableObject {
         }
     }
     
+    // MARK: - Deprecated Methods
+    
     /// Starts recording audio
     /// - Parameter completion: Completion handler with success status
+    @available(*, deprecated, message: "Use async/await startRecordingAsync() instead")
     func startRecording(completion: @escaping (Bool) -> Void) {
-        print("Starting recording...")
-        
-        // Set up the recording session
-        let session = AVAudioSession.sharedInstance()
-        recordingSession = session
-        
-        // Check if we already have permission before requesting it
-        if session.recordPermission == .granted {
+        Task {
             do {
-                try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
-                try session.setActive(true, options: .notifyOthersOnDeactivation)
-                self.startRecordingAudio(completion: completion)
+                let success = try await startRecordingAsync()
+                completion(success)
             } catch {
-                print("Failed to set up recording session: \(error.localizedDescription)")
+                print("Error in startRecording: \(error)")
                 completion(false)
-            }
-        } else {
-            // Request microphone permission
-            session.requestRecordPermission { [weak self] allowed in
-                DispatchQueue.main.async {
-                    guard let self = self, allowed else {
-                        print("Microphone permission denied")
-                        completion(false)
-                        return
-                    }
-                    
-                    do {
-                        try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
-                        try session.setActive(true, options: .notifyOthersOnDeactivation)
-                        self.startRecordingAudio(completion: completion)
-                    } catch {
-                        print("Failed to set up recording session after permission: \(error.localizedDescription)")
-                        completion(false)
-                    }
-                }
             }
         }
     }
@@ -197,35 +177,23 @@ class RecordingManager: ObservableObject {
     
     /// Stops recording audio
     /// - Parameter completion: Completion handler with success status, recording URL, and duration
+    @available(*, deprecated, message: "Use async/await stopRecordingAsync() instead")
     func stopRecording(completion: @escaping (Bool, URL?, TimeInterval) -> Void) {
-        guard let recorder = audioRecorder, 
-              let recordingURL = currentRecordingURL, 
-              let startTime = recordingStartTime else {
-            completion(false, nil, 0)
-            return
+        Task {
+            do {
+                let voiceNote = try await stopRecordingAsync()
+                if let voiceNote = voiceNote {
+                    let recordingURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                        .appendingPathComponent(voiceNote.audioFilename)
+                    completion(true, recordingURL, voiceNote.duration)
+                } else {
+                    completion(false, nil, 0)
+                }
+            } catch {
+                print("Error in stopRecording: \(error)")
+                completion(false, nil, 0)
+            }
         }
-        
-        // Stop recording
-        recorder.stop()
-        audioRecorder = nil
-        
-        // Stop the duration timer properly
-        if let timer = durationTimer {
-            timer.invalidate()
-            durationTimer = nil
-        }
-        
-        // Calculate recording duration
-        let duration = recorder.currentTime
-        
-        // Update state
-        isRecording = false
-        
-        // Keep the recording duration displayed until processing is complete
-        // We'll reset it later with resetRecordingDuration()
-        
-        // Return the recording URL and duration
-        completion(true, recordingURL, duration)
     }
     
     /// Gets the current recording URL
@@ -354,44 +322,6 @@ class RecordingManager: ObservableObject {
         }
     }
     
-    private func startRecordingAudio(completion: @escaping (Bool) -> Void) {
-        // Create a unique filename for the recording
-        let audioFilename = "\(UUID().uuidString).m4a"
-        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        currentRecordingURL = documentsDirectory.appendingPathComponent(audioFilename)
-        
-        // Set up the audio recorder
-        let settings = [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 44100,
-            AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-        ]
-        
-        do {
-            audioRecorder = try AVAudioRecorder(url: currentRecordingURL!, settings: settings)
-            audioRecorder?.record()
-            recordingStartTime = Date()
-            
-            // Start a timer to update the recording duration
-            // Make sure the timer runs on the main thread and updates the published property
-            durationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-                guard let self = self, let recorder = self.audioRecorder else { return }
-                DispatchQueue.main.async {
-                    self.recordingDuration = recorder.currentTime
-                }
-            }
-            
-            // Ensure the timer is added to the main run loop
-            RunLoop.main.add(durationTimer!, forMode: .common)
-            
-            // Update state
-            isRecording = true
-            
-            completion(true)
-        } catch {
-            print("Failed to start recording: \(error.localizedDescription)")
-            completion(false)
-        }
-    }
+    // Private callback-based method removed as it's no longer needed
+    // All functionality has been moved to the async version startRecordingAudioAsync
 }
