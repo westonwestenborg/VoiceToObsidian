@@ -20,7 +20,7 @@ class AnthropicService {
         logger.debug("API key updated")
     }
     
-    // Deprecated callback-based method removed - using async version only
+
     
     /// Parses the LLM response to extract the title and cleaned transcript
     /// - Parameter response: The raw response from the LLM

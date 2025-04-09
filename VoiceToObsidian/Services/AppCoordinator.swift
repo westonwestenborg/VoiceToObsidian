@@ -51,12 +51,7 @@ class AppCoordinator: ObservableObject, ErrorHandling {
                 try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
                 
                 do {
-                    if #available(iOS 15.0, *) {
-                        try await self.initializeEssentialServicesAsync()
-                    } else {
-                        // Fall back to non-async version for iOS 14 and below
-                        try self.initializeEssentialServices()
-                    }
+                    try await self.initializeEssentialServicesAsync()
                 } catch let error as AppError {
                     self.handleError(error)
                 } catch {
@@ -68,27 +63,6 @@ class AppCoordinator: ObservableObject, ErrorHandling {
     }
     
     /// Initialize only the absolutely necessary services for basic app function
-    private func initializeEssentialServices() throws {
-        // Note: We don't actually create any services here, we just mark the app
-        // as ready for user interaction. Services will be created on-demand when accessed.
-        logger.debug("App ready for interaction - services will initialize on demand")
-        
-        // Set up error handling between coordinators
-        if let voiceNoteCoord = _voiceNoteCoordinator {
-            // Subscribe to errors from the voice note coordinator
-            voiceNoteCoord.$errorState
-                .compactMap { $0 }
-                .sink { [weak self] error in
-                    self?.handleChildError(error)
-                }
-                .store(in: &voiceNoteCoord.cancellables)
-        }
-        
-        appState = .ready
-    }
-    
-    /// Async version of essential services initialization
-    @available(iOS 15.0, *)
     private func initializeEssentialServicesAsync() async throws {
         logger.debug("Initializing essential services asynchronously")
         

@@ -200,15 +200,7 @@ class ObsidianService {
         }
     }
     
-    // MARK: - Legacy Methods (For Backward Compatibility)
-    
-    /// Legacy method for creating a voice note file (uses completion handler)
-    /// - Parameters:
-    ///   - voiceNote: The voice note to save
-    ///   - completion: Completion handler with success status and path to the created note
-    /// - Note: This method is deprecated. Use the async version with AsyncBridge for better memory management.
-    @available(*, deprecated, message: "Use createVoiceNoteFile(for:) async throws -> (success:path:) with AsyncBridge instead")
-    // Deprecated callback-based methods removed - using async versions only
+
     
     // MARK: - Private Helper Methods
     

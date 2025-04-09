@@ -63,22 +63,7 @@ class RecordingManager: ObservableObject {
         }
     }
     
-    // MARK: - Deprecated Methods
-    
-    /// Starts recording audio
-    /// - Parameter completion: Completion handler with success status
-    @available(*, deprecated, message: "Use async/await startRecordingAsync() instead")
-    func startRecording(completion: @escaping (Bool) -> Void) {
-        Task {
-            do {
-                let success = try await startRecordingAsync()
-                completion(success)
-            } catch {
-                print("Error in startRecording: \(error)")
-                completion(false)
-            }
-        }
-    }
+
     
     /// Stops recording audio using async/await
     /// - Returns: The recorded voice note
@@ -175,26 +160,7 @@ class RecordingManager: ObservableObject {
         return voiceNote
     }
     
-    /// Stops recording audio
-    /// - Parameter completion: Completion handler with success status, recording URL, and duration
-    @available(*, deprecated, message: "Use async/await stopRecordingAsync() instead")
-    func stopRecording(completion: @escaping (Bool, URL?, TimeInterval) -> Void) {
-        Task {
-            do {
-                let voiceNote = try await stopRecordingAsync()
-                if let voiceNote = voiceNote {
-                    let recordingURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                        .appendingPathComponent(voiceNote.audioFilename)
-                    completion(true, recordingURL, voiceNote.duration)
-                } else {
-                    completion(false, nil, 0)
-                }
-            } catch {
-                print("Error in stopRecording: \(error)")
-                completion(false, nil, 0)
-            }
-        }
-    }
+
     
     /// Gets the current recording URL
     /// - Returns: The URL of the current recording, if any
@@ -319,6 +285,6 @@ class RecordingManager: ObservableObject {
         }
     }
     
-    // Private callback-based method removed as it's no longer needed
-    // All functionality has been moved to the async version startRecordingAudioAsync
+
+
 }

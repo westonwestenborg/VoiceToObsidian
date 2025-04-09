@@ -110,16 +110,12 @@ struct VoiceToObsidianApp: App {
                 tabBarAppearance.backgroundColor = UIColor(Color.flexokiBackground)
                 
                 UITabBar.appearance().standardAppearance = tabBarAppearance
-                if #available(iOS 15.0, *) {
-                    UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
-                }
+                UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
                 
                 UITableView.appearance().backgroundColor = UIColor(Color.flexokiBackground)
                 UITableViewCell.appearance().backgroundColor = UIColor(Color.flexokiBackground2)
                 
-                if #available(iOS 15.0, *) {
-                    UITableView.appearance().sectionHeaderTopPadding = 0
-                }
+                UITableView.appearance().sectionHeaderTopPadding = 0
                 UITableView.appearance().separatorColor = UIColor(Color.flexokiUI)
             }
         }

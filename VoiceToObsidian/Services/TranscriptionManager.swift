@@ -71,22 +71,7 @@ class TranscriptionManager: ObservableObject {
         }
     }
     
-    /// Transcribes an audio file
-    /// - Parameters:
-    ///   - audioURL: The URL of the audio file to transcribe
-    ///   - completion: Completion handler with success status and transcript
-    @available(*, deprecated, message: "Use async/await transcribeAudioFileAsync(at:) instead")
-    func transcribeAudioFile(at audioURL: URL, completion: @escaping (Bool, String?) -> Void) {
-        Task {
-            do {
-                let transcript = try await transcribeAudioFileAsync(at: audioURL)
-                completion(true, transcript)
-            } catch {
-                print("Error in transcribeAudioFile: \(error)")
-                completion(false, nil)
-            }
-        }
-    }
+
     
     /// Cancels any ongoing transcription
     func cancelTranscription() {
