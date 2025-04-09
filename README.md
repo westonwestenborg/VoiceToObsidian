@@ -10,52 +10,6 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
 - Save voice notes as Markdown files in your Obsidian vault
 - Link voice notes in your daily note
 - Browse and play back past voice notes
-- Flexoki color palette for a warm, readable interface
-- Memory-optimized initialization for better performance
-- Swift Concurrency (async/await) for improved code readability and performance
-- Structured logging with OSLog for better debugging
-
-## Development History
-
-### Key Issues Fixed
-
-1. **API Key Persistence**
-   - Implemented UserDefaults to store the Anthropic API key
-   - Ensured the key persists between app launches
-
-2. **Obsidian Vault Selection**
-   - Added a DocumentPicker to allow users to select their Obsidian vault directory
-   - Implemented security-scoped bookmarks to maintain access to the selected directory
-
-3. **Speech Recognition**
-   - Implemented file-based transcription instead of live recognition for better stability
-   - Added proper error handling and fallback mechanisms
-
-4. **Code Modernization**
-   - Fully standardized on Swift Concurrency (async/await) with no callback-based methods
-   - Removed legacy bridging code for a cleaner, more maintainable codebase
-   - Implemented centralized security management with SecurityManager
-   - Added structured logging with OSLog
-   - Optimized memory usage to address allocation errors during startup
-
-5. **Anthropic API Integration**
-   - Fixed API headers and response parsing to match the current Claude API format
-   - Added detailed logging and error handling
-
-6. **iOS Sandbox Permissions**
-   - Implemented security-scoped bookmarks for file access outside the app sandbox
-   - Properly managed resource access with startAccessingSecurityScopedResource and stopAccessingSecurityScopedResource
-
-7. **Memory Optimization**
-   - Implemented staged initialization to reduce memory pressure during app startup
-   - Added autoreleasepool blocks for memory-intensive operations
-   - Deferred heavy operations like speech recognition until needed
-   - Optimized security-scoped bookmark resolution
-
-8. **UI Enhancement**
-   - Implemented the Flexoki color palette for a warm, readable interface
-   - Created custom form components for better styling control
-   - Improved visual consistency across all screens
 
 ## Project Structure
 
@@ -109,6 +63,8 @@ table duration, daily from "Voice Notes"
 - Voice notes include both YAML frontmatter properties and proper Obsidian backlinks to daily notes
 - Backlinks ensure your voice notes appear in the graph view and backlinks panel
 - Memory-optimized initialization with staged loading to improve startup performance
+- Optimized recording start process for minimal latency and immediate user feedback
+- Enhanced transcription reliability with smart retry mechanisms for challenging audio
 - Uses the Flexoki color palette for a consistent, warm visual identity
 
 ## License

@@ -81,34 +81,20 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     // Logger for VoiceNoteCoordinator
     private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "VoiceNoteCoordinator")
     
-    // Configuration
-    private var anthropicAPIKey: String = "" {
+    // Configuration using property wrappers for automatic persistence
+    @SecureStorage(wrappedValue: "", key: "AnthropicAPIKey")
+    private var anthropicAPIKey: String {
         didSet {
             logger.debug("API key updated")
             anthropicService.updateAPIKey(anthropicAPIKey)
-            
-            // Store API key securely using SecurityManager
-            do {
-                try SecurityManager.storeAnthropicAPIKey(anthropicAPIKey)
-            } catch {
-                logger.error("Failed to save API key to keychain: \(error.localizedDescription)")
-                self.handleError(AppError.keychain(.unexpectedStatus(0)))
-            }
         }
     }
     
-    private var obsidianVaultPath: String = "" {
+    @SecureStorage(wrappedValue: "", key: "ObsidianVaultPath")
+    private var obsidianVaultPath: String {
         didSet {
             logger.debug("Vault path updated")
             obsidianService.updateVaultPath(obsidianVaultPath)
-            
-            // Store vault path using SecurityManager
-            do {
-                try SecurityManager.storeObsidianVaultPath(obsidianVaultPath)
-            } catch {
-                logger.error("Failed to save vault path to keychain: \(error.localizedDescription)")
-                self.handleError(AppError.keychain(.unexpectedStatus(0)))
-            }
         }
     }
     
@@ -121,22 +107,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     init(loadImmediately: Bool = false) {
         logger.debug("VoiceNoteCoordinator initialization started - minimal setup only")
         
-        // Initialize stored properties first
-        // Retrieve configuration values using SecurityManager
-        do {
-            self.anthropicAPIKey = try SecurityManager.retrieveAnthropicAPIKey()
-        } catch {
-            logger.error("Failed to retrieve API key: \(error.localizedDescription)")
-            self.anthropicAPIKey = ""  // Use empty string as fallback
-        }
-        
-        // Get vault path using SecurityManager
-        do {
-            self.obsidianVaultPath = try SecurityManager.retrieveObsidianVaultPath()
-        } catch {
-            logger.error("Failed to retrieve vault path: \(error.localizedDescription)")
-            self.obsidianVaultPath = ""
-        }
+        // No need to manually initialize stored properties as they are now handled by property wrappers
         
         // Always set up bindings between services
         setupBindings()
@@ -328,14 +299,10 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     
     /// Clears the Anthropic API key securely
     func clearAnthropicAPIKey() {
-        do {
-            try KeychainManager.deleteString(forKey: "AnthropicAPIKey")
-            anthropicAPIKey = ""
-            anthropicService.updateAPIKey("")
-            print("API key cleared successfully")
-        } catch {
-            print("Failed to clear API key: \(error)")
-        }
+        // Property wrapper handles the deletion from keychain
+        anthropicAPIKey = ""
+        anthropicService.updateAPIKey("")
+        print("API key cleared successfully")
     }
     
     /// Sets the Obsidian vault path
@@ -346,35 +313,34 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     
     /// Clears the Obsidian vault path
     func clearObsidianVaultPath() {
-        do {
-            try KeychainManager.deleteString(forKey: "ObsidianVaultPath")
-            UserDefaults.standard.removeObject(forKey: "ObsidianVaultPath")
-            obsidianVaultPath = ""
-            obsidianService.updateVaultPath("")
-            print("Vault path cleared successfully")
-        } catch {
-            print("Failed to clear vault path: \(error)")
-        }
+        // Property wrapper handles the deletion from keychain
+        obsidianVaultPath = ""
+        obsidianService.updateVaultPath("")
+        print("Vault path cleared successfully")
     }
     
     /// Clears all sensitive data from the app (API keys, vault paths, bookmarks) asynchronously
     /// - Returns: Dictionary of errors that occurred during the operation, empty if successful
     func clearAllSensitiveDataAsync() async -> [String: Error] {
-        // Clear all data from keychain
-        let errors = KeychainManager.clearAllSensitiveData()
+        var errors: [String: Error] = [:]
         
-        // Also clear from UserDefaults for backward compatibility
+        // Clear local properties - property wrappers will handle keychain deletion
         await MainActor.run {
-            UserDefaults.standard.removeObject(forKey: "ObsidianVaultPath")
-            UserDefaults.standard.removeObject(forKey: "ObsidianVaultBookmark")
-            
             // Update local properties
-            anthropicAPIKey = ""
-            obsidianVaultPath = ""
+            anthropicAPIKey = "" // SecureStorage wrapper handles keychain deletion
+            obsidianVaultPath = "" // SecureStorage wrapper handles keychain deletion
             
             // Update services
             anthropicService.updateAPIKey("")
             obsidianService.updateVaultPath("")
+        }
+        
+        // For backward compatibility, also clear any legacy data that might not be handled by property wrappers
+        do {
+            try KeychainManager.deleteData(forKey: "ObsidianVaultBookmark")
+            UserDefaults.standard.removeObject(forKey: "ObsidianVaultBookmark")
+        } catch {
+            errors["ObsidianVaultBookmark"] = error
         }
         
         if !errors.isEmpty {

@@ -1,0 +1,3 @@
+1. I have to manually trigger builds in Xcode, if you need to do that to verify a change please ask me to do it
+2. I have to manually add new directories and files into the project scope in Xcode. If you need me to do that please ask me to do it
+3. When making a sequence of unrelated changes, please pause and ask me to kick of a build so we can verify the change / fix worked before moving on

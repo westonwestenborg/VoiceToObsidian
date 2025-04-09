@@ -1,74 +1,19 @@
 import Foundation
 import Security
 
-/// Manages all security-related operations in the app
+/// Manages security-related operations in the app, focusing on security-scoped bookmarks
 class SecurityManager {
     
     // MARK: - Constants
     
     /// Keys for storing data
     enum StorageKey: String {
-        case anthropicAPIKey = "AnthropicAPIKey"
-        case obsidianVaultPath = "ObsidianVaultPath"
         case obsidianVaultBookmark = "ObsidianVaultBookmark"
     }
     
-    // MARK: - API Key Management
-    
-    /// Securely stores the Anthropic API key in the keychain
-    /// - Parameter apiKey: The API key to store
-    /// - Throws: KeychainError if the operation fails
-    static func storeAnthropicAPIKey(_ apiKey: String) throws {
-        try KeychainManager.updateString(apiKey, forKey: StorageKey.anthropicAPIKey.rawValue)
-        
-        // Remove any legacy storage in UserDefaults for security
-        UserDefaults.standard.removeObject(forKey: StorageKey.anthropicAPIKey.rawValue)
-    }
-    
-    /// Retrieves the Anthropic API key from the keychain
-    /// - Returns: The API key, or an empty string if not found
-    /// - Throws: KeychainError if the operation fails
-    static func retrieveAnthropicAPIKey() throws -> String {
-        // Try to get from keychain first
-        let apiKey = try KeychainManager.getString(forKey: StorageKey.anthropicAPIKey.rawValue) ?? ""
-        
-        // If empty and exists in UserDefaults, migrate it to keychain
-        if apiKey.isEmpty, let legacyKey = UserDefaults.standard.string(forKey: StorageKey.anthropicAPIKey.rawValue) {
-            if !legacyKey.isEmpty {
-                try storeAnthropicAPIKey(legacyKey)
-                return legacyKey
-            }
-        }
-        
-        return apiKey
-    }
-    
-    // MARK: - Vault Path Management
-    
-    /// Securely stores the Obsidian vault path in the keychain
-    /// - Parameter vaultPath: The vault path to store
-    /// - Throws: KeychainError if the operation fails
-    static func storeObsidianVaultPath(_ vaultPath: String) throws {
-        try KeychainManager.updateString(vaultPath, forKey: StorageKey.obsidianVaultPath.rawValue)
-        
-        // Keep in UserDefaults for backward compatibility, but consider removing in future versions
-        UserDefaults.standard.set(vaultPath, forKey: StorageKey.obsidianVaultPath.rawValue)
-    }
-    
-    /// Retrieves the Obsidian vault path from secure storage
-    /// - Returns: The vault path, or an empty string if not found
-    /// - Throws: KeychainError if the operation fails
-    static func retrieveObsidianVaultPath() throws -> String {
-        // Try to get from keychain first
-        let vaultPath = try KeychainManager.getString(forKey: StorageKey.obsidianVaultPath.rawValue) ?? ""
-        
-        // If empty, fall back to UserDefaults for backward compatibility
-        if vaultPath.isEmpty {
-            return UserDefaults.standard.string(forKey: StorageKey.obsidianVaultPath.rawValue) ?? ""
-        }
-        
-        return vaultPath
-    }
+    // Using SecureBookmark property wrapper for bookmark data
+    @SecureBookmark(key: "ObsidianVaultBookmark")
+    private static var obsidianVaultBookmark: Data?
     
     // MARK: - Security-Scoped Bookmark Management
     
@@ -79,11 +24,8 @@ class SecurityManager {
         // Create the bookmark
         let bookmarkData = try url.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
         
-        // Store in keychain
-        try KeychainManager.saveData(bookmarkData, forKey: StorageKey.obsidianVaultBookmark.rawValue)
-        
-        // Also store in UserDefaults for backward compatibility
-        UserDefaults.standard.set(bookmarkData, forKey: StorageKey.obsidianVaultBookmark.rawValue)
+        // Store using property wrapper (which handles both Keychain and UserDefaults)
+        obsidianVaultBookmark = bookmarkData
         
         print("Successfully created and stored security-scoped bookmark")
     }
@@ -92,31 +34,8 @@ class SecurityManager {
     /// - Returns: A tuple containing the URL and a flag indicating if access was started
     /// - Throws: Error if bookmark resolution fails
     static func resolveBookmark() throws -> (url: URL?, didStartAccessing: Bool) {
-        var bookmarkData: Data? = nil
-        
-        // Try to get bookmark from keychain first
-        do {
-            bookmarkData = try KeychainManager.getData(forKey: StorageKey.obsidianVaultBookmark.rawValue)
-        } catch {
-            print("Error retrieving bookmark from keychain: \(error.localizedDescription)")
-            // Fall back to UserDefaults
-        }
-        
-        // Fall back to UserDefaults if not found in keychain
-        if bookmarkData == nil {
-            bookmarkData = UserDefaults.standard.data(forKey: StorageKey.obsidianVaultBookmark.rawValue)
-            
-            // If found in UserDefaults but not in keychain, save to keychain for future use
-            if let data = bookmarkData {
-                do {
-                    try KeychainManager.saveData(data, forKey: StorageKey.obsidianVaultBookmark.rawValue)
-                    print("Migrated bookmark from UserDefaults to keychain")
-                } catch {
-                    print("Failed to migrate bookmark to keychain: \(error)")
-                    // Continue anyway since we have the bookmark data
-                }
-            }
-        }
+        // Get bookmark data using property wrapper
+        let bookmarkData = obsidianVaultBookmark
         
         guard let bookmarkData = bookmarkData else {
             print("No bookmark data found")
@@ -136,9 +55,8 @@ class SecurityManager {
                     // Create a new bookmark
                     let newBookmarkData = try url.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
                     
-                    // Store the new bookmark
-                    try KeychainManager.saveData(newBookmarkData, forKey: StorageKey.obsidianVaultBookmark.rawValue)
-                    UserDefaults.standard.set(newBookmarkData, forKey: StorageKey.obsidianVaultBookmark.rawValue)
+                    // Store the new bookmark using property wrapper
+                    obsidianVaultBookmark = newBookmarkData
                     
                     print("Successfully recreated stale bookmark")
                 } else {
@@ -171,21 +89,10 @@ class SecurityManager {
     
     // MARK: - Data Cleanup
     
-    /// Removes all sensitive data from the app
-    /// - Throws: Error if any operation fails
-    static func clearAllSensitiveData() throws {
-        // Remove API key
-        try KeychainManager.deleteString(forKey: StorageKey.anthropicAPIKey.rawValue)
-        UserDefaults.standard.removeObject(forKey: StorageKey.anthropicAPIKey.rawValue)
-        
-        // Remove vault path
-        try KeychainManager.deleteString(forKey: StorageKey.obsidianVaultPath.rawValue)
-        UserDefaults.standard.removeObject(forKey: StorageKey.obsidianVaultPath.rawValue)
-        
-        // Remove bookmark
-        try KeychainManager.deleteData(forKey: StorageKey.obsidianVaultBookmark.rawValue)
-        UserDefaults.standard.removeObject(forKey: StorageKey.obsidianVaultBookmark.rawValue)
-        
-        print("All sensitive data has been cleared")
+    /// Removes all security-scoped bookmark data
+    static func clearBookmarkData() {
+        // Property wrapper handles the deletion
+        obsidianVaultBookmark = nil
+        print("Security-scoped bookmark data has been cleared")
     }
 }

@@ -234,8 +234,7 @@ class RecordingManager: ObservableObject {
             
             print("Audio session successfully configured with sample rate: \(session.sampleRate)")
             
-            // Wait a moment to ensure the audio session is fully active
-            try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+            // Removed intentional delay to reduce latency
             
             return try await startRecordingAudioAsync()
         } catch {
@@ -253,16 +252,13 @@ class RecordingManager: ObservableObject {
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         currentRecordingURL = documentsDirectory.appendingPathComponent(audioFilename)
         
-        // Set up the audio recorder with more detailed settings
+        // Set up the audio recorder with original working settings
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
             AVSampleRateKey: 44100.0,
             AVNumberOfChannelsKey: 1,
             AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
-            AVEncoderBitRateKey: 128000,
-            AVLinearPCMBitDepthKey: 16,
-            AVLinearPCMIsBigEndianKey: false,
-            AVLinearPCMIsFloatKey: false
+            AVEncoderBitRateKey: 128000
         ]
         
         do {
@@ -293,8 +289,12 @@ class RecordingManager: ObservableObject {
             audioRecorder = recorder
             recordingStartTime = Date()
             
-            // Start a timer to update the recording duration on the main thread
+            // Update UI state immediately before setting up timer (latency improvement)
             await MainActor.run {
+                // Update state first for immediate UI feedback
+                self.isRecording = true
+                
+                // Then set up the timer for ongoing updates
                 self.durationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
                     guard let self = self, let recorder = self.audioRecorder else { return }
                     self.recordingDuration = recorder.currentTime
@@ -309,9 +309,6 @@ class RecordingManager: ObservableObject {
                 if let timer = self.durationTimer {
                     RunLoop.main.add(timer, forMode: .common)
                 }
-                
-                // Update state
-                self.isRecording = true
             }
             
             print("Recording started successfully")

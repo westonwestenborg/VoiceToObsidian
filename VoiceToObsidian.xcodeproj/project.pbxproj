@@ -35,6 +35,14 @@
 		D403DE192DA3991C00C29CDB /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE172DA3991C00C29CDB /* AppError.swift */; };
 		D403DE1B2DA39D0900C29CDB /* SecurityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE1A2DA39D0900C29CDB /* SecurityManager.swift */; };
 		D4D971AD2DA4E93400A6BB89 /* DateFormattingExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4D971AC2DA4E93400A6BB89 /* DateFormattingExtensions.swift */; };
+		D4E85B082DA626FF006B8FC8 /* SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B072DA626FF006B8FC8 /* SecureStorage.swift */; };
+		D4E85B092DA626FF006B8FC8 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B062DA626FF006B8FC8 /* AppPreferences.swift */; };
+		D4E85B0D2DA62714006B8FC8 /* SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B0B2DA62714006B8FC8 /* SecureStorage.swift */; };
+		D4E85B0E2DA62714006B8FC8 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B0A2DA62714006B8FC8 /* AppPreferences.swift */; };
+		D4E85B102DA6272A006B8FC8 /* ErrorImports.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B0F2DA6272A006B8FC8 /* ErrorImports.swift */; };
+		D4E85B142DA62740006B8FC8 /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B112DA62740006B8FC8 /* AppError.swift */; };
+		D4E85B152DA62740006B8FC8 /* ErrorImports.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B122DA62740006B8FC8 /* ErrorImports.swift */; };
+		D4E85B172DA6275C006B8FC8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D4E85B162DA6275C006B8FC8 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -69,6 +77,14 @@
 		D403DE172DA3991C00C29CDB /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
 		D403DE1A2DA39D0900C29CDB /* SecurityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityManager.swift; sourceTree = "<group>"; };
 		D4D971AC2DA4E93400A6BB89 /* DateFormattingExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormattingExtensions.swift; sourceTree = "<group>"; };
+		D4E85B062DA626FF006B8FC8 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppPreferences.swift; path = PropertyWrappers/AppPreferences.swift; sourceTree = "<group>"; };
+		D4E85B072DA626FF006B8FC8 /* SecureStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SecureStorage.swift; path = PropertyWrappers/SecureStorage.swift; sourceTree = "<group>"; };
+		D4E85B0A2DA62714006B8FC8 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
+		D4E85B0B2DA62714006B8FC8 /* SecureStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStorage.swift; sourceTree = "<group>"; };
+		D4E85B0F2DA6272A006B8FC8 /* ErrorImports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ErrorImports.swift; path = Errors/ErrorImports.swift; sourceTree = "<group>"; };
+		D4E85B112DA62740006B8FC8 /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
+		D4E85B122DA62740006B8FC8 /* ErrorImports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorImports.swift; sourceTree = "<group>"; };
+		D4E85B162DA6275C006B8FC8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -94,6 +110,12 @@
 		00E2234567890123456789AB /* VoiceToObsidian */ = {
 			isa = PBXGroup;
 			children = (
+				D4E85B162DA6275C006B8FC8 /* Assets.xcassets */,
+				D4E85B132DA62740006B8FC8 /* Errors */,
+				D4E85B0F2DA6272A006B8FC8 /* ErrorImports.swift */,
+				D4E85B0C2DA62714006B8FC8 /* PropertyWrappers */,
+				D4E85B062DA626FF006B8FC8 /* AppPreferences.swift */,
+				D4E85B072DA626FF006B8FC8 /* SecureStorage.swift */,
 				D403DDFA2DA3442300C29CDB /* Utilities */,
 				D403DDF62DA3440F00C29CDB /* Extensions */,
 				00B1234567890123456789AB /* VoiceToObsidianApp.swift */,
@@ -191,6 +213,24 @@
 			path = Errors;
 			sourceTree = "<group>";
 		};
+		D4E85B0C2DA62714006B8FC8 /* PropertyWrappers */ = {
+			isa = PBXGroup;
+			children = (
+				D4E85B0A2DA62714006B8FC8 /* AppPreferences.swift */,
+				D4E85B0B2DA62714006B8FC8 /* SecureStorage.swift */,
+			);
+			path = PropertyWrappers;
+			sourceTree = "<group>";
+		};
+		D4E85B132DA62740006B8FC8 /* Errors */ = {
+			isa = PBXGroup;
+			children = (
+				D4E85B112DA62740006B8FC8 /* AppError.swift */,
+				D4E85B122DA62740006B8FC8 /* ErrorImports.swift */,
+			);
+			path = Errors;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -249,6 +289,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D4E85B172DA6275C006B8FC8 /* Assets.xcassets in Resources */,
 				D403DDF32DA33DA100C29CDB /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -265,6 +306,7 @@
 				00A1234567890123456789AB /* VoiceToObsidianApp.swift in Sources */,
 				00A2234567890123456789AB /* ContentView.swift in Sources */,
 				D403DE0F2DA3904C00C29CDB /* AccessibilityConstants.swift in Sources */,
+				D4E85B102DA6272A006B8FC8 /* ErrorImports.swift in Sources */,
 				D403DE102DA3904C00C29CDB /* FlexokiTheme.swift in Sources */,
 				D403DDFE2DA3444B00C29CDB /* WaveformView.swift in Sources */,
 				D403DE1B2DA39D0900C29CDB /* SecurityManager.swift in Sources */,
@@ -276,6 +318,8 @@
 				00A5234567890123456789AB /* VoiceNoteDetailView.swift in Sources */,
 				00A6234567890123456789AB /* SettingsView.swift in Sources */,
 				00A7234567890123456789AB /* VoiceNote.swift in Sources */,
+				D4E85B082DA626FF006B8FC8 /* SecureStorage.swift in Sources */,
+				D4E85B092DA626FF006B8FC8 /* AppPreferences.swift in Sources */,
 				00A8234567890123456789AB /* VoiceNoteStore.swift in Sources */,
 				00A9234567890123456789AB /* ObsidianService.swift in Sources */,
 				D403DE192DA3991C00C29CDB /* AppError.swift in Sources */,
@@ -284,8 +328,12 @@
 				D403DE052DA3643F00C29CDB /* VoiceNoteDataStore.swift in Sources */,
 				D403DE082DA3646700C29CDB /* VoiceNoteCoordinator.swift in Sources */,
 				D403DE062DA3643F00C29CDB /* RecordingManager.swift in Sources */,
+				D4E85B142DA62740006B8FC8 /* AppError.swift in Sources */,
+				D4E85B152DA62740006B8FC8 /* ErrorImports.swift in Sources */,
 				D403DE162DA398CE00C29CDB /* ErrorHandling.swift in Sources */,
 				00AA234567890123456789AB /* AnthropicService.swift in Sources */,
+				D4E85B0D2DA62714006B8FC8 /* SecureStorage.swift in Sources */,
+				D4E85B0E2DA62714006B8FC8 /* AppPreferences.swift in Sources */,
 				00AB234567890123456789AB /* DocumentPicker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

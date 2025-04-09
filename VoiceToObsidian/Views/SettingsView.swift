@@ -64,6 +64,9 @@ struct APIKeySection: View {
     @Binding var showingAPIKeyAlert: Bool
     @Binding var showingClearedAlert: Bool
     
+    // Use a binding to the secure storage instead of a property wrapper
+    @Binding var secureAnthropicAPIKey: String
+    
     var body: some View {
         FlexokiSectionView("Anthropic API") {
             VStack(alignment: .leading, spacing: 16) {
@@ -100,7 +103,10 @@ struct APIKeySection: View {
                     Button(action: {
                         hideKeyboard()
                         if !anthropicAPIKey.isEmpty {
+                            // Update the coordinator
                             coordinator.setAnthropicAPIKey(anthropicAPIKey)
+                            // The binding will update the secure storage
+                            secureAnthropicAPIKey = anthropicAPIKey
                             showingAPIKeyAlert = true
                         }
                     }) {
@@ -120,6 +126,7 @@ struct APIKeySection: View {
                     Button(action: {
                         hideKeyboard()
                         coordinator.clearAnthropicAPIKey()
+                        secureAnthropicAPIKey = ""
                         anthropicAPIKey = ""
                         showingClearedAlert = true
                     }) {
@@ -145,6 +152,9 @@ struct VaultPathSection: View {
     @Binding var isLoadingVaultPath: Bool
     @Binding var showingDocumentPicker: Bool
     @Binding var showingVaultPathAlert: Bool
+    
+    // Use a binding to the secure storage instead of a property wrapper
+    @Binding var secureObsidianVaultPath: String
     
     var body: some View {
         FlexokiSectionView("Obsidian Vault") {
@@ -198,8 +208,9 @@ struct VaultPathSection: View {
                 
                 Button(action: {
                     coordinator.clearObsidianVaultPath()
+                    secureObsidianVaultPath = ""
                     obsidianVaultPath = ""
-                    // This line is now handled in the try-catch block
+                    showingVaultPathAlert = true
                 }) {
                     HStack {
                         Image(systemName: "xmark.circle.fill")
@@ -271,13 +282,23 @@ struct ClearAllDataSection: View {
 struct SettingsView: View {
     @EnvironmentObject var coordinator: VoiceNoteCoordinator
     
-    // State variables for settings
+    // Use property wrappers for settings
+    @SecureStorage(wrappedValue: "", key: "AnthropicAPIKey")
+    private var secureAnthropicAPIKey: String
+    
+    @SecureStorage(wrappedValue: "", key: "ObsidianVaultPath")
+    private var secureObsidianVaultPath: String
+    
+    // Local state for editing
     @State private var anthropicAPIKey = ""
     @State private var obsidianVaultPath = ""
     
     // App preferences
-    @State private var showTranscriptionProgress = true
-    @State private var useHighQualityRecording = true
+    @AppPreference(wrappedValue: true, "ShowTranscriptionProgress")
+    private var showTranscriptionProgress: Bool
+    
+    @AppPreference(wrappedValue: true, "UseHighQualityRecording")
+    private var useHighQualityRecording: Bool
     
     @State private var isLoadingAPIKey = false
     @State private var isLoadingVaultPath = false
@@ -300,7 +321,8 @@ struct SettingsView: View {
                     anthropicAPIKey: $anthropicAPIKey,
                     isLoadingAPIKey: $isLoadingAPIKey,
                     showingAPIKeyAlert: $showingAPIKeyAlert,
-                    showingClearedAlert: $showingClearedAlert
+                    showingClearedAlert: $showingClearedAlert,
+                    secureAnthropicAPIKey: $secureAnthropicAPIKey
                 )
                 
                 // Use the extracted Vault Path Section component
@@ -308,7 +330,8 @@ struct SettingsView: View {
                     obsidianVaultPath: $obsidianVaultPath,
                     isLoadingVaultPath: $isLoadingVaultPath,
                     showingDocumentPicker: $showingDocumentPicker,
-                    showingVaultPathAlert: $showingVaultPathAlert
+                    showingVaultPathAlert: $showingVaultPathAlert,
+                    secureObsidianVaultPath: $secureObsidianVaultPath
                 )
                 
                 // Use the extracted Clear All Data Section component
@@ -374,41 +397,18 @@ struct SettingsView: View {
     private func loadSavedSettings() {
         logger.debug("Loading saved settings")
         
-        // Load API Key
+        // Load API Key from property wrapper
         isLoadingAPIKey = true
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                let apiKey = try SecurityManager.retrieveAnthropicAPIKey()
-                DispatchQueue.main.async {
-                    self.anthropicAPIKey = apiKey
-                    self.isLoadingAPIKey = false
-                }
-            } catch {
-                self.logger.error("Failed to load API key: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    self.isLoadingAPIKey = false
-                }
-            }
+        DispatchQueue.main.async {
+            self.anthropicAPIKey = self.secureAnthropicAPIKey
+            self.isLoadingAPIKey = false
         }
         
-        // Load Vault Path
+        // Load Vault Path from property wrapper
         isLoadingVaultPath = true
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                let path = try SecurityManager.retrieveObsidianVaultPath()
-                DispatchQueue.main.async {
-                    self.obsidianVaultPath = path
-                    self.isLoadingVaultPath = false
-                }
-            } catch {
-                self.logger.error("Failed to load vault path: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    // Try to get the path using UserDefaults as fallback
-                    let path = UserDefaults.standard.string(forKey: "ObsidianVaultPath") ?? ""
-                    self.obsidianVaultPath = path
-                    self.isLoadingVaultPath = false
-                }
-            }
+        DispatchQueue.main.async {
+            self.obsidianVaultPath = self.secureObsidianVaultPath
+            self.isLoadingVaultPath = false
         }
     }
     
@@ -433,6 +433,10 @@ struct SettingsView: View {
             
             // Save the path using the coordinator
             coordinator.setObsidianVaultPath(path)
+            
+            // Use the property wrapper's projected value (binding) to update the value
+            // This avoids the 'self is immutable' error
+            _secureObsidianVaultPath.projectedValue.wrappedValue = path
             
             // Update the UI
             obsidianVaultPath = path

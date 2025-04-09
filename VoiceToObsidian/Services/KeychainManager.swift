@@ -237,21 +237,20 @@ class KeychainManager {
     
     // MARK: - Utility Methods
     
-    /// Clears all sensitive data from the keychain
+    /// Clears legacy sensitive data from the keychain
     /// - Returns: A dictionary with keys that were attempted to be deleted and any errors that occurred
+    /// - Note: This method is primarily for backward compatibility. New code should use property wrappers.
     @discardableResult
     static func clearAllSensitiveData() -> [String: Error] {
-        // List of all sensitive keys used in the app
-        let sensitiveKeys = [
-            "AnthropicAPIKey",
-            "ObsidianVaultPath",
+        // List of legacy sensitive keys that might not be handled by property wrappers
+        let legacyKeys = [
             "ObsidianVaultBookmark"
         ]
         
         var errors = [String: Error]()
         
         // Attempt to delete each key
-        for key in sensitiveKeys {
+        for key in legacyKeys {
             do {
                 try deleteString(forKey: key)
                 print("Successfully cleared \(key) from keychain")
