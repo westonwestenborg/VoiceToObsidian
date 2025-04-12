@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -35,15 +35,24 @@
 		D403DE192DA3991C00C29CDB /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE172DA3991C00C29CDB /* AppError.swift */; };
 		D403DE1B2DA39D0900C29CDB /* SecurityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE1A2DA39D0900C29CDB /* SecurityManager.swift */; };
 		D4D971AD2DA4E93400A6BB89 /* DateFormattingExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4D971AC2DA4E93400A6BB89 /* DateFormattingExtensions.swift */; };
-		D4E85B082DA626FF006B8FC8 /* SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B072DA626FF006B8FC8 /* SecureStorage.swift */; };
-		D4E85B092DA626FF006B8FC8 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B062DA626FF006B8FC8 /* AppPreferences.swift */; };
 		D4E85B0D2DA62714006B8FC8 /* SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B0B2DA62714006B8FC8 /* SecureStorage.swift */; };
 		D4E85B0E2DA62714006B8FC8 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B0A2DA62714006B8FC8 /* AppPreferences.swift */; };
 		D4E85B102DA6272A006B8FC8 /* ErrorImports.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B0F2DA6272A006B8FC8 /* ErrorImports.swift */; };
 		D4E85B142DA62740006B8FC8 /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B112DA62740006B8FC8 /* AppError.swift */; };
 		D4E85B152DA62740006B8FC8 /* ErrorImports.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B122DA62740006B8FC8 /* ErrorImports.swift */; };
 		D4E85B172DA6275C006B8FC8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D4E85B162DA6275C006B8FC8 /* Assets.xcassets */; };
+		D4E85B1B2DA63C55006B8FC8 /* BookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B1A2DA63C55006B8FC8 /* BookmarkManager.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D4E85B242DA64160006B8FC8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 00G1234567890123456789AB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 00F1234567890123456789AB;
+			remoteInfo = VoiceToObsidian;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		00B1234567890123456789AB /* VoiceToObsidianApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceToObsidianApp.swift; sourceTree = "<group>"; };
@@ -77,18 +86,30 @@
 		D403DE172DA3991C00C29CDB /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
 		D403DE1A2DA39D0900C29CDB /* SecurityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityManager.swift; sourceTree = "<group>"; };
 		D4D971AC2DA4E93400A6BB89 /* DateFormattingExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormattingExtensions.swift; sourceTree = "<group>"; };
-		D4E85B062DA626FF006B8FC8 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppPreferences.swift; path = PropertyWrappers/AppPreferences.swift; sourceTree = "<group>"; };
-		D4E85B072DA626FF006B8FC8 /* SecureStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SecureStorage.swift; path = PropertyWrappers/SecureStorage.swift; sourceTree = "<group>"; };
 		D4E85B0A2DA62714006B8FC8 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
 		D4E85B0B2DA62714006B8FC8 /* SecureStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStorage.swift; sourceTree = "<group>"; };
 		D4E85B0F2DA6272A006B8FC8 /* ErrorImports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ErrorImports.swift; path = Errors/ErrorImports.swift; sourceTree = "<group>"; };
 		D4E85B112DA62740006B8FC8 /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
 		D4E85B122DA62740006B8FC8 /* ErrorImports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorImports.swift; sourceTree = "<group>"; };
 		D4E85B162DA6275C006B8FC8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D4E85B1A2DA63C55006B8FC8 /* BookmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkManager.swift; sourceTree = "<group>"; };
+		D4E85B202DA64160006B8FC8 /* VoiceToObsidianTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceToObsidianTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D4E85B412DAB080C006B8FC8 /* VoiceToObsidian.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = VoiceToObsidian.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		D4E85B212DA64160006B8FC8 /* VoiceToObsidianTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = VoiceToObsidianTests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		00D1234567890123456789AB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D4E85B1D2DA64160006B8FC8 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -101,8 +122,10 @@
 		00E1234567890123456789AB = {
 			isa = PBXGroup;
 			children = (
+				D4E85B412DAB080C006B8FC8 /* VoiceToObsidian.xctestplan */,
 				D403DDF22DA33DA100C29CDB /* Assets.xcassets */,
 				00E2234567890123456789AB /* VoiceToObsidian */,
+				D4E85B212DA64160006B8FC8 /* VoiceToObsidianTests */,
 				00E3234567890123456789AB /* Products */,
 			);
 			sourceTree = "<group>";
@@ -114,8 +137,6 @@
 				D4E85B132DA62740006B8FC8 /* Errors */,
 				D4E85B0F2DA6272A006B8FC8 /* ErrorImports.swift */,
 				D4E85B0C2DA62714006B8FC8 /* PropertyWrappers */,
-				D4E85B062DA626FF006B8FC8 /* AppPreferences.swift */,
-				D4E85B072DA626FF006B8FC8 /* SecureStorage.swift */,
 				D403DDFA2DA3442300C29CDB /* Utilities */,
 				D403DDF62DA3440F00C29CDB /* Extensions */,
 				00B1234567890123456789AB /* VoiceToObsidianApp.swift */,
@@ -134,6 +155,7 @@
 			isa = PBXGroup;
 			children = (
 				00C1234567890123456789AB /* VoiceToObsidian.app */,
+				D4E85B202DA64160006B8FC8 /* VoiceToObsidianTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -174,6 +196,7 @@
 		00E7234567890123456789AB /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				D4E85B1A2DA63C55006B8FC8 /* BookmarkManager.swift */,
 				D403DE1A2DA39D0900C29CDB /* SecurityManager.swift */,
 				D403DE112DA3906200C29CDB /* AppCoordinator.swift */,
 				D403DE0B2DA3674000C29CDB /* KeychainManager.swift */,
@@ -251,6 +274,29 @@
 			productReference = 00C1234567890123456789AB /* VoiceToObsidian.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D4E85B1F2DA64160006B8FC8 /* VoiceToObsidianTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D4E85B262DA64160006B8FC8 /* Build configuration list for PBXNativeTarget "VoiceToObsidianTests" */;
+			buildPhases = (
+				D4E85B1C2DA64160006B8FC8 /* Sources */,
+				D4E85B1D2DA64160006B8FC8 /* Frameworks */,
+				D4E85B1E2DA64160006B8FC8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D4E85B252DA64160006B8FC8 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D4E85B212DA64160006B8FC8 /* VoiceToObsidianTests */,
+			);
+			name = VoiceToObsidianTests;
+			packageProductDependencies = (
+			);
+			productName = VoiceToObsidianTests;
+			productReference = D4E85B202DA64160006B8FC8 /* VoiceToObsidianTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -258,11 +304,15 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
+				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					00F1234567890123456789AB = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					D4E85B1F2DA64160006B8FC8 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 00F1234567890123456789AB;
 					};
 				};
 			};
@@ -280,6 +330,7 @@
 			projectRoot = "";
 			targets = (
 				00F1234567890123456789AB /* VoiceToObsidian */,
+				D4E85B1F2DA64160006B8FC8 /* VoiceToObsidianTests */,
 			);
 		};
 /* End PBXProject section */
@@ -291,6 +342,13 @@
 			files = (
 				D4E85B172DA6275C006B8FC8 /* Assets.xcassets in Resources */,
 				D403DDF32DA33DA100C29CDB /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D4E85B1E2DA64160006B8FC8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -318,8 +376,6 @@
 				00A5234567890123456789AB /* VoiceNoteDetailView.swift in Sources */,
 				00A6234567890123456789AB /* SettingsView.swift in Sources */,
 				00A7234567890123456789AB /* VoiceNote.swift in Sources */,
-				D4E85B082DA626FF006B8FC8 /* SecureStorage.swift in Sources */,
-				D4E85B092DA626FF006B8FC8 /* AppPreferences.swift in Sources */,
 				00A8234567890123456789AB /* VoiceNoteStore.swift in Sources */,
 				00A9234567890123456789AB /* ObsidianService.swift in Sources */,
 				D403DE192DA3991C00C29CDB /* AppError.swift in Sources */,
@@ -332,13 +388,29 @@
 				D4E85B152DA62740006B8FC8 /* ErrorImports.swift in Sources */,
 				D403DE162DA398CE00C29CDB /* ErrorHandling.swift in Sources */,
 				00AA234567890123456789AB /* AnthropicService.swift in Sources */,
+				D4E85B1B2DA63C55006B8FC8 /* BookmarkManager.swift in Sources */,
 				D4E85B0D2DA62714006B8FC8 /* SecureStorage.swift in Sources */,
 				D4E85B0E2DA62714006B8FC8 /* AppPreferences.swift in Sources */,
 				00AB234567890123456789AB /* DocumentPicker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D4E85B1C2DA64160006B8FC8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D4E85B252DA64160006B8FC8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 00F1234567890123456789AB /* VoiceToObsidian */;
+			targetProxy = D4E85B242DA64160006B8FC8 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		00H1234567890123456789AB /* Debug */ = {
@@ -522,6 +594,44 @@
 			};
 			name = Release;
 		};
+		D4E85B272DA64160006B8FC8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8JF5HHJ64N;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ww.VoiceToObsidianTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VoiceToObsidian.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VoiceToObsidian";
+			};
+			name = Debug;
+		};
+		D4E85B282DA64160006B8FC8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8JF5HHJ64N;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ww.VoiceToObsidianTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VoiceToObsidian.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VoiceToObsidian";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -539,6 +649,15 @@
 			buildConfigurations = (
 				00H1234567890123456789AB /* Debug */,
 				00H2234567890123456789AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D4E85B262DA64160006B8FC8 /* Build configuration list for PBXNativeTarget "VoiceToObsidianTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D4E85B272DA64160006B8FC8 /* Debug */,
+				D4E85B282DA64160006B8FC8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

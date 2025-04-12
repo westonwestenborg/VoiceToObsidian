@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "3041C22D-8A1D-47B0-A59F-A46A2BD81EED",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:VoiceToObsidian.xcodeproj",
+      "identifier" : "00F1234567890123456789AB",
+      "name" : "VoiceToObsidian"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:VoiceToObsidian.xcodeproj",
+        "identifier" : "D4E85B1F2DA64160006B8FC8",
+        "name" : "VoiceToObsidianTests"
+      }
+    }
+  ],
+  "version" : 1
+}

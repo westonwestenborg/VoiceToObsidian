@@ -1,3 +1,7 @@
-1. I have to manually trigger builds in Xcode, if you need to do that to verify a change please ask me to do it
-2. I have to manually add new directories and files into the project scope in Xcode. If you need me to do that please ask me to do it
+1. We have to manually trigger builds in Xcode, if you need to do that to verify a change please ask me to do it
+2. We have to manually add new directories and files into the project scope in Xcode. If you need me to do that please ask me to do it
 3. When making a sequence of unrelated changes, please pause and ask me to kick of a build so we can verify the change / fix worked before moving on
+4. Our project is build in Swift and SwiftUI
+5. Use modern Swift best practices (concurrency, async/await, property wrappers, etc.)
+6. Use OSLog for structured logging
+7. If we are refactoring or removing code, remove all comments, deprecated code, logic, etc. so that we can maintain a clean codebase
