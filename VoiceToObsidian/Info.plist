@@ -44,7 +44,9 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Voice to Obsidian App</string>
 	<key>UIBackgroundModes</key>
-	<array/>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>UIRequiresFullScreen</key>

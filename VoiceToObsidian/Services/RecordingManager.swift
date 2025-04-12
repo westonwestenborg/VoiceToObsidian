@@ -2,8 +2,9 @@ import Foundation
 import AVFoundation
 import Combine
 import SwiftUI
+import OSLog
 
-/// Manages audio recording functionality
+/// Manages audio recording functionality with background support
 class RecordingManager: ObservableObject {
     // Published properties for UI updates
     @Published var isRecording = false
@@ -15,10 +16,48 @@ class RecordingManager: ObservableObject {
     private var currentRecordingURL: URL?
     private var recordingStartTime: Date?
     private var durationTimer: Timer?
+    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "RecordingManager")
     
     // Initializer
     init() {
-        print("RecordingManager initialized")
+        logger.info("RecordingManager initialized")
+        setupNotifications()
+    }
+    
+    /// Set up notification observers for audio session interruptions and app state changes
+    private func setupNotifications() {
+        // Audio session interruption notifications
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioSessionInterruption),
+            name: AVAudioSession.interruptionNotification,
+            object: nil
+        )
+        
+        // App entering background notification
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+        
+        // App becoming active notification
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+        
+        // Route change notifications (e.g., headphones connected/disconnected)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioRouteChange),
+            name: AVAudioSession.routeChangeNotification,
+            object: nil
+        )
     }
     
     deinit {
@@ -29,15 +68,24 @@ class RecordingManager: ObservableObject {
             }
         }
         durationTimer?.invalidate()
+        
+        // Remove notification observers
+        NotificationCenter.default.removeObserver(self)
+        
+        // End background task if active
+        endBackgroundTaskIfNeeded()
     }
     
     // MARK: - Public Methods
     
-    /// Starts recording audio using async/await
+    /// Starts recording audio using async/await with background support
     /// - Returns: Boolean indicating success
     /// - Throws: Error if recording fails
     func startRecordingAsync() async throws -> Bool {
-        print("Starting recording with async/await...")
+        logger.info("Starting recording with async/await...")
+        
+        // Begin background task to ensure we have time to start recording
+        beginBackgroundTask()
         
         // Set up the recording session
         let session = AVAudioSession.sharedInstance()
@@ -55,7 +103,8 @@ class RecordingManager: ObservableObject {
             }
             
             if !allowed {
-                print("Microphone permission denied")
+                logger.error("Microphone permission denied")
+                endBackgroundTaskIfNeeded()
                 throw NSError(domain: "RecordingManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Microphone permission denied"])
             }
             
@@ -69,11 +118,15 @@ class RecordingManager: ObservableObject {
     /// - Returns: The recorded voice note
     /// - Throws: Error if stopping recording fails
     func stopRecordingAsync() async throws -> VoiceNote? {
-        print("Stopping recording with async/await...")
+        logger.info("Stopping recording with async/await...")
+        
+        // Begin background task to ensure we have time to complete stopping the recording
+        beginBackgroundTask()
         
         guard let recorder = audioRecorder,
               let recordingURL = currentRecordingURL,
               let startTime = recordingStartTime else {
+            endBackgroundTaskIfNeeded()
             throw NSError(domain: "RecordingManager", code: 2, userInfo: [NSLocalizedDescriptionKey: "No active recording to stop"])
         }
         
@@ -137,6 +190,9 @@ class RecordingManager: ObservableObject {
             durationTimer = nil
         }
         
+        // End background task since recording is stopped
+        endBackgroundTaskIfNeeded()
+        
         // Update state on the main thread
         await MainActor.run {
             isRecording = false
@@ -188,8 +244,8 @@ class RecordingManager: ObservableObject {
     /// - Throws: Error if setup fails
     private func setupRecordingSessionAsync(session: AVAudioSession) async throws -> Bool {
         do {
-            // Configure the audio session for recording
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            // Configure the audio session for recording with background support
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
             
             // Set the preferred sample rate and I/O buffer duration
             try session.setPreferredSampleRate(44100.0)
@@ -198,13 +254,14 @@ class RecordingManager: ObservableObject {
             // Activate the session with options
             try session.setActive(true, options: .notifyOthersOnDeactivation)
             
-            print("Audio session successfully configured with sample rate: \(session.sampleRate)")
+            logger.info("Audio session successfully configured with sample rate: \(session.sampleRate)")
             
             // Removed intentional delay to reduce latency
             
             return try await startRecordingAudioAsync()
         } catch {
-            print("Failed to set up recording session: \(error.localizedDescription)")
+            logger.error("Failed to set up recording session: \(error.localizedDescription)")
+            endBackgroundTaskIfNeeded()
             throw error
         }
     }
@@ -236,7 +293,7 @@ class RecordingManager: ObservableObject {
             let fileManager = FileManager.default
             if fileManager.fileExists(atPath: recordingURL.path) {
                 try fileManager.removeItem(at: recordingURL)
-                print("Removed existing file at recording URL")
+                logger.info("Removed existing file at recording URL")
             }
             
             // Create and configure the audio recorder
@@ -277,14 +334,148 @@ class RecordingManager: ObservableObject {
                 }
             }
             
-            print("Recording started successfully")
+            logger.info("Recording started successfully")
             return true
         } catch {
-            print("Failed to start recording: \(error.localizedDescription)")
+            logger.error("Failed to start recording: \(error.localizedDescription)")
+            endBackgroundTaskIfNeeded()
             throw error
         }
     }
     
-
-
+    // MARK: - Background Task Management
+    
+    /// Begin a background task to allow audio processing to continue when app is in background
+    private func beginBackgroundTask() {
+        // End any existing background task first
+        endBackgroundTaskIfNeeded()
+        
+        // Start a new background task
+        backgroundTask = UIApplication.shared.beginBackgroundTask { [weak self] in
+            // This is the expiration handler - clean up if we're about to be terminated
+            self?.endBackgroundTaskIfNeeded()
+        }
+        
+        logger.info("Background task started with identifier: \(self.backgroundTask.rawValue)")
+    }
+    
+    /// End the current background task if one exists
+    private func endBackgroundTaskIfNeeded() {
+        if backgroundTask != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+            backgroundTask = .invalid
+            logger.info("Background task ended")
+        }
+    }
+    
+    // MARK: - Notification Handlers
+    
+    /// Handle audio session interruptions (e.g., phone calls)
+    @objc private func handleAudioSessionInterruption(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+            return
+        }
+        
+        switch type {
+        case .began:
+            // Interruption began - audio session is deactivated
+            logger.info("Audio session interrupted")
+            
+            // If we're recording, we'll need to handle this interruption
+            if isRecording {
+                // We'll let the system pause our session, but we'll keep our state as recording
+                // so we can resume when the interruption ends
+                logger.info("Recording was active during interruption")
+            }
+            
+        case .ended:
+            // Interruption ended - check if we should resume
+            if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt,
+               AVAudioSession.InterruptionOptions(rawValue: optionsValue).contains(.shouldResume) {
+                logger.info("Audio interruption ended - resuming session")
+                
+                // Try to reactivate the session
+                do {
+                    try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+                    
+                    // If we were recording before the interruption, the recorder might have stopped
+                    // We could potentially restart it here, but that's complex and might not be desired
+                    // Instead, we'll log that the session is back but recording may need to be manually restarted
+                    if isRecording && audioRecorder?.isRecording == false {
+                        logger.warning("Recording was interrupted and needs to be manually restarted")
+                        // Update UI state to reflect that recording stopped
+                        Task { @MainActor in
+                            self.isRecording = false
+                        }
+                    }
+                } catch {
+                    logger.error("Failed to reactivate audio session: \(error.localizedDescription)")
+                }
+            }
+            
+        @unknown default:
+            logger.warning("Unknown audio session interruption type")
+        }
+    }
+    
+    /// Handle app entering background
+    @objc private func handleAppDidEnterBackground(notification: Notification) {
+        logger.info("App entered background")
+        
+        // If we're recording, make sure we have a background task
+        if isRecording {
+            beginBackgroundTask()
+            logger.info("Continuing recording in background")
+        }
+    }
+    
+    /// Handle app returning to foreground
+    @objc private func handleAppWillEnterForeground(notification: Notification) {
+        logger.info("App will enter foreground")
+        
+        // If we're not recording, we can end the background task
+        if !isRecording {
+            endBackgroundTaskIfNeeded()
+        }
+    }
+    
+    /// Handle audio route changes (e.g., headphones connected/disconnected)
+    @objc private func handleAudioRouteChange(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+            return
+        }
+        
+        // Log the route change
+        logger.info("Audio route changed: \(reason.rawValue)")
+        
+        // Handle old and new routes if needed
+        if let routeDescription = userInfo[AVAudioSessionRouteChangePreviousRouteKey] as? AVAudioSessionRouteDescription {
+            for output in routeDescription.outputs {
+                logger.info("Previous output: \(output.portName)")
+            }
+        }
+        
+        // Get current route
+        let currentRoute = AVAudioSession.sharedInstance().currentRoute
+        for output in currentRoute.outputs {
+            logger.info("Current output: \(output.portName)")
+        }
+        
+        // Handle specific reasons if needed
+        switch reason {
+        case .oldDeviceUnavailable:
+            // This happens when headphones are unplugged
+            if isRecording {
+                logger.info("Audio device became unavailable while recording")
+                // We'll let the system handle the route change
+                // The recording should continue with the new audio route
+            }
+        default:
+            break
+        }
+    }
 }

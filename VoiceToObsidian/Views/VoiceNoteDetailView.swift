@@ -173,6 +173,24 @@ struct DetailContentView: View {
                         
                             Spacer()
                             
+                            // Copy button
+                            Button(action: {
+                                // Copy the currently displayed transcript to clipboard
+                                let textToCopy = showingOriginalTranscript ? voiceNote.originalTranscript : voiceNote.cleanedTranscript
+                                UIPasteboard.general.string = textToCopy
+                                
+                                // Provide haptic feedback for successful copy
+                                let generator = UINotificationFeedbackGenerator()
+                                generator.notificationOccurred(.success)
+                            }) {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(Color.flexokiAccentBlue)
+                            }
+                            .frame(width: 44, height: 44)
+                            .accessibilityLabel("Copy transcript")
+                            .accessibilityHint("Copy the transcript to clipboard")
+                            
                             Button(action: {
                                 showingOriginalTranscript.toggle()
                             }) {

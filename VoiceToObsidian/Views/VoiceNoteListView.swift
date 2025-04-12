@@ -63,17 +63,7 @@ struct VoiceNoteListView: View {
                             .listRowBackground(Color.flexokiBackground)
                         }
                         
-                        // End of list indicator
-                        if coordinator.loadedAllNotes && !filteredNotes.isEmpty {
-                            Text("End of notes")
-                                .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(Color.flexokiText2)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(8)
-                                .dynamicTypeSize(.small...(.accessibility5))
-                                .accessibilityLabel("You have reached the end of the notes list")
-                                .listRowBackground(Color.flexokiBackground)
-                        }
+                        // No end of list indicator - removed as requested
                     }
                 }
                 .refreshable {
