@@ -90,7 +90,6 @@ struct VoiceToObsidianApp: App {
     private func configureAppearance() {
         // Basic appearance configuration
         UINavigationBar.appearance().tintColor = UIColor.systemBlue
-        UITabBar.appearance().tintColor = UIColor.systemBlue
         
         // More detailed appearance configuration
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
@@ -104,13 +103,6 @@ struct VoiceToObsidianApp: App {
                 UINavigationBar.appearance().standardAppearance = navBarAppearance
                 UINavigationBar.appearance().compactAppearance = navBarAppearance
                 UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
-                
-                let tabBarAppearance = UITabBarAppearance()
-                tabBarAppearance.configureWithOpaqueBackground()
-                tabBarAppearance.backgroundColor = UIColor(Color.flexokiBackground)
-                
-                UITabBar.appearance().standardAppearance = tabBarAppearance
-                UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
                 
                 UITableView.appearance().backgroundColor = UIColor(Color.flexokiBackground)
                 UITableViewCell.appearance().backgroundColor = UIColor(Color.flexokiBackground2)

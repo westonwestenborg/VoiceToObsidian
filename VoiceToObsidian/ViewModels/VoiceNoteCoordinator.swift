@@ -477,4 +477,9 @@ extension VoiceNoteCoordinator {
     var loadedAllNotes: Bool {
         voiceNoteStore.loadedAllNotes
     }
+    
+    /// Access to the voice note store for UI observation
+    var voiceNoteStoreForObservation: VoiceNoteStore {
+        return voiceNoteStore
+    }
 }

@@ -1,11 +1,16 @@
 import SwiftUI
 import Combine
 import Foundation
+import OSLog
 
 struct VoiceNoteListView: View {
     @EnvironmentObject var coordinator: VoiceNoteCoordinator
     @State private var searchText = ""
     @State private var isRefreshing = false
+    @State private var showingSettingsView = false
+    @State private var forceRefresh = false // Added to force view refresh
+    
+    private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "VoiceNoteListView")
     
     var filteredNotes: [VoiceNote] {
         if searchText.isEmpty {
@@ -72,7 +77,23 @@ struct VoiceNoteListView: View {
                 .navigationTitle("Voice Notes")
                 .searchable(text: $searchText, prompt: "Search notes")
                 .toolbar {
-                    EditButton()
+                    Button(action: {
+                        logger.debug("Settings button tapped")
+                        showingSettingsView = true
+                    }) {
+                        Image(systemName: "gear")
+                            .foregroundColor(Color.flexokiAccentBlue)
+                    }
+                    .accessibilityLabel("Settings")
+                }
+                .sheet(isPresented: $showingSettingsView) {
+                    NavigationView {
+                        SettingsView()
+                            .navigationTitle("Settings")
+                            .navigationBarItems(trailing: Button("Done") {
+                                showingSettingsView = false
+                            })
+                    }
                 }
                 .listStyle(PlainListStyle())
                 .background(Color.flexokiBackground)
@@ -94,11 +115,19 @@ struct VoiceNoteListView: View {
             }
         }
         .onAppear {
-            // Only load notes if we haven't loaded any yet
-            if coordinator.voiceNotes.isEmpty && !coordinator.isLoadingNotes && !coordinator.loadedAllNotes {
-                coordinator.loadMoreVoiceNotes()
+            // Always load notes when the view appears
+            logger.debug("VoiceNoteListView appeared - loading notes")
+            coordinator.loadMoreVoiceNotes()
+            
+            // Set up a timer to force refresh the view if notes aren't showing
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                if !coordinator.voiceNotes.isEmpty && filteredNotes.isEmpty {
+                    logger.debug("Forcing view refresh - notes loaded but not displayed")
+                    forceRefresh.toggle() // Toggle to force view update
+                }
             }
         }
+        .id(forceRefresh) // Force view to recreate when forceRefresh changes
     }
     
     private func refreshNotes() async {
@@ -116,6 +145,8 @@ struct VoiceNoteListView: View {
     }
     
     private func deleteNotes(at offsets: IndexSet) {
+        logger.debug("Deleting notes at offsets: \(offsets)")
+        
         // Get the actual voice notes to delete based on filtered list
         let notesToDelete = offsets.map { filteredNotes[$0] }
         

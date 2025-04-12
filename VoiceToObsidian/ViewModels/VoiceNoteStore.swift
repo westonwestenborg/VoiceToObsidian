@@ -94,6 +94,12 @@ class VoiceNoteStore: ObservableObject, ErrorHandling {
         guard !isLoadingNotes && !loadedAllNotes else { return }
         
         isLoadingNotes = true
+        logger.debug("Starting to load more voice notes")
+        
+        // First, ensure we notify UI that loading has started
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
         
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             autoreleasepool {
@@ -106,8 +112,12 @@ class VoiceNoteStore: ObservableObject, ErrorHandling {
                 
                 self.loadVoiceNotesPage(page: self.currentPage)
                 
+                // Ensure we update the UI on the main thread
                 DispatchQueue.main.async {
                     self.isLoadingNotes = false
+                    // Force another UI update when loading completes
+                    self.objectWillChange.send()
+                    self.logger.debug("Voice notes loading complete, sent objectWillChange notification")
                 }
             }
         }
@@ -201,8 +211,15 @@ class VoiceNoteStore: ObservableObject, ErrorHandling {
                 
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
-                    // Append to existing notes
-                    self.voiceNotes.append(contentsOf: pageNotes)
+                    
+                    // Clear and reload if this is the first page
+                    if page == 0 {
+                        self.voiceNotes = pageNotes
+                    } else {
+                        // Append to existing notes for subsequent pages
+                        self.voiceNotes.append(contentsOf: pageNotes)
+                    }
+                    
                     self.currentPage += 1
                     
                     // Check if we've loaded all notes
@@ -210,7 +227,10 @@ class VoiceNoteStore: ObservableObject, ErrorHandling {
                         self.loadedAllNotes = true
                     }
                     
-                    print("Loaded page \(page) with \(pageNotes.count) notes. Total: \(self.voiceNotes.count)")
+                    self.logger.debug("Loaded page \(page) with \(pageNotes.count) notes. Total: \(self.voiceNotes.count)")
+                    
+                    // Force UI update by triggering objectWillChange
+                    self.objectWillChange.send()
                 }
             } catch {
                 print("Failed to load voice notes: \(error.localizedDescription)")
