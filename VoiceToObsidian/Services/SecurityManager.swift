@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import OSLog
 
 /// Manages security-related operations in the app, focusing on security-scoped bookmarks
 class SecurityManager {
@@ -10,6 +11,9 @@ class SecurityManager {
     enum StorageKey: String {
         case obsidianVaultBookmark = "ObsidianVaultBookmark"
     }
+    
+    /// Logger for SecurityManager
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "SecurityManager")
     
     // Using SecureBookmark property wrapper for bookmark data
     @SecureBookmark(key: "ObsidianVaultBookmark")
@@ -27,7 +31,7 @@ class SecurityManager {
         // Store using property wrapper (which handles both Keychain and UserDefaults)
         obsidianVaultBookmark = bookmarkData
         
-        print("Successfully created and stored security-scoped bookmark")
+        Self.logger.info("Successfully created and stored security-scoped bookmark")
     }
     
     /// Resolves a security-scoped bookmark and starts accessing the resource
@@ -38,7 +42,7 @@ class SecurityManager {
         let bookmarkData = obsidianVaultBookmark
         
         guard let bookmarkData = bookmarkData else {
-            print("No bookmark data found")
+            Self.logger.info("No bookmark data found")
             return (nil, false)
         }
         
@@ -47,7 +51,7 @@ class SecurityManager {
             let url = try URL(resolvingBookmarkData: bookmarkData, options: [.withoutUI], relativeTo: nil, bookmarkDataIsStale: &isStale)
             
             if isStale {
-                print("Bookmark is stale, attempting to recreate")
+                Self.logger.warning("Bookmark is stale, attempting to recreate")
                 // Try to recreate the bookmark if possible
                 if url.startAccessingSecurityScopedResource() {
                     defer { url.stopAccessingSecurityScopedResource() }
@@ -58,9 +62,9 @@ class SecurityManager {
                     // Store the new bookmark using property wrapper
                     obsidianVaultBookmark = newBookmarkData
                     
-                    print("Successfully recreated stale bookmark")
+                    Self.logger.info("Successfully recreated stale bookmark")
                 } else {
-                    print("Could not access resource to recreate stale bookmark")
+                    Self.logger.error("Could not access resource to recreate stale bookmark")
                     return (url, false)
                 }
             }
@@ -68,14 +72,14 @@ class SecurityManager {
             // Start accessing the resource
             let didStartAccessing = url.startAccessingSecurityScopedResource()
             if !didStartAccessing {
-                print("Failed to start accessing security-scoped resource")
+                Self.logger.error("Failed to start accessing security-scoped resource")
             } else {
-                print("Successfully started accessing security-scoped resource")
+                Self.logger.info("Successfully started accessing security-scoped resource")
             }
             
             return (url, didStartAccessing)
         } catch {
-            print("Error resolving bookmark: \(error.localizedDescription)")
+            Self.logger.error("Error resolving bookmark: \(error.localizedDescription)")
             throw error
         }
     }
@@ -84,7 +88,7 @@ class SecurityManager {
     /// - Parameter url: The URL to stop accessing
     static func stopAccessingSecurityScopedResource(url: URL) {
         url.stopAccessingSecurityScopedResource()
-        print("Stopped accessing security-scoped resource")
+        Self.logger.info("Stopped accessing security-scoped resource")
     }
     
     // MARK: - Data Cleanup
@@ -93,6 +97,6 @@ class SecurityManager {
     static func clearBookmarkData() {
         // Property wrapper handles the deletion
         obsidianVaultBookmark = nil
-        print("Security-scoped bookmark data has been cleared")
+        Self.logger.info("Security-scoped bookmark data has been cleared")
     }
 }

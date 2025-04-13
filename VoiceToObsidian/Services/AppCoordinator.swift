@@ -18,7 +18,7 @@ class AppCoordinator: ObservableObject, ErrorHandling {
     // Public accessor with lazy initialization
     var voiceNoteCoordinator: VoiceNoteCoordinator {
         if _voiceNoteCoordinator == nil {
-            print("Lazily creating VoiceNoteCoordinator on first access")
+            logger.debug("Lazily creating VoiceNoteCoordinator on first access")
             _voiceNoteCoordinator = VoiceNoteCoordinator(loadImmediately: false)
         }
         return _voiceNoteCoordinator!

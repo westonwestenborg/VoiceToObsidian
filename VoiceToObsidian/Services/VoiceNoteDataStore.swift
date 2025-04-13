@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import OSLog
 
 /// Manages persistence and retrieval of voice notes
 class VoiceNoteDataStore: ObservableObject {
@@ -13,9 +14,12 @@ class VoiceNoteDataStore: ObservableObject {
     private let pageSize = 10
     private var cachedNoteCount: Int = 0
     
+    // Logger for VoiceNoteDataStore
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "VoiceNoteDataStore")
+    
     // Initializer
     init(preloadData: Bool = false) {
-        print("VoiceNoteDataStore initialized")
+        logger.debug("VoiceNoteDataStore initialized")
         
         if preloadData {
             // Just check if we have notes, but don't load them yet
@@ -103,7 +107,7 @@ class VoiceNoteDataStore: ObservableObject {
                     // Update cached count
                     self.cachedNoteCount = self.voiceNotes.count
                 } catch {
-                    print("Failed to save voice notes: \(error.localizedDescription)")
+                    self.logger.error("Failed to save voice notes: \(error.localizedDescription)")
                 }
             }
         }
@@ -117,7 +121,7 @@ class VoiceNoteDataStore: ObservableObject {
             do {
                 let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
                 if let fileSize = attributes[.size] as? Int {
-                    print("Voice notes file exists, size: \(fileSize) bytes")
+                    self.logger.debug("Voice notes file exists, size: \(fileSize) bytes")
                     
                     // Estimate number of notes based on file size
                     // This is a rough estimate - average note might be around 1KB
@@ -125,18 +129,18 @@ class VoiceNoteDataStore: ObservableObject {
                     cachedNoteCount = estimatedCount
                 }
             } catch {
-                print("Failed to get voice notes file attributes: \(error.localizedDescription)")
+                self.logger.error("Failed to get voice notes file attributes: \(error.localizedDescription)")
                 cachedNoteCount = 0
             }
         } else {
-            print("No voice notes file found")
+            self.logger.info("No voice notes file found")
             cachedNoteCount = 0
         }
     }
     
     /// Loads a specific page of voice notes
     private func loadVoiceNotesPage(page: Int) {
-        print("Loading voice notes page \(page)")
+        logger.debug("Loading voice notes page \(page)")
         let url = getVoiceNotesFileURL()
         
         if FileManager.default.fileExists(atPath: url.path) {
@@ -146,7 +150,7 @@ class VoiceNoteDataStore: ObservableObject {
                 let data = fileHandle.readDataToEndOfFile()
                 try fileHandle.close()
                 
-                print("Voice notes file size: \(data.count) bytes")
+                self.logger.debug("Voice notes file size: \(data.count) bytes")
                 
                 // Decode all notes (we'll implement true pagination in a future version)
                 let allNotes = try JSONDecoder().decode([VoiceNote].self, from: data)
@@ -177,16 +181,16 @@ class VoiceNoteDataStore: ObservableObject {
                         self.loadedAllNotes = true
                     }
                     
-                    print("Loaded page \(page) with \(pageNotes.count) notes. Total: \(self.voiceNotes.count)")
+                    self.logger.info("Loaded page \(page) with \(pageNotes.count) notes. Total: \(self.voiceNotes.count)")
                 }
             } catch {
-                print("Failed to load voice notes: \(error.localizedDescription)")
+                self.logger.error("Failed to load voice notes: \(error.localizedDescription)")
                 DispatchQueue.main.async { [weak self] in
                     self?.loadedAllNotes = true
                 }
             }
         } else {
-            print("No voice notes file found")
+            self.logger.info("No voice notes file found")
             DispatchQueue.main.async { [weak self] in
                 self?.loadedAllNotes = true
             }

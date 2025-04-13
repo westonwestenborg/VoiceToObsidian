@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// Centralized error type for the Voice to Obsidian application
 enum AppError: Error {
@@ -188,17 +189,20 @@ extension AppError: LocalizedError {
 extension AppError {
     /// Log the error with appropriate level
     func log() {
-        // In a real app, this would use a proper logging framework
-        print("ERROR: \(errorDescription ?? "Unknown error")")
-        print("REASON: \(failureReason ?? "Unknown reason")")
+        // Create a logger for error logging
+        let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "AppError")
+        
+        // Log the error with appropriate level
+        logger.error("ERROR: \(errorDescription ?? "Unknown error")")
+        logger.error("REASON: \(failureReason ?? "Unknown reason")")
         
         if let suggestion = recoverySuggestion {
-            print("SUGGESTION: \(suggestion)")
+            logger.notice("SUGGESTION: \(suggestion)")
         }
         
         // Additional debug info in development builds
         #if DEBUG
-        print("ERROR DETAILS: \(self)")
+        logger.debug("ERROR DETAILS: \(self)")
         #endif
     }
 }

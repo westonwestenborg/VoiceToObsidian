@@ -109,6 +109,9 @@ struct RecordButton: View {
     @Binding var showRecordingTray: Bool
     @Binding var isRecording: Bool
     
+    // Logger for RecordButton
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "RecordButton")
+    
     var body: some View {
         Button(action: {
             // Start recording immediately and show the tray
@@ -145,7 +148,7 @@ struct RecordButton: View {
                 }
             } catch {
                 // Handle errors
-                print("Error starting recording: \(error)")
+                logger.error("Error starting recording: \(error.localizedDescription)")
             }
         }
     }

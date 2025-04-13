@@ -1,9 +1,13 @@
 import SwiftUI
+import OSLog
 
 /// A reusable view component for displaying error messages to the user
 struct ErrorBannerView: View {
     let error: AppError
     let dismissAction: () -> Void
+    
+    // Logger for ErrorBannerView
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "ErrorBannerView")
     
     var body: some View {
         VStack(spacing: 0) {
@@ -96,24 +100,27 @@ extension View {
 // MARK: - Preview
 #if DEBUG
 struct ErrorBannerView_Previews: PreviewProvider {
+    // Logger for preview
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "ErrorBannerView_Previews")
+    
     static var previews: some View {
         VStack {
             ErrorBannerView(
                 error: AppError.recording(.permissionDenied)
             ) {
-                print("Dismissed")
+                logger.debug("Dismissed")
             }
             
             ErrorBannerView(
                 error: AppError.anthropic(.apiKeyMissing)
             ) {
-                print("Dismissed")
+                logger.debug("Dismissed")
             }
             
             ErrorBannerView(
                 error: AppError.obsidian(.fileCreationFailed("Could not create file"))
             ) {
-                print("Dismissed")
+                logger.debug("Dismissed")
             }
         }
         .padding()

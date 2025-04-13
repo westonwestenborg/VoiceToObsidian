@@ -3,6 +3,7 @@ import AVFoundation
 import Combine
 import UIKit
 import Foundation
+import OSLog
 
 struct VoiceNoteDetailView: View {
     let voiceNote: VoiceNote
@@ -30,6 +31,9 @@ struct DetailContentView: View {
     // Add timer as a state property so it can be modified
     @State private var timer: Timer? = nil
     
+    // Logger for DetailContentView
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "VoiceNoteDetailView")
+    
     // Audio playback functions
     private func setupAudioPlayer() {
         guard let audioURL = voiceNote.audioURL else { return }
@@ -38,7 +42,7 @@ struct DetailContentView: View {
             audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
             audioPlayer?.prepareToPlay()
         } catch {
-            print("Error setting up audio player: \(error.localizedDescription)")
+            logger.error("Error setting up audio player: \(error.localizedDescription)")
         }
     }
     

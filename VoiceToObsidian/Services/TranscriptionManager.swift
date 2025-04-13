@@ -1,6 +1,7 @@
 import Foundation
 import Speech
 import Combine
+import OSLog
 
 /// Manages speech recognition and transcription
 class TranscriptionManager: ObservableObject {
@@ -13,9 +14,12 @@ class TranscriptionManager: ObservableObject {
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     
+    // Logger for TranscriptionManager
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "TranscriptionManager")
+    
     // Initializer
     init() {
-        print("TranscriptionManager initialized (lightweight)")
+        logger.debug("TranscriptionManager initialized (lightweight)")
         // DO NOT initialize speech recognition until needed
     }
     
@@ -30,7 +34,7 @@ class TranscriptionManager: ObservableObject {
     /// - Returns: The transcript text if successful, nil otherwise
     /// - Throws: Error if transcription fails
     func transcribeAudioFileAsync(at audioURL: URL) async throws -> String {
-        print("Starting async transcription of file: \(audioURL.path)")
+        logger.info("Starting async transcription of file: \(audioURL.path)")
         
         // Update UI state on main thread
         await MainActor.run {
@@ -52,7 +56,7 @@ class TranscriptionManager: ObservableObject {
         
         // Check authorization status
         guard authStatus == .authorized else {
-            print("Speech recognition not authorized")
+            logger.error("Speech recognition not authorized")
             await MainActor.run {
                 isTranscribing = false
             }
@@ -92,7 +96,7 @@ class TranscriptionManager: ObservableObject {
             
             // Only log if we actually cancelled something
             if hadActiveTask {
-                print("Transcription cancelled")
+                logger.info("Transcription cancelled")
             }
         }
     }
@@ -113,22 +117,22 @@ class TranscriptionManager: ObservableObject {
             
             // Check if the recognizer is available
             if !recognizer.isAvailable {
-                print("Speech recognizer is not available on this device")
+                logger.error("Speech recognizer is not available on this device")
             }
             
             // Request authorization for speech recognition
             SFSpeechRecognizer.requestAuthorization { status in
                 switch status {
                 case .authorized:
-                    print("Speech recognition authorization granted")
+                    self.logger.info("Speech recognition authorization granted")
                 case .denied:
-                    print("Speech recognition authorization denied by user")
+                    self.logger.error("Speech recognition authorization denied by user")
                 case .restricted:
-                    print("Speech recognition is restricted on this device")
+                    self.logger.error("Speech recognition is restricted on this device")
                 case .notDetermined:
-                    print("Speech recognition authorization not determined")
+                    self.logger.warning("Speech recognition authorization not determined")
                 @unknown default:
-                    print("Speech recognition authorization unknown status")
+                    self.logger.warning("Speech recognition authorization unknown status")
                 }
             }
         }
@@ -145,7 +149,7 @@ class TranscriptionManager: ObservableObject {
                 // Verify the audio file exists and has content
                 let fileManager = FileManager.default
                 if !fileManager.fileExists(atPath: audioURL.path) {
-                    print("Error: Audio file does not exist")
+                    self.logger.error("Audio file does not exist")
                     DispatchQueue.main.async {
                         self.isTranscribing = false
                         completion(false, nil)
@@ -157,16 +161,16 @@ class TranscriptionManager: ObservableObject {
                 do {
                     let attributes = try fileManager.attributesOfItem(atPath: audioURL.path)
                     if let size = attributes[.size] as? NSNumber, size.intValue <= 1000 {
-                        print("Warning: Audio file is very small, may not contain speech")
+                        self.logger.warning("Audio file is very small, may not contain speech")
                     }
                 } catch {
-                    print("Error checking audio file")
+                    self.logger.error("Error checking audio file")
                 }
                 
                 // Create a new recognizer with the US English locale
                 let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
                 guard let recognizer = recognizer else {
-                    print("Failed to create speech recognizer")
+                    self.logger.error("Failed to create speech recognizer")
                     DispatchQueue.main.async {
                         self.isTranscribing = false
                         completion(false, nil)
@@ -176,7 +180,7 @@ class TranscriptionManager: ObservableObject {
                 
                 // Check if the recognizer is available
                 if !recognizer.isAvailable {
-                    print("Speech recognizer is not available")
+                    self.logger.error("Speech recognizer is not available")
                     // Try again after a short delay
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                         guard let self = self else { return }
@@ -195,7 +199,7 @@ class TranscriptionManager: ObservableObject {
                 // Add contextual phrases if needed
                 request.contextualStrings = ["note", "Obsidian", "voice memo"]
                 
-                print("Created speech recognition request")
+                self.logger.debug("Created speech recognition request")
                 
                 // Start the recognition task with error handling and retry logic
                 var retryCount = 0
@@ -219,7 +223,7 @@ class TranscriptionManager: ObservableObject {
                             // If this is the final result
                             if result.isFinal {
                                 let transcript = result.bestTranscription.formattedString
-                                print("Transcription completed successfully")
+                                self.logger.info("Transcription completed successfully")
                                 
                                 DispatchQueue.main.async {
                                     self.transcriptionProgress = 1.0
@@ -233,11 +237,11 @@ class TranscriptionManager: ObservableObject {
                         if let error = error {
                             let nsError = error as NSError
                             // Log basic error info
-                            print("Speech recognition error: \(nsError.localizedDescription)")
+                            self.logger.error("Speech recognition error: \(nsError.localizedDescription)")
                             
                             // Handle "No speech detected" error specifically
                             if nsError.localizedDescription.contains("No speech detected") {
-                                print("No speech detected in the audio file")
+                                self.logger.warning("No speech detected in the audio file")
                                 
                                 // Try one more time with a different approach
                                 if retryCount < 1 {
@@ -257,14 +261,14 @@ class TranscriptionManager: ObservableObject {
                                         self.recognitionTask = recognizer.recognitionTask(with: newRequest) { [weak self] result, retryError in
                                             // Handle the retry result
                                             if let result = result, result.isFinal, !result.bestTranscription.formattedString.isEmpty {
-                                                print("Transcription successful after retry")
+                                                self?.logger.info("Transcription successful after retry")
                                                 DispatchQueue.main.async {
                                                     self?.transcriptionProgress = 1.0
                                                     self?.isTranscribing = false
                                                     completion(true, result.bestTranscription.formattedString)
                                                 }
                                             } else if retryError != nil {
-                                                print("Transcription retry failed")
+                                                self?.logger.error("Transcription retry failed")
                                                 DispatchQueue.main.async {
                                                     self?.isTranscribing = false
                                                     completion(false, nil)
@@ -278,12 +282,12 @@ class TranscriptionManager: ObservableObject {
                             
                             // Check for kAFAssistantErrorDomain errors (code 1101)
                             else if nsError.domain == "kAFAssistantErrorDomain" && nsError.code == 1101 {
-                                print("Received common speech recognition error: \(nsError.domain) Code=\(nsError.code). This is usually non-fatal.")
+                                self.logger.warning("Received common speech recognition error: \(nsError.domain) Code=\(nsError.code). This is usually non-fatal.")
                                 
                                 // Only retry if we haven't reached the final result yet
                                 if result?.isFinal != true && retryCount < maxRetries {
                                     retryCount += 1
-                                    print("Retrying speech recognition (attempt \(retryCount) of \(maxRetries))")
+                                    self.logger.info("Retrying speech recognition (attempt \(retryCount) of \(maxRetries))")
                                     
                                     // Cancel the current task
                                     self.recognitionTask?.cancel()
@@ -298,11 +302,11 @@ class TranscriptionManager: ObservableObject {
                             }
                             
                             // For other errors or if we've exhausted retries
-                            print("Transcription error: \(error.localizedDescription)")
+                            self.logger.error("Transcription error: \(error.localizedDescription)")
                             
                             // If we have partial results, use those rather than failing completely
                             if let partialTranscript = result?.bestTranscription.formattedString, !partialTranscript.isEmpty {
-                                print("Using partial transcript despite error")
+                                self.logger.info("Using partial transcript despite error")
                                 DispatchQueue.main.async {
                                     self.transcriptionProgress = 1.0
                                     self.isTranscribing = false

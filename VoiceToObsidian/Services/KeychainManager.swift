@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import OSLog
 
 /// Manages secure storage of sensitive data using the iOS Keychain
 class KeychainManager {
@@ -13,6 +14,9 @@ class KeychainManager {
     
     /// Service name used for all keychain items in this app
     private static let serviceName = "com.voicetoobsidian.app"
+    
+    /// Logger for KeychainManager
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "KeychainManager")
     
     /// Saves a string value to the keychain
     /// - Parameters:
@@ -253,9 +257,9 @@ class KeychainManager {
         for key in legacyKeys {
             do {
                 try deleteString(forKey: key)
-                print("Successfully cleared \(key) from keychain")
+                Self.logger.info("Successfully cleared \(key) from keychain")
             } catch {
-                print("Error clearing \(key) from keychain: \(error)")
+                Self.logger.error("Error clearing \(key) from keychain: \(error)")
                 errors[key] = error
             }
         }

@@ -133,7 +133,7 @@ class RecordingManager: ObservableObject {
         // Ensure we've been recording for at least 1 second to capture audio
         let currentDuration = recorder.currentTime
         if currentDuration < 0.5 {
-            print("Recording duration too short (\(currentDuration)s), waiting to ensure audio is captured...")
+            logger.warning("Recording duration too short (\(currentDuration)s), waiting to ensure audio is captured...")
             // Wait a bit to ensure we capture some audio
             try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
         }
@@ -141,7 +141,7 @@ class RecordingManager: ObservableObject {
         // Verify the recording URL exists
         let fileManager = FileManager.default
         if !fileManager.fileExists(atPath: recordingURL.path) {
-            print("Warning: Recording file does not exist before stopping: \(recordingURL.path)")
+            logger.warning("Recording file does not exist before stopping: \(recordingURL.path)")
         }
         
         // Get a reference to the recorder before stopping
@@ -158,7 +158,7 @@ class RecordingManager: ObservableObject {
         
         // Verify the recording was saved
         if !fileManager.fileExists(atPath: recordingURL.path) {
-            print("Error: Recording file was not created after stopping: \(recordingURL.path)")
+            logger.error("Recording file was not created after stopping: \(recordingURL.path)")
             throw NSError(domain: "RecordingManager", code: 5, userInfo: [NSLocalizedDescriptionKey: "Recording file was not created"])
         }
         
@@ -170,16 +170,16 @@ class RecordingManager: ObservableObject {
                 fileSize = fileSizeNumber.intValue
                 // File size captured for debugging if needed
                 if fileSize <= 0 {
-                    print("Error: Recording file is empty")
+                    logger.error("Recording file is empty")
                     throw NSError(domain: "RecordingManager", code: 6, userInfo: [NSLocalizedDescriptionKey: "Recording file is empty"])
                 }
             }
         } catch {
-            print("Error checking recording file: \(error.localizedDescription)")
+            logger.error("Error checking recording file: \(error.localizedDescription)")
         }
         
         // Duration was already captured before stopping the recorder
-        print("Using previously captured recording duration: \(duration) seconds")
+        logger.debug("Using previously captured recording duration: \(duration) seconds")
         
         // Clean up resources
         audioRecorder = nil
@@ -212,7 +212,7 @@ class RecordingManager: ObservableObject {
             audioFilename: recordingURL.lastPathComponent
         )
         
-        print("Successfully created voice note")
+        logger.info("Successfully created voice note")
         return voiceNote
     }
     

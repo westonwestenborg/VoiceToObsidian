@@ -446,7 +446,7 @@ struct SettingsView: View {
             // Stop accessing the security-scoped resource
             SecurityManager.stopAccessingSecurityScopedResource(url: url)
         } catch {
-            print("Failed to create security-scoped bookmark: \(error)")
+            logger.error("Failed to create security-scoped bookmark: \(error)")
             let appError = AppError.securityScoped(.bookmarkCreationFailed)
             handleError(appError)
             isLoadingVaultPath = false

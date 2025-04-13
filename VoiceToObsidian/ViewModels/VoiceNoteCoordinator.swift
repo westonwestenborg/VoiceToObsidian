@@ -43,7 +43,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     // Lazy services - only initialized when needed
     private var recordingManager: RecordingManager {
         if _recordingManager == nil {
-            print("Lazily creating RecordingManager")
+            logger.debug("Lazily creating RecordingManager")
             _recordingManager = RecordingManager()
         }
         return _recordingManager!
@@ -51,7 +51,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     
     private var transcriptionManager: TranscriptionManager {
         if _transcriptionManager == nil {
-            print("Lazily creating TranscriptionManager")
+            logger.debug("Lazily creating TranscriptionManager")
             _transcriptionManager = TranscriptionManager()
         }
         return _transcriptionManager!
@@ -59,7 +59,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     
     private var voiceNoteStore: VoiceNoteStore {
         if _voiceNoteStore == nil {
-            print("Lazily creating VoiceNoteStore")
+            logger.debug("Lazily creating VoiceNoteStore")
             _voiceNoteStore = VoiceNoteStore(previewData: false, lazyInit: true)
         }
         return _voiceNoteStore!
@@ -67,7 +67,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     
     private var anthropicService: AnthropicService {
         if _anthropicService == nil {
-            print("Lazily creating AnthropicService")
+            logger.debug("Lazily creating AnthropicService")
             _anthropicService = AnthropicService(apiKey: anthropicAPIKey)
         }
         return _anthropicService!
@@ -75,7 +75,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     
     private var obsidianService: ObsidianService {
         if _obsidianService == nil {
-            print("Lazily creating ObsidianService")
+            logger.debug("Lazily creating ObsidianService")
             _obsidianService = ObsidianService(vaultPath: obsidianVaultPath)
         }
         return _obsidianService!
@@ -117,7 +117,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         
         // If requested, preload services - normally we don't do this
         if loadImmediately {
-            print("Preloading services as requested (not recommended)")
+            logger.warning("Preloading services as requested (not recommended)")
             // Force initialization of services
             _ = recordingManager
             _ = transcriptionManager
@@ -126,7 +126,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             _ = obsidianService
         }
         
-        print("VoiceNoteCoordinator initialized - services will load on demand")
+        logger.debug("VoiceNoteCoordinator initialized - services will load on demand")
     }
     
     // This method is no longer needed - initialization moved to init()
@@ -170,14 +170,14 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                 await MainActor.run {
                     self.handleError(error)
                 }
-                print("Failed to start recording")
+                logger.error("Failed to start recording")
                 throw error
             }
         } catch {
             await MainActor.run {
                 self.handleError(AppError.recording(.recordingFailed(error.localizedDescription)))
             }
-            print("Error starting recording: \(error.localizedDescription)")
+            logger.error("Error starting recording: \(error.localizedDescription)")
             throw error
         }
     }
@@ -243,7 +243,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                 self.recordingManager.resetRecordingDuration()
                 self.handleError(AppError.recording(.recordingFailed(error.localizedDescription)))
             }
-            print("Error stopping recording: \(error.localizedDescription)")
+            logger.error("Error stopping recording: \(error.localizedDescription)")
             throw error
         }
     }
@@ -281,7 +281,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         // Property wrapper handles the deletion from keychain
         anthropicAPIKey = ""
         anthropicService.updateAPIKey("")
-        print("API key cleared successfully")
+        logger.info("API key cleared successfully")
     }
     
     /// Sets the Obsidian vault path
@@ -295,7 +295,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         // Property wrapper handles the deletion from keychain
         obsidianVaultPath = ""
         obsidianService.updateVaultPath("")
-        print("Vault path cleared successfully")
+        logger.info("Vault path cleared successfully")
     }
     
     /// Clears all sensitive data from the app (API keys, vault paths, bookmarks) asynchronously
@@ -318,9 +318,9 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         BookmarkManager.shared.clearObsidianVaultBookmark()
         
         if !errors.isEmpty {
-            print("Some errors occurred while clearing sensitive data: \(errors)")
+            logger.warning("Some errors occurred while clearing sensitive data: \(errors)")
         } else {
-            print("All sensitive data cleared successfully")
+            logger.info("All sensitive data cleared successfully")
         }
         
         return errors
@@ -363,7 +363,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                 // Update the voice note with the transcript
                 processedVoiceNote.originalTranscript = transcript
             } catch {
-                print("Error transcribing audio: \(error.localizedDescription)")
+                logger.error("Error transcribing audio: \(error.localizedDescription)")
                 // Continue with empty transcript
             }
             
@@ -385,7 +385,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                             self.handleError(appError)
                         }
                     }
-                    print("Error processing with Anthropic: \(error.localizedDescription)")
+                    logger.error("Error processing with Anthropic: \(error.localizedDescription)")
                 }
             } else if !processedVoiceNote.originalTranscript.isEmpty {
                 // If we have a transcript but no Anthropic API key, use the original transcript
@@ -398,17 +398,17 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                 do {
                     // Copy audio file to Obsidian vault
                     let audioSuccess = try await obsidianService.copyAudioFileToVault(from: recordingURL)
-                    print("Audio file copy result: \(audioSuccess)")
+                    logger.debug("Audio file copy result: \(audioSuccess)")
                     
                     // Create markdown note in Obsidian vault
                     let result = try await obsidianService.createVoiceNoteFile(for: processedVoiceNote)
-                    print("Note creation result: \(result.success), path: \(result.path ?? "none")")
+                    logger.info("Note creation result: \(result.success), path: \(result.path ?? "none")")
                     
                     if result.success, let path = result.path {
                         processedVoiceNote.obsidianPath = path
                     }
                 } catch {
-                    print("Error saving to Obsidian: \(error.localizedDescription)")
+                    logger.error("Error saving to Obsidian: \(error.localizedDescription)")
                 }
             }
             

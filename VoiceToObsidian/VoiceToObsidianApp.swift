@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 import AVFoundation
 import Combine
+import OSLog
 
 // Streamlined app implementation with proper resource management
 @main
@@ -12,9 +13,12 @@ struct VoiceToObsidianApp: App {
     // Basic UI state - minimal state to avoid memory pressure
     @State private var isFirstLaunch = true
     
+    // Logger for app-level logging
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "VoiceToObsidianApp")
+    
     init() {
         // Minimal app initialization
-        print("App initialization started - using lightweight approach")
+        logger.debug("App initialization started - using lightweight approach")
         
         // Reduce URLCache size for startup
         URLCache.shared = URLCache(memoryCapacity: 100_000, diskCapacity: 1_000_000, directory: nil)
@@ -31,7 +35,7 @@ struct VoiceToObsidianApp: App {
         NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, 
                                                object: nil, 
                                                queue: .main) { _ in
-            print("Memory warning received - performing cleanup")
+            logger.warning("Memory warning received - performing cleanup")
             
             // Force memory cleanup without capturing self
             DispatchQueue.global(qos: .utility).async {
