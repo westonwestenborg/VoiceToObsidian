@@ -335,13 +335,17 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         // Forward recording duration updates
         recordingManager.$recordingDuration
             .receive(on: RunLoop.main)
-            .assign(to: \.recordingDuration, on: self)
+            .sink { [weak self] duration in
+                self?.recordingDuration = duration
+            }
             .store(in: &cancellables)
         
         // Forward transcription progress updates
         transcriptionManager.$transcriptionProgress
             .receive(on: RunLoop.main)
-            .assign(to: \.transcriptionProgress, on: self)
+            .sink { [weak self] progress in
+                self?.transcriptionProgress = progress
+            }
             .store(in: &cancellables)
     }
     

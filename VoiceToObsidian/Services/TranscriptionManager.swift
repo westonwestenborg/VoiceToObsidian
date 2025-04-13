@@ -121,7 +121,8 @@ class TranscriptionManager: ObservableObject {
             }
             
             // Request authorization for speech recognition
-            SFSpeechRecognizer.requestAuthorization { status in
+            SFSpeechRecognizer.requestAuthorization { [weak self] status in
+                guard let self = self else { return }
                 switch status {
                 case .authorized:
                     self.logger.info("Speech recognition authorization granted")
@@ -257,7 +258,8 @@ class TranscriptionManager: ObservableObject {
                                     newRequest.taskHint = .confirmation // Try a different hint
                                     
                                     // Wait a moment before retrying
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                                        guard let self = self else { return }
                                         self.recognitionTask = recognizer.recognitionTask(with: newRequest) { [weak self] result, retryError in
                                             // Handle the retry result
                                             if let result = result, result.isFinal, !result.bestTranscription.formattedString.isEmpty {
@@ -294,7 +296,8 @@ class TranscriptionManager: ObservableObject {
                                     self.recognitionTask = nil
                                     
                                     // Wait a moment before retrying
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                                        guard let self = self else { return }
                                         startRecognitionTask()
                                     }
                                     return

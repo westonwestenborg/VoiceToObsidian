@@ -50,6 +50,9 @@ class AppCoordinator: ObservableObject, ErrorHandling {
                 // Add a small delay to ensure UI is fully rendered
                 try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
                 
+                // Since Task doesn't support capture lists, we need to be careful
+                // about potential retain cycles in the following code
+                
                 do {
                     try await self.initializeEssentialServicesAsync()
                 } catch let error as AppError {

@@ -5,3 +5,6 @@
 5. Use modern Swift best practices (concurrency, async/await, property wrappers, etc.)
 6. Use OSLog for structured logging
 7. If we are refactoring or removing code, remove all comments, deprecated code, logic, etc. so that we can maintain a clean codebase
+8. When editing major services or utilities, be sure to check the corresponding tests to ensure they are still valid
+9. If it would be helpful to have me do something outside of what you can see to help you debug, please let me know. I am eager to help.
+10. For memory management, always use weak references in closures, prefer block-based notification APIs, avoid .assign(to:on:self), and ensure proper cleanup in deinit to prevent retain cycles.

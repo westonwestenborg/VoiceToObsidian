@@ -29,35 +29,39 @@ class RecordingManager: ObservableObject {
     private func setupNotifications() {
         // Audio session interruption notifications
         NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleAudioSessionInterruption),
-            name: AVAudioSession.interruptionNotification,
-            object: nil
-        )
+            forName: AVAudioSession.interruptionNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            self?.handleAudioSessionInterruption(notification: notification)
+        }
         
         // App entering background notification
         NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleAppDidEnterBackground),
-            name: UIApplication.didEnterBackgroundNotification,
-            object: nil
-        )
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            self?.handleAppDidEnterBackground(notification: notification)
+        }
         
         // App becoming active notification
         NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleAppWillEnterForeground),
-            name: UIApplication.willEnterForegroundNotification,
-            object: nil
-        )
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            self?.handleAppWillEnterForeground(notification: notification)
+        }
         
         // Route change notifications (e.g., headphones connected/disconnected)
         NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleAudioRouteChange),
-            name: AVAudioSession.routeChangeNotification,
-            object: nil
-        )
+            forName: AVAudioSession.routeChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            self?.handleAudioRouteChange(notification: notification)
+        }
     }
     
     deinit {
