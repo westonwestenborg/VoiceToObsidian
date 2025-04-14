@@ -49,7 +49,7 @@ The app's functionality is implemented through several service classes:
 
 ### RecordingManager
 
-Handles audio recording with background support, managing the AVAudioSession and AVAudioRecorder.
+Handles audio recording with background support, managing the AVAudioSession and AVAudioRecorder. Uses CADisplayLink with optimized dispatch queues to ensure the recording timer updates reliably during all UI interactions, including scrolling.
 
 ### TranscriptionManager
 

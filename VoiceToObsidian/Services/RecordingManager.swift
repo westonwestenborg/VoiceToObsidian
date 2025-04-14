@@ -70,8 +70,9 @@ class RecordingManager: ObservableObject {
     /// The timestamp when the current recording started.
     private var recordingStartTime: Date?
     
-    /// Timer used to update the recording duration.
-    private var durationTimer: Timer?
+    /// Display link used to update the recording duration.
+    /// This is more reliable than Timer during scrolling and other UI interactions.
+    private var displayLink: CADisplayLink?
     
     /// Background task identifier for continuing recording when app is in background.
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
@@ -154,7 +155,8 @@ class RecordingManager: ObservableObject {
                 _ = try? await stopRecordingAsync()
             }
         }
-        durationTimer?.invalidate()
+        displayLink?.invalidate()
+        displayLink = nil
         
         // Remove notification observers
         NotificationCenter.default.removeObserver(self)
@@ -327,9 +329,9 @@ class RecordingManager: ObservableObject {
         audioRecorder = nil
         
         // Stop the duration timer properly
-        if let timer = durationTimer {
-            timer.invalidate()
-            durationTimer = nil
+        if let link = displayLink {
+            link.invalidate()
+            displayLink = nil
         }
         
         // End background task since recording is stopped
@@ -471,21 +473,14 @@ class RecordingManager: ObservableObject {
                 // Update state first for immediate UI feedback
                 self.isRecording = true
                 
-                // Then set up the timer for ongoing updates
-                self.durationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-                    guard let self = self, let recorder = self.audioRecorder else { return }
-                    self.recordingDuration = recorder.currentTime
-                    
-                    // Update metering if needed
-                    if recorder.isMeteringEnabled {
-                        recorder.updateMeters()
-                    }
-                }
+                // Set up a display link for more reliable updates during scrolling
+                self.displayLink = CADisplayLink(target: self, selector: #selector(self.updateRecordingDuration))
+                self.displayLink?.preferredFramesPerSecond = 10  // Update approximately 10 times per second
                 
-                // Ensure the timer is added to the main run loop
-                if let timer = self.durationTimer {
-                    RunLoop.main.add(timer, forMode: .common)
-                }
+                // Add to common, tracking, and default modes to ensure it works during all UI interactions
+                self.displayLink?.add(to: .main, forMode: .common)
+                self.displayLink?.add(to: .main, forMode: .tracking)
+                self.displayLink?.add(to: .main, forMode: .default)
             }
             
             logger.info("Recording started successfully")
@@ -644,6 +639,34 @@ class RecordingManager: ObservableObject {
             }
         default:
             break
+        }
+    }
+    
+    /// Updates the recording duration using the current time from the audio recorder.
+    ///
+    /// This method is called by the CADisplayLink at regular intervals during recording.
+    /// It updates the published recordingDuration property with the current time from the
+    /// audio recorder, which ensures the UI stays updated even during scrolling and other
+    /// UI interactions.
+    ///
+    /// The implementation uses a barrier flag with DispatchQueue.main.async to ensure
+    /// updates are not deferred during UI-intensive operations like scrolling.
+    @objc private func updateRecordingDuration() {
+        guard let recorder = audioRecorder else { return }
+        
+        // Get the current recording time
+        let currentTime = recorder.currentTime
+        
+        // Update the recording duration directly on the main thread
+        // Using DispatchQueue.main.async with barrier to ensure the update is not deferred
+        DispatchQueue.main.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            self.recordingDuration = currentTime
+            
+            // Update metering if needed
+            if recorder.isMeteringEnabled {
+                recorder.updateMeters()
+            }
         }
     }
 }
