@@ -208,6 +208,8 @@ struct RecordButton: View {
             return "\(seconds) second\(seconds == 1 ? "" : "s")"
         }
     }
+    
+
 }
 
 

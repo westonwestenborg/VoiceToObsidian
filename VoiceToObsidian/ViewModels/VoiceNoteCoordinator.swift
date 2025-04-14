@@ -662,7 +662,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     private func setupBindings() {
         // Forward recording duration updates
         recordingManager.$recordingDuration
-            .receive(on: RunLoop.main)
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] duration in
                 self?.recordingDuration = duration
             }
