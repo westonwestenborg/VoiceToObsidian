@@ -3,20 +3,69 @@ import SwiftUI
 import Combine
 import OSLog
 
-/// Manages the lifecycle of app services with deferred initialization
+/// Coordinates the application lifecycle and manages service initialization.
+///
+/// `AppCoordinator` serves as the central coordinator for the Voice to Obsidian app,
+/// managing the lifecycle of various services and providing a deferred initialization pattern
+/// to optimize app startup time. It handles:
+/// - App state management
+/// - Lazy initialization of services
+/// - Coordination between app components
+/// - Centralized error handling
+///
+/// The coordinator implements the `ErrorHandling` protocol to provide consistent error
+/// management throughout the app. It is marked with `@MainActor` to ensure all UI updates
+/// and state changes happen on the main thread.
+///
+/// ## Architecture
+/// This class follows the Coordinator pattern, acting as the central point of coordination
+/// for the app's MVVM architecture. Child coordinators handle specific feature domains.
+///
+/// ## Example Usage
+/// ```swift
+/// let appCoordinator = AppCoordinator()
+/// appCoordinator.startInitialization()
+///
+/// // Later, when user wants to record
+/// appCoordinator.prepareForRecording()
+/// ```
 @MainActor
 class AppCoordinator: ObservableObject, ErrorHandling {
-    // App state
+    /// The current state of the application.
+    ///
+    /// This published property reflects the app's current lifecycle state and is used by
+    /// UI components to determine what to display. It progresses through the following states:
+    /// - `.initializing`: App is starting up
+    /// - `.uiReady`: UI is ready but services may not be fully initialized
+    /// - `.ready`: App is fully initialized and ready for user interaction
     @Published var appState: AppState = .initializing
     
-    // Error handling properties
+    // MARK: - Error Handling Properties
+    
+    /// The current error state of the application, if any.
+    ///
+    /// When an error occurs in the app, this property is updated with the error details.
+    /// UI components observe this property to display appropriate error messages.
     @Published var errorState: AppError?
+    
+    /// Indicates whether an error message should be displayed to the user.
+    ///
+    /// This property controls the visibility of error UI components.
     @Published var isShowingError: Bool = false
     
-    // Service references - all lazy to defer creation
+    // MARK: - Service References
+    
+    /// Private backing field for the voice note coordinator.
+    ///
+    /// This property is nil until the coordinator is first accessed, implementing lazy initialization.
     private var _voiceNoteCoordinator: VoiceNoteCoordinator?
     
-    // Public accessor with lazy initialization
+    /// Provides access to the voice note coordinator with lazy initialization.
+    ///
+    /// This property creates the VoiceNoteCoordinator on first access, implementing
+    /// a deferred initialization pattern to optimize app startup time and resource usage.
+    /// 
+    /// - Returns: The initialized VoiceNoteCoordinator instance
     var voiceNoteCoordinator: VoiceNoteCoordinator {
         if _voiceNoteCoordinator == nil {
             logger.debug("Lazily creating VoiceNoteCoordinator on first access")
@@ -25,20 +74,42 @@ class AppCoordinator: ObservableObject, ErrorHandling {
         return _voiceNoteCoordinator!
     }
     
-    // Logger for AppCoordinator
+    /// Logger for structured logging of coordinator operations.
+    ///
+    /// Uses OSLog for efficient and structured logging throughout the coordinator lifecycle.
     private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "AppCoordinator")
     
+    /// Initializes a new AppCoordinator instance.
+    ///
+    /// This initializer is lightweight and doesn't set up any services immediately.
+    /// Services are created on-demand when accessed to optimize app startup time.
     init() {
         logger.debug("AppCoordinator initialized - NO services created yet")
     }
     
-    /// Handles errors from child coordinators
+    /// Handles errors propagated from child coordinators.
+    ///
+    /// This method provides a centralized error handling mechanism for errors that occur
+    /// in child coordinators. It forwards the errors to the AppCoordinator's own error
+    /// handling system.
+    ///
+    /// - Parameter error: The error from a child coordinator
     func handleChildError(_ error: AppError) {
         // Forward errors to our own error handling
         handleError(error)
     }
     
-    /// Start the app initialization sequence
+    /// Starts the application initialization sequence.
+    ///
+    /// This method implements a staged initialization approach:
+    /// 1. First, it updates the app state to indicate the UI is ready
+    /// 2. Then it schedules the initialization of essential services after a small delay
+    ///    to ensure the UI is fully rendered and responsive
+    ///
+    /// This approach prioritizes UI responsiveness over immediate service availability,
+    /// creating a better user experience during app startup.
+    ///
+    /// - Note: Services are initialized asynchronously to avoid blocking the main thread
     func startInitialization() {
         // Initially just show UI, don't create any services
         appState = .uiReady
@@ -60,7 +131,17 @@ class AppCoordinator: ObservableObject, ErrorHandling {
         }
     }
     
-    /// Initialize only the absolutely necessary services for basic app function
+    /// Initializes only the absolutely necessary services for basic app functionality.
+    ///
+    /// This method implements the deferred initialization pattern. Instead of creating all
+    /// services at startup, it:
+    /// 1. Sets up error handling between coordinators that are already initialized
+    /// 2. Updates the app state to indicate readiness
+    ///
+    /// Services are created on-demand when accessed, optimizing resource usage and startup time.
+    ///
+    /// - Throws: An error if initialization fails
+    /// - Note: This method is called asynchronously from `startInitialization()`
     private func initializeEssentialServicesAsync() async throws {
         logger.debug("Initializing essential services asynchronously")
         
@@ -85,7 +166,16 @@ class AppCoordinator: ObservableObject, ErrorHandling {
         }
     }
     
-    /// Prepare for recording (called when user wants to record)
+    /// Prepares the app for recording functionality.
+    ///
+    /// This method is called when the user indicates they want to start recording.
+    /// It ensures that all necessary services for recording are initialized before
+    /// the recording UI is presented.
+    ///
+    /// The method leverages the lazy initialization pattern by simply accessing
+    /// the `voiceNoteCoordinator` property, which triggers its creation if needed.
+    ///
+    /// - Note: This method should be called before showing recording UI to the user
     func prepareForRecording() {
         // This is where we'd initialize recording-specific services
         // For now, just accessing voiceNoteCoordinator will initialize it
@@ -93,16 +183,35 @@ class AppCoordinator: ObservableObject, ErrorHandling {
         _ = voiceNoteCoordinator
     }
     
-    /// Clean up resources when app is backgrounded or terminated
+    /// Cleans up resources when the app is backgrounded or terminated.
+    ///
+    /// This method ensures proper cleanup of all services and resources when the app
+    /// is about to enter the background or be terminated. It delegates cleanup to
+    /// each child coordinator.
+    ///
+    /// - Note: This should be called from the app delegate's applicationWillResignActive
+    ///   or similar lifecycle methods
     func cleanup() {
         logger.debug("Cleaning up app resources")
         _voiceNoteCoordinator?.cleanup()
     }
 }
 
-/// Represents the current state of the app
+/// Represents the current state of the application lifecycle.
+///
+/// This enum defines the possible states the app can be in during its lifecycle,
+/// providing a clear indication of readiness for different operations.
+///
+/// - `initializing`: The app is starting up and initializing core components
+/// - `uiReady`: The UI is ready to be displayed, but background services may still be initializing
+/// - `ready`: The app is fully initialized and ready for all operations
 enum AppState: Equatable {
+    /// The app is in the process of starting up and initializing core components.
     case initializing
+    
+    /// The UI is ready to be displayed, but background services may still be initializing.
     case uiReady
+    
+    /// The app is fully initialized and ready for all operations.
     case ready
 }

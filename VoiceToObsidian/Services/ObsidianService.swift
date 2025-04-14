@@ -2,25 +2,93 @@ import Foundation
 import Security
 import OSLog
 
+/// A service that manages interactions with the Obsidian vault.
+///
+/// `ObsidianService` provides functionality for creating and managing notes in an Obsidian vault.
+/// It handles operations such as:
+/// - Creating markdown files for voice notes
+/// - Copying audio files to the vault's attachments directory
+/// - Managing vault path configuration
+/// - Handling security-scoped bookmark access
+///
+/// This service works closely with the `SecurityManager` to ensure proper access to the
+/// Obsidian vault directory across app launches.
+///
+/// ## Example Usage
+/// ```swift
+/// let obsidianService = ObsidianService(vaultPath: "/path/to/vault")
+///
+/// // Save a voice note to the Obsidian vault
+/// do {
+///     let result = try await obsidianService.createVoiceNoteFile(for: voiceNote)
+///     if result.success {
+///         print("Note saved at: \(result.path ?? "")")
+///     }
+/// } catch {
+///     print("Failed to save note: \(error)")
+/// }
+///
+/// // Copy an audio file to the vault
+/// do {
+///     let success = try await obsidianService.copyAudioFileToVault(from: audioURL)
+///     if success {
+///         print("Audio file copied successfully")
+///     }
+/// } catch {
+///     print("Failed to copy audio file: \(error)")
+/// }
+/// ```
 class ObsidianService {
+    /// The file manager used for file operations.
     private let fileManager = FileManager.default
     
-    // Path to the Obsidian vault
+    /// The path to the Obsidian vault directory.
+    ///
+    /// This path is used as a fallback when security-scoped bookmarks are not available.
+    /// It can be updated using the `updateVaultPath(_:)` method.
     private var vaultPath: String
     
+    /// Initializes a new ObsidianService instance.
+    ///
+    /// - Parameter vaultPath: The path to the Obsidian vault directory
     init(vaultPath: String) {
         self.vaultPath = vaultPath
     }
     
     // MARK: - Public Methods
     
-    // Logger for ObsidianService
+    /// Logger for structured logging of Obsidian operations.
+    ///
+    /// Uses OSLog for efficient and structured logging of file operations and errors.
     private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "ObsidianService")
     
-    /// Creates a new note in the Obsidian vault with the voice note content
-    /// - Parameter voiceNote: The voice note to save
-    /// - Returns: A tuple containing success status and path to the created note (if successful)
-    /// - Throws: AppError if the operation fails
+    /// Creates a new note in the Obsidian vault with the voice note content.
+    ///
+    /// This method creates a markdown file in the Obsidian vault's "Voice Notes" directory
+    /// containing the formatted content of the provided voice note. It handles:
+    /// - Accessing the vault using security-scoped bookmarks
+    /// - Creating necessary directories if they don't exist
+    /// - Generating markdown content with proper formatting
+    /// - Writing the file to disk
+    /// - Error handling for various file system issues
+    ///
+    /// - Parameter voiceNote: The voice note to save to Obsidian
+    /// - Returns: A tuple containing:
+    ///   - `success`: Boolean indicating whether the operation succeeded
+    ///   - `path`: The relative path to the created note within the vault, if successful
+    /// - Throws: `AppError.obsidian` with details about what went wrong
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     let result = try await obsidianService.createVoiceNoteFile(for: voiceNote)
+    ///     if result.success {
+    ///         print("Note created at: \(result.path ?? "")")
+    ///     }
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     func createVoiceNoteFile(for voiceNote: VoiceNote) async throws -> (success: Bool, path: String?) {
         logger.debug("Creating voice note file in Obsidian vault at: \(self.vaultPath)")
         
@@ -104,17 +172,49 @@ class ObsidianService {
         }
     }
     
-    /// Updates the configuration with a new vault path
-    /// - Parameter path: The path to the Obsidian vault
+    /// Updates the configuration with a new vault path.
+    ///
+    /// This method updates the path to the Obsidian vault directory. This path is used
+    /// as a fallback when security-scoped bookmarks are not available or cannot be resolved.
+    ///
+    /// - Parameter path: The new path to the Obsidian vault directory
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Update the vault path after user selects a new directory
+    /// obsidianService.updateVaultPath("/Users/username/Documents/MyObsidianVault")
+    /// ```
     func updateVaultPath(_ path: String) {
         vaultPath = path
         logger.debug("Updated Obsidian vault path")
     }
     
-    /// Copies the audio file to the Obsidian vault using async/await
-    /// - Parameter audioURL: The URL of the audio file
-    /// - Returns: A boolean indicating success
-    /// - Throws: AppError if the operation fails
+    /// Copies the audio file to the Obsidian vault's attachments directory.
+    ///
+    /// This method copies an audio file from the provided URL to the Obsidian vault's
+    /// "Attachments" directory. It handles:
+    /// - Accessing the vault using security-scoped bookmarks
+    /// - Creating the attachments directory if it doesn't exist
+    /// - Checking for and handling existing files with the same name
+    /// - Copying the file with proper error handling
+    ///
+    /// - Parameter audioURL: The URL of the audio file to copy
+    /// - Returns: A boolean indicating whether the operation succeeded
+    /// - Throws: `AppError.obsidian` with details about what went wrong
+    ///
+    /// - Important: This method requires the source audio file to exist at the provided URL.
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     let success = try await obsidianService.copyAudioFileToVault(from: audioURL)
+    ///     if success {
+    ///         print("Audio file copied successfully")
+    ///     }
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     func copyAudioFileToVault(from audioURL: URL) async throws -> Bool {
         logger.debug("Copying audio file from \(audioURL.path) to Obsidian vault")
         
@@ -204,8 +304,13 @@ class ObsidianService {
     
     // MARK: - Private Helper Methods
     
-    /// Formats a time interval as a string
-    /// - Parameter duration: The duration to format
+    /// Formats a time interval as a string in mm:ss format.
+    ///
+    /// This method converts a time interval (in seconds) to a human-readable
+    /// string format (minutes:seconds). It uses the centralized DateFormatUtil
+    /// to ensure consistent formatting throughout the app.
+    ///
+    /// - Parameter duration: The duration to format (in seconds)
     /// - Returns: A formatted string (e.g., "2:35")
     private func formatDuration(_ duration: TimeInterval) -> String {
         return DateFormatUtil.shared.formatTimeShort(duration)
@@ -213,9 +318,38 @@ class ObsidianService {
     
     // MARK: - Private Methods
     
-    /// Generates markdown content for a voice note
-    /// - Parameter voiceNote: The voice note to generate content for
-    /// - Returns: Markdown content as a string
+    /// Generates formatted markdown content for a voice note.
+    ///
+    /// This method creates properly formatted markdown content for the given voice note,
+    /// including:
+    /// - YAML frontmatter with metadata (date, duration, daily note reference)
+    /// - An embedded audio player for the recording
+    /// - A backlink to the daily note
+    /// - The cleaned transcript with proper formatting
+    ///
+    /// The generated markdown follows Obsidian's conventions for embedding media,
+    /// creating backlinks, and structuring content. The YAML frontmatter enables
+    /// structured queries and filtering in Obsidian.
+    ///
+    /// - Parameter voiceNote: The voice note to generate markdown for
+    /// - Returns: A string containing the formatted markdown content
+    ///
+    /// ## Example Output
+    /// ```markdown
+    /// ---
+    /// date: 2023-05-15 14:30:25
+    /// duration: 2:45
+    /// daily: "2023-05-15"
+    /// ---
+    ///
+    /// ![[Attachments/recording.m4a]]
+    ///
+    /// > Related to daily note: [[2023-05-15]]
+    ///
+    /// ## Transcript
+    ///
+    /// This is the cleaned transcript text of the voice note...
+    /// ```
     private func generateMarkdownContent(for voiceNote: VoiceNote) -> String {
         // Get today's date in the format YYYY-MM-DD for linking to daily note
         let dailyNoteDate = DateFormatUtil.shared.formatTimestamp(date: Date()).prefix(10)

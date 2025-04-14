@@ -3,28 +3,83 @@ import Speech
 import Combine
 import OSLog
 
-/// Manages speech recognition and transcription
+/// A manager that handles speech recognition and transcription of audio files.
+///
+/// `TranscriptionManager` provides functionality to transcribe audio files into text using
+/// Apple's Speech Recognition framework. It handles the entire transcription process including:
+/// - Setting up speech recognition services
+/// - Managing authorization requests
+/// - Processing audio files
+/// - Providing progress updates
+/// - Error handling
+///
+/// The class is designed to work with the MVVM architecture and is marked with `@MainActor`
+/// to ensure all UI updates happen on the main thread.
+///
+/// - Important: This class requires microphone permission to function properly.
+///
+/// ## Example Usage
+/// ```swift
+/// let transcriptionManager = TranscriptionManager()
+/// 
+/// // Transcribe an audio file
+/// do {
+///     let transcript = try await transcriptionManager.transcribeAudioFileAsync(at: audioFileURL)
+///     print("Transcription: \(transcript)")
+/// } catch {
+///     print("Transcription failed: \(error)")
+/// }
+/// ```
 @MainActor
 class TranscriptionManager: ObservableObject {
-    // Published properties for UI updates
+    /// Indicates whether transcription is currently in progress.
+    ///
+    /// This property is observed by UI components to show appropriate loading states.
     @Published var isTranscribing = false
+    
+    /// The progress of the current transcription operation, ranging from 0.0 to 1.0.
+    ///
+    /// This property is updated during transcription and can be used to display a progress indicator.
     @Published var transcriptionProgress: Float = 0
     
-    // Private properties
+    // MARK: - Private Properties
+    
+    /// The speech recognizer instance used for transcription.
+    ///
+    /// This is lazily initialized when needed to conserve resources.
     private var speechRecognizer: SFSpeechRecognizer?
+    
+    /// The current recognition request being processed.
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    
+    /// The current recognition task.
     private var recognitionTask: SFSpeechRecognitionTask?
+    
+    /// Stores the most recent partial transcription result.
+    ///
+    /// This is used to track progress during transcription.
     private var latestPartialTranscription = ""
     
-    // Logger for TranscriptionManager
+    /// Logger for structured logging of transcription operations.
+    ///
+    /// Uses OSLog for efficient and structured logging throughout the transcription process.
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "TranscriptionManager")
     
-    // Initializer
+    // MARK: - Initialization
+    
+    /// Initializes a new TranscriptionManager instance.
+    ///
+    /// This initializer is lightweight and doesn't set up speech recognition immediately.
+    /// Speech recognition resources are only initialized when needed to conserve system resources.
     init() {
         logger.debug("TranscriptionManager initialized (lightweight)")
         // DO NOT initialize speech recognition until needed
     }
     
+    /// Cleans up resources when the TranscriptionManager is deallocated.
+    ///
+    /// This method handles proper cleanup of speech recognition resources and updates UI state.
+    /// - Note: Since this is a `@MainActor` class, we need special handling in deinit.
     deinit {
         // We can't directly call a MainActor-isolated method from deinit
         // Instead, we'll clean up the resources directly that don't require MainActor isolation
@@ -41,10 +96,29 @@ class TranscriptionManager: ObservableObject {
     
     // MARK: - Public Methods
     
-    /// Transcribes an audio file using async/await
+    /// Transcribes an audio file using async/await pattern.
+    ///
+    /// This method handles the entire transcription process including:
+    /// - Checking and requesting speech recognition authorization
+    /// - Setting up the recognition request
+    /// - Processing the audio file
+    /// - Providing progress updates through published properties
+    ///
     /// - Parameter audioURL: The URL of the audio file to transcribe
-    /// - Returns: The transcript text if successful
-    /// - Throws: Error if transcription fails
+    /// - Returns: The complete transcript text if successful
+    /// - Throws: An error if transcription fails, including authorization errors or processing errors
+    ///
+    /// - Note: This method updates `isTranscribing` and `transcriptionProgress` properties during execution
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     let transcript = try await transcriptionManager.transcribeAudioFileAsync(at: audioFileURL)
+    ///     // Use transcript
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     func transcribeAudioFileAsync(at audioURL: URL) async throws -> String {
         logger.info("Starting async transcription of file: \(audioURL.path)")
         
@@ -77,7 +151,18 @@ class TranscriptionManager: ObservableObject {
         return transcript
     }
     
-    /// Cancels any ongoing transcription
+    /// Cancels any ongoing transcription operation.
+    ///
+    /// This method safely cancels the current transcription process, cleans up resources,
+    /// and updates the UI state. It's safe to call even if no transcription is in progress.
+    ///
+    /// - Note: This method is idempotent and can be called multiple times without side effects.
+    ///
+    /// ## Example
+    /// ```swift
+    /// // User taps cancel button
+    /// transcriptionManager.cancelTranscription()
+    /// ```
     func cancelTranscription() {
         // Only log if there's an active task being cancelled
         let hadActiveTask = recognitionTask != nil
@@ -98,6 +183,13 @@ class TranscriptionManager: ObservableObject {
     
     // MARK: - Private Methods
     
+    /// Sets up the speech recognition system.
+    ///
+    /// This method initializes the speech recognizer with the US English locale and
+    /// requests authorization for speech recognition. It uses an autoreleasepool for
+    /// better memory management.
+    ///
+    /// - Note: This is called lazily when needed rather than at initialization time.
     private func setupSpeechRecognition() {
         // Use autoreleasepool to help with memory management
         autoreleasepool {
@@ -139,10 +231,20 @@ class TranscriptionManager: ObservableObject {
         }
     }
     
-    /// Performs transcription of an audio file asynchronously
+    /// Performs the core transcription process asynchronously.
+    ///
+    /// This internal method handles the detailed work of transcribing an audio file, including:
+    /// - Verifying the audio file exists and has content
+    /// - Creating and configuring the speech recognition request
+    /// - Processing the audio and collecting results
+    /// - Handling timeouts and errors
+    /// - Updating progress information
+    ///
     /// - Parameter audioURL: URL of the audio file to transcribe
-    /// - Returns: The transcript text
-    /// - Throws: Error if transcription fails
+    /// - Returns: The complete transcript text
+    /// - Throws: Error if transcription fails for any reason
+    ///
+    /// - Important: This method should only be called from `transcribeAudioFileAsync(at:)`
     private func performTranscriptionAsync(of audioURL: URL) async throws -> String {
         // Verify the audio file exists and has content
         let fileManager = FileManager.default

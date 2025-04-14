@@ -1,20 +1,78 @@
 import Foundation
 import OSLog
 
+/// A service that interfaces with the Anthropic Claude API to process voice transcripts.
+///
+/// `AnthropicService` provides functionality to clean and format raw voice transcripts
+/// using Anthropic's Claude AI model. It handles communication with the Anthropic API,
+/// including request formatting, error handling, and response parsing.
+///
+/// The service can process transcripts to:
+/// - Remove filler words (um, uh, like, etc.)
+/// - Fix grammatical errors and repetitions
+/// - Format text in a clear, readable way
+/// - Generate appropriate titles based on content
+///
+/// - Important: This service requires a valid Anthropic API key to function.
+///
+/// ## Example Usage
+/// ```swift
+/// let anthropicService = AnthropicService(apiKey: "your-api-key")
+///
+/// // Process a transcript
+/// do {
+///     let cleanedTranscript = try await anthropicService.processTranscriptAsync(transcript: rawTranscript)
+///     print("Cleaned transcript: \(cleanedTranscript)")
+/// } catch {
+///     print("Failed to process transcript: \(error)")
+/// }
+///
+/// // Process a transcript and get a title
+/// do {
+///     let result = try await anthropicService.processTranscriptWithTitleAsync(transcript: rawTranscript)
+///     print("Title: \(result.title)")
+///     print("Cleaned transcript: \(result.transcript)")
+/// } catch {
+///     print("Failed to process transcript: \(error)")
+/// }
+/// ```
 class AnthropicService {
+    /// The API key used for authenticating with the Anthropic API.
+    ///
+    /// This key can be updated using the `updateAPIKey(_:)` method.
     private var apiKey: String
+    
+    /// The base URL for the Anthropic API messages endpoint.
+    ///
+    /// This is the endpoint used for all API requests to Claude.
     private let baseURL = "https://api.anthropic.com/v1/messages"
     
-    // Logger for AnthropicService
+    /// Logger for structured logging of API operations.
+    ///
+    /// Uses OSLog for efficient and structured logging of API requests, responses, and errors.
     private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "AnthropicService")
     
+    /// Initializes a new AnthropicService instance.
+    ///
+    /// - Parameter apiKey: The Anthropic API key to use for authentication. Can be empty
+    ///                     and set later using `updateAPIKey(_:)`. Default is an empty string.
     init(apiKey: String = "") {
         self.apiKey = apiKey
         logger.debug("AnthropicService initialized")
     }
     
-    /// Updates the API key
-    /// - Parameter key: The Anthropic API key
+    /// Updates the API key used for authentication with the Anthropic API.
+    ///
+    /// This method allows changing the API key after initialization, which is useful
+    /// when the key is obtained from user input or loaded from secure storage.
+    ///
+    /// - Parameter key: The new Anthropic API key to use
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Update API key from settings
+    /// anthropicService.updateAPIKey(userSettings.anthropicApiKey)
+    /// ```
     func updateAPIKey(_ key: String) {
         self.apiKey = key
         logger.debug("API key updated")
@@ -22,9 +80,16 @@ class AnthropicService {
     
 
     
-    /// Parses the LLM response to extract the title and cleaned transcript
-    /// - Parameter response: The raw response from the LLM
-    /// - Returns: A tuple containing the title and cleaned transcript
+    /// Parses the LLM response to extract the title and cleaned transcript.
+    ///
+    /// This method parses the formatted response from Claude to extract the title
+    /// and cleaned transcript sections. It expects the response to follow the format
+    /// specified in the prompt, with "TITLE:" and "CLEANED TRANSCRIPT:" markers.
+    ///
+    /// - Parameter response: The raw text response from the LLM
+    /// - Returns: A tuple containing:
+    ///   - `title`: The extracted title, or nil if not found
+    ///   - `cleanedTranscript`: The extracted cleaned transcript, or nil if not found
     private func parseResponse(_ response: String) -> (String?, String?) {
         // Extract title
         var title: String? = nil
@@ -44,10 +109,31 @@ class AnthropicService {
     
     // MARK: - Async Methods
     
-    /// Processes a transcript with the Anthropic Claude API using async/await
+    /// Processes a transcript with the Anthropic Claude API using async/await pattern.
+    ///
+    /// This method sends the original transcript to the Anthropic Claude API for processing
+    /// and returns the cleaned and formatted transcript. It handles the entire API communication
+    /// process including:
+    /// - Creating the API request with appropriate headers and body
+    /// - Sending the request and handling responses
+    /// - Parsing the response to extract the cleaned transcript
+    /// - Error handling for various failure scenarios
+    ///
     /// - Parameter transcript: The original transcript to process
-    /// - Returns: The cleaned transcript
-    /// - Throws: AppError if processing fails
+    /// - Returns: The cleaned and formatted transcript
+    /// - Throws: `AppError.anthropic` with details about what went wrong
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     let cleanedTranscript = try await anthropicService.processTranscriptAsync(transcript: rawTranscript)
+    ///     // Use the cleaned transcript
+    /// } catch let error as AppError {
+    ///     // Handle specific app error
+    /// } catch {
+    ///     // Handle other errors
+    /// }
+    /// ```
     func processTranscriptAsync(transcript: String) async throws -> String {
         logger.debug("Processing transcript with Anthropic API using async/await")
         
@@ -162,10 +248,28 @@ class AnthropicService {
         }
     }
     
-    /// Processes a transcript with the Anthropic Claude API using async/await and returns both title and transcript
+    /// Processes a transcript with the Anthropic Claude API and returns both title and transcript.
+    ///
+    /// This method is similar to `processTranscriptAsync(transcript:)` but returns both the
+    /// cleaned transcript and a suggested title for the note. It uses the same API call but
+    /// parses the response differently to extract both pieces of information.
+    ///
     /// - Parameter transcript: The original transcript to process
-    /// - Returns: A tuple containing the cleaned transcript and suggested title
-    /// - Throws: AppError if processing fails
+    /// - Returns: A tuple containing:
+    ///   - `transcript`: The cleaned and formatted transcript
+    ///   - `title`: A suggested title for the note based on its content
+    /// - Throws: `AppError.anthropic` with details about what went wrong
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     let result = try await anthropicService.processTranscriptWithTitleAsync(transcript: rawTranscript)
+    ///     print("Title: \(result.title)")
+    ///     print("Transcript: \(result.transcript)")
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     func processTranscriptWithTitleAsync(transcript: String) async throws -> (transcript: String, title: String) {
         logger.debug("Processing transcript with title using Anthropic API")
         

@@ -4,29 +4,102 @@ import Combine
 import SwiftUI
 import OSLog
 
-/// Manages audio recording functionality with background support
+/// A manager that handles audio recording functionality with background processing support.
+///
+/// `RecordingManager` provides comprehensive audio recording capabilities including:
+/// - Starting and stopping recordings
+/// - Managing recording sessions and permissions
+/// - Handling audio interruptions (calls, other apps)
+/// - Supporting background recording when the app is minimized
+/// - Tracking recording duration
+/// - Proper resource management
+///
+/// The class is designed to work within the MVVM architecture pattern and is marked with
+/// `@MainActor` to ensure all UI updates happen on the main thread.
+///
+/// - Important: This class requires microphone permission to function properly.
+///
+/// ## Example Usage
+/// ```swift
+/// let recordingManager = RecordingManager()
+///
+/// // Start recording
+/// do {
+///     let success = try await recordingManager.startRecordingAsync()
+///     if success {
+///         print("Recording started successfully")
+///     }
+/// } catch {
+///     print("Failed to start recording: \(error)")
+/// }
+///
+/// // Later, stop recording
+/// do {
+///     let voiceNote = try await recordingManager.stopRecordingAsync()
+///     if let voiceNote = voiceNote {
+///         print("Recording saved: \(voiceNote.title)")
+///     }
+/// } catch {
+///     print("Failed to stop recording: \(error)")
+/// }
+/// ```
 @MainActor
 class RecordingManager: ObservableObject {
-    // Published properties for UI updates
+    /// Indicates whether audio recording is currently in progress.
+    ///
+    /// This property is observed by UI components to show appropriate recording states.
     @Published var isRecording = false
+    
+    /// The duration of the current recording in seconds.
+    ///
+    /// This property is continuously updated while recording is in progress and can be
+    /// used to display a timer in the UI.
     @Published var recordingDuration: TimeInterval = 0
     
-    // Private properties
+    // MARK: - Private Properties
+    
+    /// The audio recorder instance used for recording.
     private var audioRecorder: AVAudioRecorder?
+    
+    /// Reference to the shared audio session.
     private var recordingSession: AVAudioSession?
+    
+    /// The URL where the current recording is being saved.
     private var currentRecordingURL: URL?
+    
+    /// The timestamp when the current recording started.
     private var recordingStartTime: Date?
+    
+    /// Timer used to update the recording duration.
     private var durationTimer: Timer?
+    
+    /// Background task identifier for continuing recording when app is in background.
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    
+    /// Logger for structured logging of recording operations.
+    ///
+    /// Uses OSLog for efficient and structured logging throughout the recording process.
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "RecordingManager")
     
-    // Initializer
+    // MARK: - Initialization
+    
+    /// Initializes a new RecordingManager instance.
+    ///
+    /// This initializer sets up notification observers for handling audio interruptions
+    /// and app state changes.
     init() {
         logger.info("RecordingManager initialized")
         setupNotifications()
     }
     
-    /// Set up notification observers for audio session interruptions and app state changes
+    /// Sets up notification observers for audio session interruptions and app state changes.
+    ///
+    /// This method registers observers for:
+    /// - Audio session interruptions (phone calls, other apps using audio)
+    /// - App lifecycle events (entering background, becoming active)
+    /// - Audio route changes (headphones connected/disconnected)
+    ///
+    /// These observers ensure the recording continues properly across different system events.
     private func setupNotifications() {
         // Audio session interruption notifications
         NotificationCenter.default.addObserver(
@@ -65,6 +138,15 @@ class RecordingManager: ObservableObject {
         }
     }
     
+    /// Cleans up resources when the RecordingManager is deallocated.
+    ///
+    /// This method ensures proper cleanup by:
+    /// - Stopping any active recording
+    /// - Invalidating timers
+    /// - Removing notification observers
+    /// - Ending background tasks
+    ///
+    /// - Note: Since this is a `@MainActor` class, we need special handling in deinit.
     deinit {
         // Use Task to call the async method in deinit
         Task {
@@ -92,9 +174,32 @@ class RecordingManager: ObservableObject {
     
     // MARK: - Public Methods
     
-    /// Starts recording audio using async/await with background support
-    /// - Returns: Boolean indicating success
-    /// - Throws: Error if recording fails
+    /// Starts recording audio using async/await pattern with background support.
+    ///
+    /// This method handles the entire recording setup process including:
+    /// - Requesting microphone permissions if needed
+    /// - Setting up the audio session
+    /// - Creating a file to store the recording
+    /// - Starting the recording process
+    /// - Setting up background task support
+    /// - Starting the duration timer
+    ///
+    /// - Returns: Boolean indicating whether recording started successfully
+    /// - Throws: Error if recording fails for any reason, including permission denied
+    ///
+    /// - Note: This method updates `isRecording` and starts updating `recordingDuration`
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     let success = try await recordingManager.startRecordingAsync()
+    ///     if success {
+    ///         // Recording started
+    ///     }
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     func startRecordingAsync() async throws -> Bool {
         logger.info("Starting recording with async/await...")
         
@@ -128,9 +233,32 @@ class RecordingManager: ObservableObject {
     
 
     
-    /// Stops recording audio using async/await
-    /// - Returns: The recorded voice note
-    /// - Throws: Error if stopping recording fails
+    /// Stops recording audio using async/await pattern.
+    ///
+    /// This method handles the entire process of stopping a recording including:
+    /// - Ensuring the recording has captured sufficient audio
+    /// - Properly stopping the AVAudioRecorder
+    /// - Verifying the recording was saved correctly
+    /// - Creating a VoiceNote object with metadata
+    /// - Cleaning up resources
+    /// - Ending background tasks
+    ///
+    /// - Returns: The recorded voice note if successful, or nil if no recording was active
+    /// - Throws: Error if stopping recording fails for any reason
+    ///
+    /// - Note: This method updates `isRecording` and stops updating `recordingDuration`
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     let voiceNote = try await recordingManager.stopRecordingAsync()
+    ///     if let voiceNote = voiceNote {
+    ///         // Use the recorded voice note
+    ///     }
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     func stopRecordingAsync() async throws -> VoiceNote? {
         logger.info("Stopping recording with async/await...")
         
@@ -252,10 +380,22 @@ class RecordingManager: ObservableObject {
     
     // MARK: - Private Methods
     
-    /// Set up the recording session with async/await
+    /// Sets up the recording session with async/await pattern.
+    ///
+    /// This internal method configures the audio session for recording by:
+    /// - Setting the audio session category and mode
+    /// - Activating the audio session
+    /// - Creating a unique file URL for the recording
+    /// - Configuring recording settings (format, quality, etc.)
+    /// - Initializing the audio recorder
+    /// - Starting the recording
+    /// - Setting up the duration timer
+    ///
     /// - Parameter session: The AVAudioSession to set up
     /// - Returns: Boolean indicating success
-    /// - Throws: Error if setup fails
+    /// - Throws: Error if any part of the setup process fails
+    ///
+    /// - Important: This method should only be called from `startRecordingAsync()`
     private func setupRecordingSessionAsync(session: AVAudioSession) async throws -> Bool {
         do {
             // Configure the audio session for recording with background support
@@ -359,7 +499,14 @@ class RecordingManager: ObservableObject {
     
     // MARK: - Background Task Management
     
-    /// Begin a background task to allow audio processing to continue when app is in background
+    /// Begins a background task to allow audio processing to continue when app is in background.
+    ///
+    /// This method registers a background task with iOS to request additional execution time
+    /// when the app is in the background. This is essential for continuing recording when the
+    /// app is minimized or the device is locked.
+    ///
+    /// The method includes an expiration handler that safely ends recording if the system
+    /// needs to terminate the background task.
     private func beginBackgroundTask() {
         // End any existing background task first
         endBackgroundTaskIfNeeded()
@@ -456,6 +603,13 @@ class RecordingManager: ObservableObject {
     }
     
     /// Handle audio route changes (e.g., headphones connected/disconnected)
+    /// Handles audio route changes such as headphones being connected or disconnected.
+    ///
+    /// This method responds to system notifications about audio route changes and takes
+    /// appropriate action based on the type of change. For example, if headphones are
+    /// disconnected during recording, it might pause or continue recording through the device speaker.
+    ///
+    /// - Parameter notification: The notification containing information about the route change
     @objc private func handleAudioRouteChange(notification: Notification) {
         guard let userInfo = notification.userInfo,
               let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,

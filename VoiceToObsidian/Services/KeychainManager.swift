@@ -2,27 +2,95 @@ import Foundation
 import Security
 import OSLog
 
-/// Manages secure storage of sensitive data using the iOS Keychain
+/// A utility class that manages secure storage of sensitive data using the iOS Keychain.
+///
+/// `KeychainManager` provides a simplified interface for storing, retrieving, updating,
+/// and deleting sensitive data in the iOS Keychain. It supports both string values and
+/// binary data, making it suitable for storing various types of sensitive information such as:
+/// - API keys
+/// - Authentication tokens
+/// - Security-scoped bookmarks
+/// - Encrypted data
+///
+/// All operations are performed using a consistent service name to organize the app's
+/// keychain items and prevent conflicts with other apps.
+///
+/// ## Example Usage
+/// ```swift
+/// // Store a string value
+/// do {
+///     try KeychainManager.saveString("api_key_12345", forKey: "ApiKey")
+/// } catch {
+///     print("Failed to save API key: \(error)")
+/// }
+///
+/// // Retrieve a string value
+/// do {
+///     if let apiKey = try KeychainManager.getString(forKey: "ApiKey") {
+///         // Use the API key
+///     }
+/// } catch {
+///     print("Failed to retrieve API key: \(error)")
+/// }
+///
+/// // Store binary data
+/// do {
+///     try KeychainManager.saveData(bookmarkData, forKey: "VaultBookmark")
+/// } catch {
+///     print("Failed to save bookmark data: \(error)")
+/// }
+/// ```
 class KeychainManager {
     
+    /// Errors that can occur during Keychain operations.
+    ///
+    /// This enum defines specific error cases that can occur when interacting with
+    /// the Keychain, providing more context than the raw OSStatus codes.
     enum KeychainError: Error {
+        /// The requested item was not found in the Keychain.
         case itemNotFound
+        
+        /// An attempt was made to add an item that already exists.
         case duplicateItem
+        
+        /// An unexpected status was returned by a Keychain operation.
+        /// - Parameter OSStatus: The raw status code returned by the Keychain.
         case unexpectedStatus(OSStatus)
+        
+        /// An error occurred when converting between data types.
         case conversionError
     }
     
-    /// Service name used for all keychain items in this app
+    /// Service name used for all keychain items in this app.
+    ///
+    /// This identifier is used to group all keychain items belonging to this app.
+    /// It helps organize keychain items and prevents conflicts with other apps.
     private static let serviceName = "com.voicetoobsidian.app"
     
-    /// Logger for KeychainManager
+    /// Logger for structured logging of Keychain operations.
+    ///
+    /// Uses OSLog for efficient and structured logging of keychain operations and errors.
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "KeychainManager")
     
-    /// Saves a string value to the keychain
+    /// Saves a string value to the Keychain.
+    ///
+    /// This method securely stores a string value in the Keychain under the specified key.
+    /// If an item with the same key already exists, it will be replaced.
+    ///
     /// - Parameters:
-    ///   - key: The key to store the value under
     ///   - value: The string value to store
-    /// - Throws: KeychainError if the operation fails
+    ///   - key: The key to store the value under
+    /// - Throws: `KeychainError` if the operation fails
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     try KeychainManager.saveString("api_key_12345", forKey: "ApiKey")
+    ///     // String saved successfully
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     static func saveString(_ value: String, forKey key: String) throws {
         // Convert string to data
         guard let valueData = value.data(using: .utf8) else {
@@ -49,10 +117,27 @@ class KeychainManager {
         }
     }
     
-    /// Retrieves a string value from the keychain
+    /// Retrieves a string value from the Keychain.
+    ///
+    /// This method securely retrieves a string value from the Keychain using the specified key.
+    /// If the item doesn't exist, the method returns nil instead of throwing an error.
+    ///
     /// - Parameter key: The key to retrieve the value for
     /// - Returns: The stored string value, or nil if not found
-    /// - Throws: KeychainError if the operation fails
+    /// - Throws: `KeychainError` if the operation fails for reasons other than the item not existing
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     if let apiKey = try KeychainManager.getString(forKey: "ApiKey") {
+    ///         // Use the API key
+    ///     } else {
+    ///         // API key not found
+    ///     }
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     static func getString(forKey key: String) throws -> String? {
         // Create query dictionary
         let query: [String: Any] = [
@@ -85,11 +170,25 @@ class KeychainManager {
         return string
     }
     
-    /// Updates a string value in the keychain
+    /// Updates a string value in the Keychain.
+    ///
+    /// This method updates an existing string value in the Keychain with a new value.
+    /// If the item doesn't exist, it will be created.
+    ///
     /// - Parameters:
-    ///   - key: The key to update the value for
     ///   - value: The new string value
-    /// - Throws: KeychainError if the operation fails
+    ///   - key: The key to update the value for
+    /// - Throws: `KeychainError` if the operation fails
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     try KeychainManager.updateString("new_api_key_67890", forKey: "ApiKey")
+    ///     // String updated successfully
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     static func updateString(_ value: String, forKey key: String) throws {
         // Convert string to data
         guard let valueData = value.data(using: .utf8) else {
@@ -119,9 +218,23 @@ class KeychainManager {
         }
     }
     
-    /// Deletes a string value from the keychain
+    /// Deletes a string value from the Keychain.
+    ///
+    /// This method removes a string value from the Keychain using the specified key.
+    /// If the item doesn't exist, the method completes successfully without throwing an error.
+    ///
     /// - Parameter key: The key to delete the value for
-    /// - Throws: KeychainError if the operation fails
+    /// - Throws: `KeychainError` if the operation fails for reasons other than the item not existing
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     try KeychainManager.deleteString(forKey: "ApiKey")
+    ///     // String deleted successfully or didn't exist
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     static func deleteString(forKey key: String) throws {
         // Create query dictionary
         let query: [String: Any] = [
@@ -141,11 +254,28 @@ class KeychainManager {
     
     // MARK: - Data Methods
     
-    /// Saves binary data to the keychain
+    /// Saves binary data to the Keychain.
+    ///
+    /// This method securely stores binary data in the Keychain under the specified key.
+    /// If an item with the same key already exists, it will be replaced. This method is
+    /// particularly useful for storing security-scoped bookmarks, certificates, or other
+    /// binary data that needs to be secured.
+    ///
     /// - Parameters:
-    ///   - data: The data to store
+    ///   - data: The binary data to store
     ///   - key: The key to store the data under
-    /// - Throws: KeychainError if the operation fails
+    /// - Throws: `KeychainError` if the operation fails
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     let bookmarkData = try url.bookmarkData(options: .minimalBookmark)
+    ///     try KeychainManager.saveData(bookmarkData, forKey: "VaultBookmark")
+    ///     // Data saved successfully
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     static func saveData(_ data: Data, forKey key: String) throws {
         // Create query dictionary
         let query: [String: Any] = [
@@ -167,10 +297,32 @@ class KeychainManager {
         }
     }
     
-    /// Retrieves binary data from the keychain
+    /// Retrieves binary data from the Keychain.
+    ///
+    /// This method securely retrieves binary data from the Keychain using the specified key.
+    /// If the item doesn't exist, the method returns nil instead of throwing an error.
+    ///
     /// - Parameter key: The key to retrieve the data for
-    /// - Returns: The stored data, or nil if not found
-    /// - Throws: KeychainError if the operation fails
+    /// - Returns: The stored binary data, or nil if not found
+    /// - Throws: `KeychainError` if the operation fails for reasons other than the item not existing
+    ///
+    /// ## Example
+    /// ```swift
+    /// do {
+    ///     if let bookmarkData = try KeychainManager.getData(forKey: "VaultBookmark") {
+    ///         var isStale = false
+    ///         let url = try URL(resolvingBookmarkData: bookmarkData, 
+    ///                           options: [], 
+    ///                           relativeTo: nil, 
+    ///                           bookmarkDataIsStale: &isStale)
+    ///         // Use the URL
+    ///     } else {
+    ///         // Bookmark not found
+    ///     }
+    /// } catch {
+    ///     // Handle error
+    /// }
+    /// ```
     static func getData(forKey key: String) throws -> Data? {
         // Create query dictionary
         let query: [String: Any] = [
