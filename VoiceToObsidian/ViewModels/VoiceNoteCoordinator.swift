@@ -188,7 +188,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     private var obsidianService: ObsidianService {
         if _obsidianService == nil {
             logger.debug("Lazily creating ObsidianService")
-            _obsidianService = ObsidianService(vaultPath: obsidianVaultPath)
+            _obsidianService = ObsidianService(vaultPath: _obsidianVaultPath)
         }
         return _obsidianService!
     }
@@ -222,11 +222,19 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// handle secure storage and retrieval of the vault path from the Keychain.
     /// When the value changes, it automatically updates the Obsidian service.
     @SecureStorage(wrappedValue: "", key: "ObsidianVaultPath")
-    private var obsidianVaultPath: String {
+    private var _obsidianVaultPath: String {
         didSet {
             logger.debug("Vault path updated")
-            obsidianService.updateVaultPath(obsidianVaultPath)
+            obsidianService.updateVaultPath(_obsidianVaultPath)
         }
+    }
+    
+    /// Public accessor for the Obsidian vault path.
+    ///
+    /// This property provides read-only access to the Obsidian vault path
+    /// for use in UI components and deep linking.
+    var obsidianVaultPath: String {
+        return _obsidianVaultPath
     }
     
     /// The security-scoped bookmark data for the Obsidian vault.
@@ -564,7 +572,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// coordinator.setObsidianVaultPath("/Users/username/Documents/ObsidianVault")
     /// ```
     func setObsidianVaultPath(_ path: String) {
-        obsidianVaultPath = path
+        _obsidianVaultPath = path
     }
     
     /// Clears the Obsidian vault path securely from storage.
@@ -581,7 +589,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// ```
     func clearObsidianVaultPath() {
         // Property wrapper handles the deletion from keychain
-        obsidianVaultPath = ""
+        _obsidianVaultPath = ""
         obsidianService.updateVaultPath("")
         logger.info("Vault path cleared successfully")
     }
@@ -619,7 +627,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         await MainActor.run {
             // Update local properties
             anthropicAPIKey = "" // SecureStorage wrapper handles keychain deletion
-            obsidianVaultPath = "" // SecureStorage wrapper handles keychain deletion
+            _obsidianVaultPath = "" // SecureStorage wrapper handles keychain deletion
             
             // Update services
             anthropicService.updateAPIKey("")
@@ -734,7 +742,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             }
             
             // Save to Obsidian if path is set
-            if !obsidianVaultPath.isEmpty {
+            if !_obsidianVaultPath.isEmpty {
                 do {
                     // Copy audio file to Obsidian vault
                     let audioSuccess = try await obsidianService.copyAudioFileToVault(from: recordingURL)

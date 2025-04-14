@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		00A1234567890123456789AB /* VoiceToObsidianApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B1234567890123456789AB /* VoiceToObsidianApp.swift */; };
 		00A2234567890123456789AB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B2234567890123456789AB /* ContentView.swift */; };
-		00A3234567890123456789AB /* RecordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B3234567890123456789AB /* RecordView.swift */; };
 		00A4234567890123456789AB /* VoiceNoteListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B4234567890123456789AB /* VoiceNoteListView.swift */; };
 		00A5234567890123456789AB /* VoiceNoteDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B5234567890123456789AB /* VoiceNoteDetailView.swift */; };
 		00A6234567890123456789AB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B6234567890123456789AB /* SettingsView.swift */; };
@@ -19,7 +18,6 @@
 		00AA234567890123456789AB /* AnthropicService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BA234567890123456789AB /* AnthropicService.swift */; };
 		00AB234567890123456789AB /* DocumentPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BB234567890123456789AB /* DocumentPicker.swift */; };
 		D403DDF32DA33DA100C29CDB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D403DDF22DA33DA100C29CDB /* Assets.xcassets */; };
-		D403DDFE2DA3444B00C29CDB /* WaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DDFD2DA3444B00C29CDB /* WaveformView.swift */; };
 		D403DE002DA3497F00C29CDB /* SimpleFlexokiColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DDFF2DA3497F00C29CDB /* SimpleFlexokiColors.swift */; };
 		D403DE042DA3643F00C29CDB /* TranscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE022DA3643F00C29CDB /* TranscriptionManager.swift */; };
 		D403DE052DA3643F00C29CDB /* VoiceNoteDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE032DA3643F00C29CDB /* VoiceNoteDataStore.swift */; };
@@ -42,6 +40,8 @@
 		D4E85B152DA62740006B8FC8 /* ErrorImports.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B122DA62740006B8FC8 /* ErrorImports.swift */; };
 		D4E85B172DA6275C006B8FC8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D4E85B162DA6275C006B8FC8 /* Assets.xcassets */; };
 		D4E85B1B2DA63C55006B8FC8 /* BookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B1A2DA63C55006B8FC8 /* BookmarkManager.swift */; };
+		D4E85B512DACA405006B8FC8 /* Documentation.docc in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B502DACA405006B8FC8 /* Documentation.docc */; };
+		D4E85B522DACA405006B8FC8 /* Documentation.docc in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B502DACA405006B8FC8 /* Documentation.docc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,7 +57,6 @@
 /* Begin PBXFileReference section */
 		00B1234567890123456789AB /* VoiceToObsidianApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceToObsidianApp.swift; sourceTree = "<group>"; };
 		00B2234567890123456789AB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		00B3234567890123456789AB /* RecordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordView.swift; sourceTree = "<group>"; };
 		00B4234567890123456789AB /* VoiceNoteListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteListView.swift; sourceTree = "<group>"; };
 		00B5234567890123456789AB /* VoiceNoteDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteDetailView.swift; sourceTree = "<group>"; };
 		00B6234567890123456789AB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -70,7 +69,6 @@
 		00C2234567890123456789AB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		00C3234567890123456789AB /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		D403DDF22DA33DA100C29CDB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = VoiceToObsidian/Assets.xcassets; sourceTree = "<group>"; };
-		D403DDFD2DA3444B00C29CDB /* WaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformView.swift; sourceTree = "<group>"; };
 		D403DDFF2DA3497F00C29CDB /* SimpleFlexokiColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleFlexokiColors.swift; sourceTree = "<group>"; };
 		D403DE012DA3643F00C29CDB /* RecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingManager.swift; sourceTree = "<group>"; };
 		D403DE022DA3643F00C29CDB /* TranscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionManager.swift; sourceTree = "<group>"; };
@@ -95,6 +93,7 @@
 		D4E85B1A2DA63C55006B8FC8 /* BookmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkManager.swift; sourceTree = "<group>"; };
 		D4E85B202DA64160006B8FC8 /* VoiceToObsidianTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceToObsidianTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D4E85B412DAB080C006B8FC8 /* VoiceToObsidian.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = VoiceToObsidian.xctestplan; sourceTree = "<group>"; };
+		D4E85B502DACA405006B8FC8 /* Documentation.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = Documentation.docc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -133,6 +132,7 @@
 		00E2234567890123456789AB /* VoiceToObsidian */ = {
 			isa = PBXGroup;
 			children = (
+				D4E85B502DACA405006B8FC8 /* Documentation.docc */,
 				D4E85B162DA6275C006B8FC8 /* Assets.xcassets */,
 				D4E85B132DA62740006B8FC8 /* Errors */,
 				D4E85B0F2DA6272A006B8FC8 /* ErrorImports.swift */,
@@ -164,9 +164,7 @@
 			isa = PBXGroup;
 			children = (
 				D403DE132DA398BD00C29CDB /* ErrorBannerView.swift */,
-				D403DDFD2DA3444B00C29CDB /* WaveformView.swift */,
 				00B2234567890123456789AB /* ContentView.swift */,
-				00B3234567890123456789AB /* RecordView.swift */,
 				00B4234567890123456789AB /* VoiceNoteListView.swift */,
 				00B5234567890123456789AB /* VoiceNoteDetailView.swift */,
 				00B6234567890123456789AB /* SettingsView.swift */,
@@ -366,11 +364,9 @@
 				D403DE0F2DA3904C00C29CDB /* AccessibilityConstants.swift in Sources */,
 				D4E85B102DA6272A006B8FC8 /* ErrorImports.swift in Sources */,
 				D403DE102DA3904C00C29CDB /* FlexokiTheme.swift in Sources */,
-				D403DDFE2DA3444B00C29CDB /* WaveformView.swift in Sources */,
 				D403DE1B2DA39D0900C29CDB /* SecurityManager.swift in Sources */,
 				D403DE002DA3497F00C29CDB /* SimpleFlexokiColors.swift in Sources */,
 				D403DE0C2DA3674000C29CDB /* KeychainManager.swift in Sources */,
-				00A3234567890123456789AB /* RecordView.swift in Sources */,
 				D403DE0A2DA3647B00C29CDB /* SpacingConstants.swift in Sources */,
 				00A4234567890123456789AB /* VoiceNoteListView.swift in Sources */,
 				00A5234567890123456789AB /* VoiceNoteDetailView.swift in Sources */,
@@ -380,6 +376,7 @@
 				00A9234567890123456789AB /* ObsidianService.swift in Sources */,
 				D403DE192DA3991C00C29CDB /* AppError.swift in Sources */,
 				D403DE042DA3643F00C29CDB /* TranscriptionManager.swift in Sources */,
+				D4E85B512DACA405006B8FC8 /* Documentation.docc in Sources */,
 				D4D971AD2DA4E93400A6BB89 /* DateFormattingExtensions.swift in Sources */,
 				D403DE052DA3643F00C29CDB /* VoiceNoteDataStore.swift in Sources */,
 				D403DE082DA3646700C29CDB /* VoiceNoteCoordinator.swift in Sources */,
@@ -399,6 +396,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D4E85B522DACA405006B8FC8 /* Documentation.docc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

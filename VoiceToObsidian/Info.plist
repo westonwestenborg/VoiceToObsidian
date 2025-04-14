@@ -47,6 +47,10 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>obsidian</string>
+	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>UIRequiresFullScreen</key>

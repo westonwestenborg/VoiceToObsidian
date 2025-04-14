@@ -79,6 +79,55 @@ struct DetailContentView: View {
         timer?.invalidate()
     }
     
+    /// Opens the note in the Obsidian app using deep linking
+    private func openInObsidian(path: String) {
+        // Extract the vault name from the coordinator's vault path
+        let vaultPath = coordinator.obsidianVaultPath
+        guard !vaultPath.isEmpty else {
+            logger.error("Cannot open in Obsidian: vault path not set")
+            return
+        }
+        
+        // Extract the vault name from the path
+        let vaultURL = URL(fileURLWithPath: vaultPath)
+        let vaultName = vaultURL.lastPathComponent
+        
+        // Construct the file path relative to the vault (remove "Voice Notes/" prefix if present)
+        var relativePath = path
+        if relativePath.hasPrefix("Voice Notes/") {
+            relativePath = String(relativePath.dropFirst("Voice Notes/".count))
+        }
+        
+        // URL encode the path
+        guard let encodedPath = relativePath.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+            logger.error("Cannot encode path for Obsidian URL")
+            return
+        }
+        
+        // Construct the Obsidian URL
+        let obsidianURL = URL(string: "obsidian://open?vault=\(vaultName)&file=Voice%20Notes%2F\(encodedPath)")
+        
+        // Open the URL if possible
+        guard let url = obsidianURL else {
+            logger.error("Failed to create Obsidian URL")
+            return
+        }
+        
+        logger.debug("Opening Obsidian URL: \(url.absoluteString)")
+        
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url, options: [:]) { success in
+                if success {
+                    logger.debug("Successfully opened Obsidian")
+                } else {
+                    logger.error("Failed to open Obsidian app")
+                }
+            }
+        } else {
+            logger.error("Cannot open Obsidian URL: app not installed or URL scheme not supported")
+        }
+    }
+    
     var body: some View {
         ScrollView {
             ZStack {
@@ -238,8 +287,7 @@ struct DetailContentView: View {
                                 .dynamicTypeSize(.small...(.accessibility5))
                         
                             Button(action: {
-                                // TODO: Open Obsidian note if possible
-                                // This would require a URL scheme or other method
+                                openInObsidian(path: obsidianPath)
                             }) {
                                 HStack {
                                     Image(systemName: "doc.text")

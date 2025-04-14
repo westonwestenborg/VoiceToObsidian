@@ -363,7 +363,6 @@ class ObsidianService {
         ---
         date: \(dateString)
         duration: \(formatDuration(voiceNote.duration))
-        daily: "\(dailyNoteDate)"  # Store as plain text for clean YAML
         ---
         
         ![[Attachments/\(voiceNote.audioFilename)]]
