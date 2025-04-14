@@ -19,7 +19,7 @@ The core data models in the app include:
 
 The UI layer is built with SwiftUI and consists of:
 
-- Recording views for capturing audio
+- An integrated recording interface with a floating timer display
 - Transcription views for displaying and editing transcripts
 - Settings views for configuring the app
 - Shared UI components using the Flexoki theme system for consistent styling

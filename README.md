@@ -17,8 +17,7 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
   - `VoiceNote.swift`: Data model for voice notes
 
 - **Views**
-  - `ContentView.swift`: Main tab-based interface
-  - `RecordView.swift`: UI for recording voice memos
+  - `ContentView.swift`: Main tab-based interface with integrated recording functionality
   - `VoiceNoteListView.swift`: List of recorded voice notes
   - `VoiceNoteDetailView.swift`: Detailed view of a voice note
   - `SettingsView.swift`: Settings UI for API key and vault path

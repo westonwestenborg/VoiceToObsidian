@@ -9,7 +9,7 @@ struct ContentView: View {
     @EnvironmentObject var coordinator: VoiceNoteCoordinator
     @State private var isRecording = false
     @State private var isReady = false
-    @State private var showRecordingTray = false
+    // No longer using a tray for recording UI
     @State private var viewRefreshTrigger = false
     
     // For error handling
@@ -78,23 +78,14 @@ struct ContentView: View {
                             }
                         }
                     
-                    // Record button (fixed at bottom center when not recording)
-                    if !showRecordingTray {
-                        VStack {
-                            Spacer()
-                            RecordButton(showRecordingTray: $showRecordingTray, isRecording: $isRecording)
-                                .padding(.bottom, 20)
-                        }
-                    }
-                    
-                    // Recording tray that slides up from bottom
-                    if showRecordingTray {
-                        RecordingTrayView(isRecording: $isRecording, showTray: $showRecordingTray)
-                            .transition(AnyTransition.move(edge: .bottom).combined(with: .opacity))
-                            .zIndex(10) // Ensure it's above everything else
+                    // Record button with floating timer when recording
+                    VStack {
+                        Spacer()
+                        RecordButton(isRecording: $isRecording)
+                            .padding(.bottom, 20)
                     }
                 }
-                .animation(.spring(), value: showRecordingTray)
+                .animation(.spring(), value: isRecording)
             }
         }
         .onAppear {
@@ -106,38 +97,59 @@ struct ContentView: View {
 
 // UI appearance configuration has been moved to VoiceToObsidianApp.swift
 
-// Record Button Component
+// Record Button Component with integrated timer display
 struct RecordButton: View {
     @EnvironmentObject var coordinator: VoiceNoteCoordinator
-    @Binding var showRecordingTray: Bool
     @Binding var isRecording: Bool
     
     // Logger for RecordButton
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "RecordButton")
     
     var body: some View {
-        Button(action: {
-            // Start recording immediately and show the tray
-            startRecording()
-            withAnimation {
-                showRecordingTray = true
+        VStack(spacing: 8) {
+            // Floating timer that appears when recording
+            if isRecording {
+                Text(timeString(time: coordinator.recordingDuration))
+                    .font(.system(size: 24, weight: .bold, design: .monospaced))
+                    .foregroundColor(Color.flexokiAccentRed)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.flexokiBackground.opacity(0.9))
+                            .shadow(color: Color.black.opacity(0.2), radius: 3, x: 0, y: 2)
+                    )
+                    .transition(.scale.combined(with: .opacity))
+                    .dynamicTypeSize(.small...(.accessibility5))
+                    .accessibilityLabel("Recording time: \(timeStringSpoken(time: coordinator.recordingDuration))")
             }
-        }) {
-            ZStack {
-                Circle()
-                    .fill(Color.flexokiAccentBlue)
-                    .frame(width: 64, height: 64)
-                    .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
-                
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(.white)
+            
+            // Button changes appearance and function based on recording state
+            Button(action: {
+                if isRecording {
+                    stopRecording()
+                } else {
+                    startRecording()
+                }
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(isRecording ? Color.flexokiAccentRed : Color.flexokiAccentBlue)
+                        .frame(width: 64, height: 64)
+                        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
+                    
+                    Image(systemName: isRecording ? "stop.fill" : "mic.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.white)
+                }
             }
+            .accessibilityLabel(isRecording ? "Stop Recording" : "Record Voice Note")
+            .accessibilityHint(isRecording ? "Stops the current recording" : "Starts recording a new voice note")
         }
-        .accessibilityLabel("Record Voice Note")
     }
     
-    private func startRecording() {
+    // Helper functions moved outside of body
+    func startRecording() {
         // Use Task to call the async method
         Task {
             do {
@@ -146,7 +158,9 @@ struct RecordButton: View {
                 if success {
                     // Update UI on the main thread
                     await MainActor.run {
-                        isRecording = true
+                        withAnimation(.spring()) {
+                            isRecording = true
+                        }
                     }
                 }
             } catch {
@@ -155,66 +169,47 @@ struct RecordButton: View {
             }
         }
     }
-}
-
-// Recording Tray View that slides up from bottom
-struct RecordingTrayView: View {
-    @EnvironmentObject var coordinator: VoiceNoteCoordinator
-    @Binding var isRecording: Bool
-    @Binding var showTray: Bool
     
-    var body: some View {
-        ZStack {
-            // Semi-transparent background
-            Color.black.opacity(0.4)
-                .edgesIgnoringSafeArea(.all)
-                .onTapGesture {
-                    // Only allow dismissing if not recording
-                    if !isRecording {
-                        withAnimation {
-                            showTray = false
-                        }
-                    }
-                }
-            
-            // Recording view container with animation
-            GeometryReader { geometry in
-                VStack(spacing: 0) {
-                    Spacer()
-                    
-                    // Tray container that will slide up as a single unit
-                    VStack(spacing: 0) {
-                        // Handle indicator at top of tray
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.5))
-                            .frame(width: 40, height: 5)
-                            .cornerRadius(2.5)
-                            .padding(.top, 8)
-                            .padding(.bottom, 8)
-                        
-                        // Recording view content in a container
-                        ZStack {
-                            // Background for the tray
-                            Rectangle()
-                                .fill(Color.flexokiBackground)
-                            
-                            // Recording view content
-                            RecordView(isRecording: $isRecording, onRecordingComplete: {
-                                withAnimation {
-                                    showTray = false
-                                }
-                            })
-                            .padding(.top, 16)
-                        }
-                    }
-                    .frame(height: geometry.size.height * 0.8)
-                    .background(Color.flexokiBackground)
-                    .cornerRadius(16, corners: [.topLeft, .topRight])
-                }
+    func stopRecording() {
+        // Update UI state immediately
+        withAnimation(.spring()) {
+            isRecording = false
+        }
+        
+        // Use Task to call the async method
+        Task {
+            do {
+                // Call the async version directly
+                let _ = try await coordinator.stopRecordingAsync()
+                // The coordinator will handle the processing and update its isProcessing state
+            } catch {
+                // Handle errors
+                logger.error("Error stopping recording: \(error.localizedDescription)")
             }
         }
     }
+    
+    /// Formats the time interval for display
+    func timeString(time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        let tenths = Int((time - floor(time)) * 10)
+        return String(format: "%02d:%02d.%01d", minutes, seconds, tenths)
+    }
+    
+    /// Returns a spoken version of the time for accessibility
+    func timeStringSpoken(time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        
+        if minutes > 0 {
+            return "\(minutes) minute\(minutes == 1 ? "" : "s") and \(seconds) second\(seconds == 1 ? "" : "s")"
+        } else {
+            return "\(seconds) second\(seconds == 1 ? "" : "s")"
+        }
+    }
 }
+
 
 // Extension to apply corner radius to specific corners
 extension View {
@@ -236,7 +231,7 @@ struct RoundedCorner: Shape {
 
 extension ContentView {
     /// Set up subscribers for error handling
-    private func setupErrorHandling() {
+    func setupErrorHandling() {
         // Clear existing cancellables
         cancellables.removeAll()
         
@@ -253,25 +248,20 @@ extension ContentView {
             }
             .store(in: &cancellables)
         
-        // Listen for recording completion to hide the tray
+        // Listen for recording completion
         coordinator.$isProcessing
             .dropFirst() // Skip initial value
             .sink { isProcessing in
-                if !isProcessing && isRecording == false {
-                    // Recording has finished processing, hide the tray after a short delay
+                if !isProcessing && self.isRecording == false {
+                    // Recording has finished processing, refresh the view after a short delay
                     Task {
                         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                        await MainActor.run {
-                            withAnimation {
-                                showRecordingTray = false
-                            }
-                        }
                         
                         // Force a view refresh to ensure new note appears in the list
                         try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
                         await MainActor.run {
-                            viewRefreshTrigger.toggle()
-                            logger.debug("Forced view refresh after recording completion")
+                            self.viewRefreshTrigger.toggle()
+                            self.logger.debug("Forced view refresh after recording completion")
                         }
                     }
                 }
@@ -282,11 +272,11 @@ extension ContentView {
         coordinator.voiceNoteStoreForObservation.$voiceNotes
             .dropFirst() // Skip initial value
             .sink { notes in
-                logger.debug("Voice notes updated, count: \(notes.count)")
+                self.logger.debug("Voice notes updated, count: \(notes.count)")
                 // Force view refresh when notes change
-                Task {
-                    viewRefreshTrigger.toggle()
-                    logger.debug("Forced view refresh due to notes update")
+                Task { @MainActor in
+                    self.viewRefreshTrigger.toggle()
+                    self.logger.debug("Forced view refresh due to notes update")
                 }
             }
             .store(in: &cancellables)
