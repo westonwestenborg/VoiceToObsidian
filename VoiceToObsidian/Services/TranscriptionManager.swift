@@ -4,6 +4,7 @@ import Combine
 import OSLog
 
 /// Manages speech recognition and transcription
+@MainActor
 class TranscriptionManager: ObservableObject {
     // Published properties for UI updates
     @Published var isTranscribing = false
@@ -13,6 +14,7 @@ class TranscriptionManager: ObservableObject {
     private var speechRecognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
+    private var latestPartialTranscription = ""
     
     // Logger for TranscriptionManager
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "TranscriptionManager")
@@ -24,23 +26,32 @@ class TranscriptionManager: ObservableObject {
     }
     
     deinit {
-        cancelTranscription()
+        // We can't directly call a MainActor-isolated method from deinit
+        // Instead, we'll clean up the resources directly that don't require MainActor isolation
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+        
+        // For completeness, we can schedule a task on the main actor, but it may not execute if the app is terminating
+        Task { @MainActor in
+            // Update any UI state
+            isTranscribing = false
+        }
     }
     
     // MARK: - Public Methods
     
     /// Transcribes an audio file using async/await
     /// - Parameter audioURL: The URL of the audio file to transcribe
-    /// - Returns: The transcript text if successful, nil otherwise
+    /// - Returns: The transcript text if successful
     /// - Throws: Error if transcription fails
     func transcribeAudioFileAsync(at audioURL: URL) async throws -> String {
         logger.info("Starting async transcription of file: \(audioURL.path)")
         
-        // Update UI state on main thread
-        await MainActor.run {
-            isTranscribing = true
-            transcriptionProgress = 0
-        }
+        // Update UI state
+        isTranscribing = true
+        transcriptionProgress = 0
+        latestPartialTranscription = ""
         
         // Setup speech recognition on first use
         if speechRecognizer == nil {
@@ -57,47 +68,31 @@ class TranscriptionManager: ObservableObject {
         // Check authorization status
         guard authStatus == .authorized else {
             logger.error("Speech recognition not authorized")
-            await MainActor.run {
-                isTranscribing = false
-            }
+            isTranscribing = false
             throw NSError(domain: "TranscriptionManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Speech recognition not authorized"])
         }
         
-        // Perform transcription using continuation
-        return try await withCheckedThrowingContinuation { continuation in
-            performTranscription(of: audioURL) { success, transcript in
-                if success, let transcript = transcript {
-                    continuation.resume(returning: transcript)
-                } else {
-                    continuation.resume(throwing: NSError(domain: "TranscriptionManager", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to transcribe audio"]))
-                }
-            }
-        }
+        // Perform transcription using the async method
+        let transcript = try await performTranscriptionAsync(of: audioURL)
+        return transcript
     }
-    
-
     
     /// Cancels any ongoing transcription
     func cancelTranscription() {
-        // Cancel the task on the main thread to avoid threading issues
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            // Only log if there's an active task being cancelled
-            let hadActiveTask = self.recognitionTask != nil
-            
-            // Cancel the recognition task
-            self.recognitionTask?.cancel()
-            self.recognitionTask = nil
-            self.recognitionRequest = nil
-            
-            // Update state
-            self.isTranscribing = false
-            
-            // Only log if we actually cancelled something
-            if hadActiveTask {
-                logger.info("Transcription cancelled")
-            }
+        // Only log if there's an active task being cancelled
+        let hadActiveTask = recognitionTask != nil
+        
+        // Cancel the recognition task
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+        
+        // Update state
+        isTranscribing = false
+        
+        // Only log if we actually cancelled something
+        if hadActiveTask {
+            logger.info("Transcription cancelled")
         }
     }
     
@@ -111,7 +106,7 @@ class TranscriptionManager: ObservableObject {
             
             // Check if the recognizer was created successfully
             guard let recognizer = speechRecognizer else {
-                print("Failed to create speech recognizer")
+                logger.error("Failed to create speech recognizer")
                 return
             }
             
@@ -121,213 +116,234 @@ class TranscriptionManager: ObservableObject {
             }
             
             // Request authorization for speech recognition
-            SFSpeechRecognizer.requestAuthorization { [weak self] status in
-                guard let self = self else { return }
+            Task { @MainActor in
+                let status = await withCheckedContinuation { continuation in
+                    SFSpeechRecognizer.requestAuthorization { status in
+                        continuation.resume(returning: status)
+                    }
+                }
+                
                 switch status {
                 case .authorized:
-                    self.logger.info("Speech recognition authorization granted")
+                    logger.info("Speech recognition authorization granted")
                 case .denied:
-                    self.logger.error("Speech recognition authorization denied by user")
+                    logger.error("Speech recognition authorization denied by user")
                 case .restricted:
-                    self.logger.error("Speech recognition is restricted on this device")
+                    logger.error("Speech recognition is restricted on this device")
                 case .notDetermined:
-                    self.logger.warning("Speech recognition authorization not determined")
+                    logger.warning("Speech recognition authorization not determined")
                 @unknown default:
-                    self.logger.warning("Speech recognition authorization unknown status")
+                    logger.warning("Speech recognition authorization unknown status")
                 }
             }
         }
     }
     
-    private func performTranscription(of audioURL: URL, completion: @escaping (Bool, String?) -> Void) {
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            autoreleasepool {
+    /// Performs transcription of an audio file asynchronously
+    /// - Parameter audioURL: URL of the audio file to transcribe
+    /// - Returns: The transcript text
+    /// - Throws: Error if transcription fails
+    private func performTranscriptionAsync(of audioURL: URL) async throws -> String {
+        // Verify the audio file exists and has content
+        let fileManager = FileManager.default
+        if !fileManager.fileExists(atPath: audioURL.path) {
+            logger.error("Audio file does not exist")
+            throw NSError(domain: "TranscriptionManager", code: 3, userInfo: [NSLocalizedDescriptionKey: "Audio file does not exist"])
+        }
+        
+        // Check file size to ensure it's not empty
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: audioURL.path)
+            if let size = attributes[.size] as? NSNumber, size.intValue <= 1000 {
+                logger.warning("Audio file is very small, may not contain speech")
+            }
+        } catch {
+            logger.error("Error checking audio file: \(error.localizedDescription)")
+        }
+        
+        // Create a new recognizer with the US English locale
+        let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+        guard let recognizer = recognizer, recognizer.isAvailable else {
+            logger.error("Speech recognizer is not available")
+            throw NSError(domain: "TranscriptionManager", code: 4, userInfo: [NSLocalizedDescriptionKey: "Speech recognizer is not available"])
+        }
+                
+        // Create a URL recognition request
+        let request = SFSpeechURLRecognitionRequest(url: audioURL)
+        request.shouldReportPartialResults = true
+        
+        // Set task hints to improve recognition
+        request.taskHint = .dictation
+        
+        // Add contextual phrases if needed
+        request.contextualStrings = ["note", "Obsidian", "voice memo"]
+        
+        logger.debug("Created speech recognition request")
+        
+        // Use a continuation to bridge between the callback-based API and async/await
+        // Create a class to share state between the recognition task and timeout task
+        actor ContinuationState {
+            var resumed = false
+            let continuation: CheckedContinuation<String, Error>
+            
+            init(continuation: CheckedContinuation<String, Error>) {
+                self.continuation = continuation
+            }
+            
+            func resume(with result: Result<String, Error>) async {
+                guard !resumed else { return }
+                resumed = true
+                
+                switch result {
+                case .success(let transcript):
+                    continuation.resume(returning: transcript)
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            
+            func hasResumed() -> Bool {
+                return resumed
+            }
+        }
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            // Create shared state
+            let state = ContinuationState(continuation: continuation)
+            
+            // Start the recognition task
+            self.recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
                 guard let self = self else { return }
                 
-                // Cancel any existing recognition task first
-                self.cancelTranscription()
-                
-                // Verify the audio file exists and has content
-                let fileManager = FileManager.default
-                if !fileManager.fileExists(atPath: audioURL.path) {
-                    self.logger.error("Audio file does not exist")
-                    DispatchQueue.main.async {
-                        self.isTranscribing = false
-                        completion(false, nil)
+                // Process results on the main actor
+                Task { [weak self, weak state] in
+                    guard let self = self, let state = state else { return }
+                    
+                    // Handle successful results
+                    if let result = result {
+                        // Update progress
+                        let progress = Float(result.bestTranscription.segments.count) / 10.0 // Estimate
+                        self.transcriptionProgress = min(0.95, progress) // Cap at 95% until complete
+                        
+                        // Store the latest partial transcription for potential timeout scenarios
+                        let partialText = result.bestTranscription.formattedString
+                        if !partialText.isEmpty {
+                            self.latestPartialTranscription = partialText
+                            self.logger.debug("Partial transcription: \(partialText)")
+                        }
+                        
+                        // If this is the final result, complete the transcription
+                        if result.isFinal {
+                            let transcript = result.bestTranscription.formattedString
+                            self.logger.info("Transcription completed successfully")
+                            
+                            self.transcriptionProgress = 1.0
+                            self.isTranscribing = false
+                            
+                            // Resume the continuation with the final transcript
+                            if !(await state.hasResumed()) {
+                                await state.resume(with: .success(transcript))
+                            }
+                        }
                     }
-                    return
+                    
+                    // Handle errors
+                    if let error = error {
+                        let nsError = error as NSError
+                        // Log basic error info
+                        self.logger.error("Speech recognition error: \(nsError.localizedDescription)")
+                        
+                        // Check for specific error types and handle accordingly
+                        if nsError.domain == "kAFAssistantErrorDomain" {
+                            // Handle specific Apple speech recognition errors
+                            switch nsError.code {
+                            case 1: // Recognition failed
+                                self.logger.error("Recognition failed - general error")
+                            case 2: // Recognition was canceled by the user or system
+                                self.logger.error("Recognition canceled")
+                            case 3: // Recognition timed out
+                                self.logger.error("Recognition timed out")
+                            case 4: // Recognition server error
+                                self.logger.error("Recognition server error")
+                            case 1101: // No speech detected or local speech recognition issue
+                                self.logger.error("No speech detected or local speech recognition issue")
+                            case 1110: // Other local speech recognition issue
+                                self.logger.error("Local speech recognition issue")
+                            default:
+                                self.logger.error("Unknown speech recognition error code: \(nsError.code)")
+                            }
+                        }
+                        
+                        // If we have partial results, use those rather than failing completely
+                        if !self.latestPartialTranscription.isEmpty {
+                            self.logger.info("Using partial transcript despite error: \(self.latestPartialTranscription)")
+                            self.transcriptionProgress = 1.0
+                            self.isTranscribing = false
+                            
+                            // Resume with the partial transcript we've captured
+                            if !(await state.hasResumed()) {
+                                await state.resume(with: .success(self.latestPartialTranscription))
+                            }
+                        } else {
+                            // No transcript available - check if this is a fatal error or if we should wait
+                            // Some errors like 1101 (no speech detected) might be temporary
+                            if nsError.domain == "kAFAssistantErrorDomain" && 
+                               (nsError.code == 1101 || nsError.code == 1110) {
+                                // These are often temporary errors, log but don't fail yet
+                                self.logger.debug("Temporary error (\(nsError.code)), waiting for more results")
+                            } else {
+                                // Fatal error or we've waited long enough, resume with failure
+                                self.isTranscribing = false
+                                
+                                if !(await state.hasResumed()) {
+                                    await state.resume(with: .failure(error))
+                                }
+                            }
+                        }
+                    }
                 }
+            }
+            
+            // Set up a timeout to ensure we don't wait forever
+            Task { [weak self, weak state] in
+                guard let self = self, let state = state else { return }
                 
-                // Check file size to ensure it's not empty
                 do {
-                    let attributes = try fileManager.attributesOfItem(atPath: audioURL.path)
-                    if let size = attributes[.size] as? NSNumber, size.intValue <= 1000 {
-                        self.logger.warning("Audio file is very small, may not contain speech")
+                    try await Task.sleep(nanoseconds: 30_000_000_000) // 30 seconds timeout
+                    
+                    // If we're still transcribing after timeout, force completion with whatever we have
+                    self.logger.warning("Checking transcription timeout after 30 seconds")
+                    
+                    // Only proceed if the continuation hasn't been resumed yet
+                    if await !state.hasResumed() {
+                        self.logger.warning("Transcription timed out after 30 seconds")
+                        
+                        // In a timeout scenario, use the latest partial transcription we've captured
+                        if !self.latestPartialTranscription.isEmpty {
+                            self.logger.info("Using partial transcript after timeout: \(self.latestPartialTranscription)")
+                            await state.resume(with: .success(self.latestPartialTranscription))
+                        } else if self.transcriptionProgress > 0.1 {
+                            // Fallback if we have some progress but no stored transcript
+                            let partialTranscript = "[Partial transcription - timed out]"
+                            self.logger.info("Using generic transcript after timeout")
+                            await state.resume(with: .success(partialTranscript))
+                        } else {
+                            // No results available after timeout
+                            self.logger.error("Transcription timed out with no results")
+                            await state.resume(with: .failure(NSError(
+                                domain: "TranscriptionManager",
+                                code: 1,
+                                userInfo: [NSLocalizedDescriptionKey: "Transcription timed out with no results"]
+                            )))
+                        }
+                        
+                        self.transcriptionProgress = 1.0
+                        self.isTranscribing = false
+                        self.cancelTranscription()
                     }
                 } catch {
-                    self.logger.error("Error checking audio file")
+                    // Task was cancelled, do nothing
                 }
-                
-                // Create a new recognizer with the US English locale
-                let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-                guard let recognizer = recognizer else {
-                    self.logger.error("Failed to create speech recognizer")
-                    DispatchQueue.main.async {
-                        self.isTranscribing = false
-                        completion(false, nil)
-                    }
-                    return
-                }
-                
-                // Check if the recognizer is available
-                if !recognizer.isAvailable {
-                    self.logger.error("Speech recognizer is not available")
-                    // Try again after a short delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                        guard let self = self else { return }
-                        self.performTranscription(of: audioURL, completion: completion)
-                    }
-                    return
-                }
-                
-                // Create a URL recognition request
-                let request = SFSpeechURLRecognitionRequest(url: audioURL)
-                request.shouldReportPartialResults = true
-                
-                // Set task hints to improve recognition
-                request.taskHint = .dictation
-                
-                // Add contextual phrases if needed
-                request.contextualStrings = ["note", "Obsidian", "voice memo"]
-                
-                self.logger.debug("Created speech recognition request")
-                
-                // Start the recognition task with error handling and retry logic
-                var retryCount = 0
-                let maxRetries = 3
-                
-                func startRecognitionTask() {
-                    self.recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
-                        guard let self = self else { return }
-                        
-                        // Handle successful results
-                        if let result = result {
-                            // Get the current transcript
-                            let transcript = result.bestTranscription.formattedString
-                            
-                            // Update progress
-                            let progress = Float(result.bestTranscription.segments.count) / 10.0 // Estimate
-                            DispatchQueue.main.async {
-                                self.transcriptionProgress = min(0.95, progress) // Cap at 95% until complete
-                            }
-                            
-                            // If this is the final result
-                            if result.isFinal {
-                                let transcript = result.bestTranscription.formattedString
-                                self.logger.info("Transcription completed successfully")
-                                
-                                DispatchQueue.main.async {
-                                    self.transcriptionProgress = 1.0
-                                    self.isTranscribing = false
-                                    completion(true, transcript)
-                                }
-                            }
-                        }
-                        
-                        // Handle errors with retry logic
-                        if let error = error {
-                            let nsError = error as NSError
-                            // Log basic error info
-                            self.logger.error("Speech recognition error: \(nsError.localizedDescription)")
-                            
-                            // Handle "No speech detected" error specifically
-                            if nsError.localizedDescription.contains("No speech detected") {
-                                self.logger.warning("No speech detected in the audio file")
-                                
-                                // Try one more time with a different approach
-                                if retryCount < 1 {
-                                    retryCount += 1
-                                    
-                                    // Cancel the current task
-                                    self.recognitionTask?.cancel()
-                                    self.recognitionTask = nil
-                                    
-                                    // Create a new request with different settings
-                                    let newRequest = SFSpeechURLRecognitionRequest(url: audioURL)
-                                    newRequest.shouldReportPartialResults = true
-                                    newRequest.taskHint = .confirmation // Try a different hint
-                                    
-                                    // Wait a moment before retrying
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                                        guard let self = self else { return }
-                                        self.recognitionTask = recognizer.recognitionTask(with: newRequest) { [weak self] result, retryError in
-                                            // Handle the retry result
-                                            if let result = result, result.isFinal, !result.bestTranscription.formattedString.isEmpty {
-                                                self?.logger.info("Transcription successful after retry")
-                                                DispatchQueue.main.async {
-                                                    self?.transcriptionProgress = 1.0
-                                                    self?.isTranscribing = false
-                                                    completion(true, result.bestTranscription.formattedString)
-                                                }
-                                            } else if retryError != nil {
-                                                self?.logger.error("Transcription retry failed")
-                                                DispatchQueue.main.async {
-                                                    self?.isTranscribing = false
-                                                    completion(false, nil)
-                                                }
-                                            }
-                                        }
-                                    }
-                                    return
-                                }
-                            }
-                            
-                            // Check for kAFAssistantErrorDomain errors (code 1101)
-                            else if nsError.domain == "kAFAssistantErrorDomain" && nsError.code == 1101 {
-                                self.logger.warning("Received common speech recognition error: \(nsError.domain) Code=\(nsError.code). This is usually non-fatal.")
-                                
-                                // Only retry if we haven't reached the final result yet
-                                if result?.isFinal != true && retryCount < maxRetries {
-                                    retryCount += 1
-                                    self.logger.info("Retrying speech recognition (attempt \(retryCount) of \(maxRetries))")
-                                    
-                                    // Cancel the current task
-                                    self.recognitionTask?.cancel()
-                                    self.recognitionTask = nil
-                                    
-                                    // Wait a moment before retrying
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                                        guard let self = self else { return }
-                                        startRecognitionTask()
-                                    }
-                                    return
-                                }
-                            }
-                            
-                            // For other errors or if we've exhausted retries
-                            self.logger.error("Transcription error: \(error.localizedDescription)")
-                            
-                            // If we have partial results, use those rather than failing completely
-                            if let partialTranscript = result?.bestTranscription.formattedString, !partialTranscript.isEmpty {
-                                self.logger.info("Using partial transcript despite error")
-                                DispatchQueue.main.async {
-                                    self.transcriptionProgress = 1.0
-                                    self.isTranscribing = false
-                                    completion(true, partialTranscript)
-                                }
-                            } else {
-                                // No transcript available
-                                DispatchQueue.main.async {
-                                    self.isTranscribing = false
-                                    completion(false, nil)
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Start the initial recognition task
-                startRecognitionTask()
             }
         }
     }

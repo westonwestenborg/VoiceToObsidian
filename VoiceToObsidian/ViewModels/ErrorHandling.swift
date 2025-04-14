@@ -16,24 +16,24 @@ protocol ErrorHandling: AnyObject {
 
 /// Default implementation of error handling for view models
 extension ErrorHandling {
+    @MainActor
     func handleError(_ error: AppError) {
         // Log the error
         error.log()
         
-        // Update state on the main thread
-        DispatchQueue.main.async {
-            self.errorState = error
-            self.isShowingError = true
-        }
+        // Update state directly on the main actor
+        errorState = error
+        isShowingError = true
     }
     
+    @MainActor
     func dismissError() {
-        DispatchQueue.main.async {
-            self.isShowingError = false
-            // Keep the error state for a moment to allow for smooth animation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                self.errorState = nil
-            }
+        isShowingError = false
+        
+        // Keep the error state for a moment to allow for smooth animation
+        Task {
+            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+            errorState = nil
         }
     }
 }

@@ -5,6 +5,7 @@ import SwiftUI
 import OSLog
 
 /// Manages audio recording functionality with background support
+@MainActor
 class RecordingManager: ObservableObject {
     // Published properties for UI updates
     @Published var isRecording = false
@@ -76,8 +77,17 @@ class RecordingManager: ObservableObject {
         // Remove notification observers
         NotificationCenter.default.removeObserver(self)
         
-        // End background task if active
-        endBackgroundTaskIfNeeded()
+        // End background task if active - handle directly instead of calling MainActor-isolated method
+        if backgroundTask != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+            backgroundTask = .invalid
+            
+            // We can't log directly here since logger might require MainActor
+            // but we can schedule a task for logging
+            Task { @MainActor in
+                logger.info("Background task ended in deinit")
+            }
+        }
     }
     
     // MARK: - Public Methods

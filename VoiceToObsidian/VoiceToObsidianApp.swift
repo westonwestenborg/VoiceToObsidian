@@ -38,15 +38,13 @@ struct VoiceToObsidianApp: App {
             logger.warning("Memory warning received - performing cleanup")
             
             // Force memory cleanup without capturing self
-            DispatchQueue.global(qos: .utility).async {
-                autoreleasepool {
-                    // Clear URL cache
-                    URLCache.shared.removeAllCachedResponses()
-                    
-                    // Ask coordinator to clean up resources without capturing self
-                    DispatchQueue.main.async {
-                        coordinatorRef.cleanup()
-                    }
+            Task(priority: .utility) {
+                // Clear URL cache
+                URLCache.shared.removeAllCachedResponses()
+                
+                // Ask coordinator to clean up resources without capturing self
+                await MainActor.run {
+                    coordinatorRef.cleanup()
                 }
             }
         }
@@ -96,7 +94,8 @@ struct VoiceToObsidianApp: App {
         UINavigationBar.appearance().tintColor = UIColor.systemBlue
         
         // More detailed appearance configuration
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
             autoreleasepool {
                 let navBarAppearance = UINavigationBarAppearance()
                 navBarAppearance.configureWithOpaqueBackground()

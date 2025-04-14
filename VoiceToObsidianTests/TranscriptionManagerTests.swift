@@ -15,7 +15,7 @@ class MockSFSpeechRecognizer: SFSpeechRecognizer {
     
     override func recognitionTask(with request: SFSpeechRecognitionRequest, resultHandler: @escaping (SFSpeechRecognitionResult?, Error?) -> Void) -> SFSpeechRecognitionTask {
         // Call the result handler with our mock result/error
-        DispatchQueue.main.async {
+        Task { @MainActor in
             resultHandler(self.mockRecognitionTaskResult, self.mockRecognitionTaskError)
         }
         

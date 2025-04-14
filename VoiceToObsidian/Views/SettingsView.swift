@@ -399,17 +399,13 @@ struct SettingsView: View {
         
         // Load API Key from property wrapper
         isLoadingAPIKey = true
-        DispatchQueue.main.async {
-            self.anthropicAPIKey = self.secureAnthropicAPIKey
-            self.isLoadingAPIKey = false
-        }
+        anthropicAPIKey = secureAnthropicAPIKey
+        isLoadingAPIKey = false
         
         // Load Vault Path from property wrapper
         isLoadingVaultPath = true
-        DispatchQueue.main.async {
-            self.obsidianVaultPath = self.secureObsidianVaultPath
-            self.isLoadingVaultPath = false
-        }
+        obsidianVaultPath = secureObsidianVaultPath
+        isLoadingVaultPath = false
     }
     
     private func handleVaultSelection(_ url: URL) {
@@ -454,11 +450,10 @@ struct SettingsView: View {
     }
     
     /// Handle errors in this view
+    @MainActor
     private func handleError(_ error: AppError) {
-        DispatchQueue.main.async {
-            self.localErrorState = error
-            self.isShowingLocalError = true
-        }
+        localErrorState = error
+        isShowingLocalError = true
     }
 }
 

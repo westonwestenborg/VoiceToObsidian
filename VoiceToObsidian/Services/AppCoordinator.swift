@@ -4,6 +4,7 @@ import Combine
 import OSLog
 
 /// Manages the lifecycle of app services with deferred initialization
+@MainActor
 class AppCoordinator: ObservableObject, ErrorHandling {
     // App state
     @Published var appState: AppState = .initializing
@@ -40,27 +41,21 @@ class AppCoordinator: ObservableObject, ErrorHandling {
     /// Start the app initialization sequence
     func startInitialization() {
         // Initially just show UI, don't create any services
-        DispatchQueue.main.async {
-            self.appState = .uiReady
-            self.logger.debug("UI ready, scheduling essential services initialization")
+        appState = .uiReady
+        logger.debug("UI ready, scheduling essential services initialization")
+        
+        // Schedule essential services initialization after UI is visible
+        Task {
+            // Add a small delay to ensure UI is fully rendered
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
             
-            // Schedule essential services initialization after UI is visible
-            // Using Task instead of DispatchQueue for better memory management
-            Task { @MainActor in
-                // Add a small delay to ensure UI is fully rendered
-                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                
-                // Since Task doesn't support capture lists, we need to be careful
-                // about potential retain cycles in the following code
-                
-                do {
-                    try await self.initializeEssentialServicesAsync()
-                } catch let error as AppError {
-                    self.handleError(error)
-                } catch {
-                    let appError = AppError.general("Failed to initialize app: \(error.localizedDescription)")
-                    self.handleError(appError)
-                }
+            do {
+                try await initializeEssentialServicesAsync()
+            } catch let error as AppError {
+                handleError(error)
+            } catch {
+                let appError = AppError.general("Failed to initialize app: \(error.localizedDescription)")
+                handleError(appError)
             }
         }
     }

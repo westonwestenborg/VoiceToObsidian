@@ -120,7 +120,8 @@ struct VoiceNoteListView: View {
             coordinator.loadMoreVoiceNotes()
             
             // Set up a timer to force refresh the view if notes aren't showing
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            Task {
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
                 if !coordinator.voiceNotes.isEmpty && filteredNotes.isEmpty {
                     logger.debug("Forcing view refresh - notes loaded but not displayed")
                     forceRefresh.toggle() // Toggle to force view update

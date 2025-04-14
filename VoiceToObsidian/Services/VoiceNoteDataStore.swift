@@ -3,6 +3,7 @@ import Combine
 import OSLog
 
 /// Manages persistence and retrieval of voice notes
+@MainActor
 class VoiceNoteDataStore: ObservableObject {
     // Published properties for UI updates
     @Published var voiceNotes: [VoiceNote] = []
@@ -23,10 +24,8 @@ class VoiceNoteDataStore: ObservableObject {
         
         if preloadData {
             // Just check if we have notes, but don't load them yet
-            DispatchQueue.global(qos: .utility).async { [weak self] in
-                autoreleasepool {
-                    self?.checkVoiceNotesFile()
-                }
+            Task(priority: .utility) {
+                await checkVoiceNotesFileAsync()
             }
         }
     }
@@ -39,16 +38,9 @@ class VoiceNoteDataStore: ObservableObject {
         
         isLoadingNotes = true
         
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            autoreleasepool {
-                guard let self = self else { return }
-                
-                self.loadVoiceNotesPage(page: self.currentPage)
-                
-                DispatchQueue.main.async {
-                    self.isLoadingNotes = false
-                }
-            }
+        Task(priority: .userInitiated) {
+            await loadVoiceNotesPageAsync(page: currentPage)
+            isLoadingNotes = false
         }
     }
     
@@ -95,27 +87,35 @@ class VoiceNoteDataStore: ObservableObject {
     
     /// Saves voice notes to disk
     private func saveVoiceNotes() {
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            autoreleasepool {
-                guard let self = self else { return }
+        Task(priority: .utility) {
+            await saveVoiceNotesAsync()
+        }
+    }
+    
+    /// Saves voice notes to disk asynchronously
+    private func saveVoiceNotesAsync() async {
+        // Detach this task to avoid actor isolation when performing file I/O
+        await Task.detached(priority: .utility) {
+            do {
+                let data = try JSONEncoder().encode(await self.voiceNotes)
+                let url = await self.getVoiceNotesFileURL()
+                try data.write(to: url)
                 
-                do {
-                    let data = try JSONEncoder().encode(self.voiceNotes)
-                    let url = self.getVoiceNotesFileURL()
-                    try data.write(to: url)
-                    
-                    // Update cached count
+                // Update cached count on the main actor
+                await MainActor.run {
                     self.cachedNoteCount = self.voiceNotes.count
-                } catch {
-                    self.logger.error("Failed to save voice notes: \(error.localizedDescription)")
                 }
+                
+                await self.logger.debug("Voice notes saved successfully")
+            } catch {
+                await self.logger.error("Failed to save voice notes: \(error.localizedDescription)")
             }
         }
     }
     
     /// Just checks if the voice notes file exists and gets its metadata
-    private func checkVoiceNotesFile() {
-        let url = getVoiceNotesFileURL()
+    private func checkVoiceNotesFileAsync() async {
+        let url = await getVoiceNotesFileURL()
         
         if FileManager.default.fileExists(atPath: url.path) {
             do {
@@ -138,10 +138,10 @@ class VoiceNoteDataStore: ObservableObject {
         }
     }
     
-    /// Loads a specific page of voice notes
-    private func loadVoiceNotesPage(page: Int) {
-        logger.debug("Loading voice notes page \(page)")
-        let url = getVoiceNotesFileURL()
+    /// Loads a specific page of voice notes asynchronously
+    private func loadVoiceNotesPageAsync(page: Int) async {
+        await logger.debug("Loading voice notes page \(page)")
+        let url = await getVoiceNotesFileURL()
         
         if FileManager.default.fileExists(atPath: url.path) {
             do {
@@ -150,7 +150,7 @@ class VoiceNoteDataStore: ObservableObject {
                 let data = fileHandle.readDataToEndOfFile()
                 try fileHandle.close()
                 
-                self.logger.debug("Voice notes file size: \(data.count) bytes")
+                await self.logger.debug("Voice notes file size: \(data.count) bytes")
                 
                 // Decode all notes (we'll implement true pagination in a future version)
                 let allNotes = try JSONDecoder().decode([VoiceNote].self, from: data)
@@ -161,8 +161,8 @@ class VoiceNoteDataStore: ObservableObject {
                 
                 // Check if we've reached the end
                 if startIndex >= allNotes.count {
-                    DispatchQueue.main.async { [weak self] in
-                        self?.loadedAllNotes = true
+                    await MainActor.run {
+                        self.loadedAllNotes = true
                     }
                     return
                 }
@@ -170,8 +170,7 @@ class VoiceNoteDataStore: ObservableObject {
                 // Get the subset of notes for this page
                 let pageNotes = Array(allNotes[startIndex..<endIndex])
                 
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
+                await MainActor.run {
                     // Append to existing notes
                     self.voiceNotes.append(contentsOf: pageNotes)
                     self.currentPage += 1
@@ -184,21 +183,21 @@ class VoiceNoteDataStore: ObservableObject {
                     self.logger.info("Loaded page \(page) with \(pageNotes.count) notes. Total: \(self.voiceNotes.count)")
                 }
             } catch {
-                self.logger.error("Failed to load voice notes: \(error.localizedDescription)")
-                DispatchQueue.main.async { [weak self] in
-                    self?.loadedAllNotes = true
+                await self.logger.error("Failed to load voice notes: \(error.localizedDescription)")
+                await MainActor.run {
+                    self.loadedAllNotes = true
                 }
             }
         } else {
-            self.logger.info("No voice notes file found")
-            DispatchQueue.main.async { [weak self] in
-                self?.loadedAllNotes = true
+            await self.logger.info("No voice notes file found")
+            await MainActor.run {
+                self.loadedAllNotes = true
             }
         }
     }
     
     /// Gets the URL for the voice notes file
-    private func getVoiceNotesFileURL() -> URL {
+    private func getVoiceNotesFileURL() async -> URL {
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         return documentsDirectory.appendingPathComponent("voiceNotes.json")
     }

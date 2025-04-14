@@ -4,6 +4,7 @@ import Combine
 import OSLog
 
 // Lightweight view that loads minimal content at startup
+@MainActor
 struct ContentView: View {
     @EnvironmentObject var coordinator: VoiceNoteCoordinator
     @State private var isRecording = false
@@ -44,15 +45,16 @@ struct ContentView: View {
                 .padding(.horizontal, 16)
                 .onAppear {
                     // Delay full initialization
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    Task {
+                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                        
                         // Preload notes before showing the main view
                         coordinator.loadMoreVoiceNotes()
                         
                         // Set isReady after a short delay to ensure notes are loaded
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            isReady = true
-                            logger.debug("Main view ready, notes count: \(coordinator.voiceNotes.count)")
-                        }
+                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                        isReady = true
+                        logger.debug("Main view ready, notes count: \(coordinator.voiceNotes.count)")
                     }
                 }
             } else {
@@ -67,7 +69,8 @@ struct ContentView: View {
                             // Set up a timer to force refresh if notes aren't showing
                             if !coordinator.voiceNotes.isEmpty {
                                 logger.debug("Setting up delayed refresh check")
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                Task {
+                                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
                                     // Force a view refresh to ensure notes appear
                                     viewRefreshTrigger.toggle()
                                     logger.debug("Forced view refresh triggered")
@@ -242,7 +245,8 @@ extension ContentView {
             .sink { [weak coordinator] isShowing in
                 if !isShowing {
                     // When error is dismissed, clear it after a delay to allow animation
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    Task {
+                        try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
                         coordinator?.errorState = nil
                     }
                 }
@@ -255,13 +259,17 @@ extension ContentView {
             .sink { isProcessing in
                 if !isProcessing && isRecording == false {
                     // Recording has finished processing, hide the tray after a short delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        withAnimation {
-                            showRecordingTray = false
+                    Task {
+                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                        await MainActor.run {
+                            withAnimation {
+                                showRecordingTray = false
+                            }
                         }
                         
                         // Force a view refresh to ensure new note appears in the list
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+                        await MainActor.run {
                             viewRefreshTrigger.toggle()
                             logger.debug("Forced view refresh after recording completion")
                         }
@@ -276,7 +284,7 @@ extension ContentView {
             .sink { notes in
                 logger.debug("Voice notes updated, count: \(notes.count)")
                 // Force view refresh when notes change
-                DispatchQueue.main.async {
+                Task {
                     viewRefreshTrigger.toggle()
                     logger.debug("Forced view refresh due to notes update")
                 }

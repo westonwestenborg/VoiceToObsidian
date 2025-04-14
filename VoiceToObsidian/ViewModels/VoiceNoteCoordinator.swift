@@ -22,6 +22,7 @@ import VoiceToObsidian
 ///
 /// The coordinator uses lazy initialization for its services to minimize memory usage
 /// until each service is actually needed.
+@MainActor
 class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     // Published properties for UI updates
     @Published var isRecording = false
