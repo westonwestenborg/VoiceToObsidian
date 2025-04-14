@@ -160,8 +160,11 @@ class AnthropicService {
         
         1. Remove filler words (um, uh, like, etc.)
         2. Fix any grammatical errors or repetitions
-        3. Format the text in a clear, readable way
-        4. Suggest a concise title for this note (max 5-7 words)
+        3. Format the text in a clear, readable way. Add proper punctuation and spacing
+        4. If the transcript lists items, format them in a bulleted list
+        5. If the transcript lists to do items, format them in a bulleted list with checkboxes (- [ ])
+        6. If the transcript gives you instructions, follow them to the best of your ability
+        7. Suggest a concise title for this note (max 5-7 words)
         
         Original transcript:
         \(transcript)
