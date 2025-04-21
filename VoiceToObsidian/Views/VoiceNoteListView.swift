@@ -86,13 +86,25 @@ struct VoiceNoteListView: View {
                     }
                     .accessibilityLabel("Settings")
                 }
-                .sheet(isPresented: $showingSettingsView) {
+                .fullScreenCover(isPresented: $showingSettingsView) {
                     NavigationView {
                         SettingsView()
                             .navigationTitle("Settings")
-                            .navigationBarItems(trailing: Button("Done") {
-                                showingSettingsView = false
-                            })
+                            .toolbar {
+                                ToolbarItem(placement: .navigationBarLeading) {
+                                    Button(action: {
+                                        showingSettingsView = false
+                                    }) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "chevron.left")
+                                                .font(.system(size: 16, weight: .medium))
+                                            Text("Back")
+                                                .font(.system(size: 16, weight: .medium))
+                                        }
+                                        .foregroundColor(Color.flexokiAccentBlue)
+                                    }
+                                }
+                            }
                     }
                 }
                 .listStyle(PlainListStyle())
@@ -161,9 +173,35 @@ struct VoiceNoteListView: View {
 struct VoiceNoteRow: View {
     let voiceNote: VoiceNote
     
+    @ViewBuilder
+    private var statusIndicator: some View {
+        switch voiceNote.status {
+        case .processing:
+            HStack(spacing: 6) {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: Color.flexokiAccentBlue))
+                    .scaleEffect(0.7)
+                Text("Processing...")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color.flexokiAccentBlue)
+            }
+        case .error:
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.red)
+                Text("Error")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.red)
+            }
+        case .complete:
+            EmptyView()
+        }
+    }
+    
     var body: some View {
         // Use a clean layout without additional backgrounds
         VStack(alignment: .leading, spacing: Spacing.tight) {
+            statusIndicator
             Text(voiceNote.title)
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(Color.flexokiText)

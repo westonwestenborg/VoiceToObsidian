@@ -313,6 +313,9 @@ struct SettingsView: View {
     @State private var localErrorState: AppError?
     @State private var isShowingLocalError: Bool = false
     
+    /// StateObject for managing custom words/phrases.
+    @StateObject private var customWordsManager = CustomWordsManager.shared
+    
     var body: some View {
         NavigationView {
             FlexokiFormView {
@@ -333,6 +336,45 @@ struct SettingsView: View {
                     showingVaultPathAlert: $showingVaultPathAlert,
                     secureObsidianVaultPath: $secureObsidianVaultPath
                 )
+                
+                // --- Custom Words Section ---
+                FlexokiSectionView("Custom Words & Phrases") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Add words or phrases you commonly use to improve transcription accuracy.")
+                            .font(.footnote)
+                            .foregroundColor(.flexokiText2)
+                            .padding(.bottom, 4)
+                        
+                        NavigationLink(destination: CustomWordsView(customWordsManager: customWordsManager)) {
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text("Manage Custom Words")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.flexokiText)
+                                    
+                                    if customWordsManager.customWords.isEmpty {
+                                        Text("No custom words added")
+                                            .font(.footnote)
+                                            .foregroundColor(.flexokiText2)
+                                    } else {
+                                        Text("\(customWordsManager.customWords.count) word\(customWordsManager.customWords.count == 1 ? "" : "s") added")
+                                            .font(.footnote)
+                                            .foregroundColor(.flexokiText2)
+                                    }
+                                }
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.flexokiAccentBlue)
+                                    .font(.footnote)
+                            }
+                            .padding(.vertical, 8)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                // --- END Custom Words Section ---
                 
                 // Use the extracted Clear All Data Section component
                 ClearAllDataSection(

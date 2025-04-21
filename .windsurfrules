@@ -8,3 +8,4 @@
 8. When editing major services or utilities, be sure to check the corresponding tests to ensure they are still valid
 9. If it would be helpful to have me do something outside of what you can see to help you debug, please let me know. I am eager to help.
 10. For memory management, always use weak references in closures, prefer block-based notification APIs, avoid .assign(to:on:self), and ensure proper cleanup in deinit to prevent retain cycles.
+11. We are using DocC for documentation, so when making changes to the code be sure to also update the relevant documentation

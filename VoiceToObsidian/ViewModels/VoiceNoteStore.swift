@@ -494,4 +494,13 @@ class VoiceNoteStore: ObservableObject, ErrorHandling {
         voiceNotes.insert(voiceNote, at: 0) // Add to beginning of array
         saveVoiceNotes()
     }
+    
+    /// Updates an existing voice note by id and persists the changes.
+    /// - Parameter voiceNote: The updated voice note
+    func updateVoiceNote(_ voiceNote: VoiceNote) {
+        if let index = voiceNotes.firstIndex(where: { $0.id == voiceNote.id }) {
+            voiceNotes[index] = voiceNote
+            saveVoiceNotes()
+        }
+    }
 }

@@ -434,8 +434,14 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                 let recordingURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
                     .appendingPathComponent(voiceNote.audioFilename)
                 
-                // Process the recording
-                await self.processRecordingAsync(recordingURL: recordingURL, voiceNote: voiceNote)
+                // Add note to store with .processing status immediately
+                var processingNote = voiceNote
+                processingNote.status = .processing
+                await MainActor.run {
+                    voiceNoteStore.addVoiceNote(processingNote)
+                }
+                // Start async processing
+                await self.processRecordingAsync(recordingURL: recordingURL, voiceNote: processingNote)
                 return true
             } else {
                 await MainActor.run {
@@ -760,18 +766,24 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                 }
             }
             
-            // Add to data store
+            // Update status to .complete
+            processedVoiceNote.status = .complete
             await MainActor.run {
-                voiceNoteStore.addVoiceNote(processedVoiceNote)
+                voiceNoteStore.updateVoiceNote(processedVoiceNote)
                 self.isProcessing = false
                 recordingManager.resetRecordingDuration()
             }
         } catch {
+            // Update status to .error
+            var failedNote = voiceNote
+            failedNote.status = .error
             await MainActor.run {
+                voiceNoteStore.updateVoiceNote(failedNote)
                 self.isProcessing = false
                 recordingManager.resetRecordingDuration()
                 self.handleError(AppError.transcription(.recognitionFailed(error.localizedDescription)))
             }
+            logger.error("Voice note processing failed: \(error.localizedDescription)")
         }
     }
     

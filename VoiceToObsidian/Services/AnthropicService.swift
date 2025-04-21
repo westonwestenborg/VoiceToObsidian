@@ -154,6 +154,16 @@ class AnthropicService {
         request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
         
+        // Get custom words from CustomWordsManager if available
+        // Use MainActor.run to safely access @MainActor-isolated property
+        let customWords = await MainActor.run { CustomWordsManager.shared.customWords }
+        
+        // Prepare custom words section if there are any custom words
+        let customWordsSection = !customWords.isEmpty ? """
+        The voice-to-text model we use makes errors. This is a list of common words the speaker uses, please replace them when you are cleaning up the transcript if you think they are a better fit: \(customWords.joined(separator: ", "))
+        
+        """ : ""
+        
         // Create the request body with the prompt for transcript cleaning
         let promptText = """
         I have a voice memo transcript that needs to be cleaned up. Please:
@@ -166,7 +176,7 @@ class AnthropicService {
         6. If the transcript gives you instructions, follow them to the best of your ability
         7. Suggest a concise title for this note (max 5-7 words)
         
-        Original transcript:
+        \(customWordsSection)Original transcript:
         \(transcript)
         
         Please respond in the following format:
@@ -293,6 +303,16 @@ class AnthropicService {
         request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
         
+        // Get custom words from CustomWordsManager if available
+        // Use MainActor.run to safely access @MainActor-isolated property
+        let customWords = await MainActor.run { CustomWordsManager.shared.customWords }
+        
+        // Prepare custom words section if there are any custom words
+        let customWordsSection = !customWords.isEmpty ? """
+        The voice-to-text model we use makes errors. This is a list of common words the speaker uses, please replace them when you are cleaning up the transcript if you think they are a better fit: \(customWords.joined(separator: ", "))
+        
+        """ : ""
+        
         // Create the request body with the prompt for transcript cleaning and title generation
         let promptText = """
         I have a voice memo transcript that needs to be cleaned up. Please:
@@ -302,7 +322,7 @@ class AnthropicService {
         3. Format the text in a clear, readable way
         4. Suggest a concise title for this note (max 5-7 words)
         
-        Original transcript:
+        \(customWordsSection)Original transcript:
         \(transcript)
         
         Please respond in the following format:

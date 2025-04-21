@@ -31,7 +31,31 @@ import SwiftUI
 ///     // Use the audio URL
 /// }
 /// ```
+enum VoiceNoteStatus: String, Codable, CaseIterable {
+    case processing
+    case complete
+    case error
+}
+
 struct VoiceNote: Identifiable, Codable {
+    // ... existing properties ...
+    
+    // Custom decoding to handle missing status (for backward compatibility)
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        originalTranscript = try container.decode(String.self, forKey: .originalTranscript)
+        cleanedTranscript = try container.decode(String.self, forKey: .cleanedTranscript)
+        duration = try container.decode(TimeInterval.self, forKey: .duration)
+        creationDate = try container.decode(Date.self, forKey: .creationDate)
+        audioFilename = try container.decode(String.self, forKey: .audioFilename)
+        obsidianPath = try container.decodeIfPresent(String.self, forKey: .obsidianPath)
+        status = (try? container.decode(VoiceNoteStatus.self, forKey: .status)) ?? .complete
+    }
+    
+    // Existing synthesized init and Encodable remain unchanged
+
     /// Unique identifier for the voice note.
     ///
     /// This UUID is used to uniquely identify each voice note and is automatically
@@ -76,6 +100,9 @@ struct VoiceNote: Identifiable, Codable {
     /// This property is nil until the note has been successfully exported to Obsidian.
     var obsidianPath: String?
     
+    /// The processing status of the note (processing, complete, error)
+    var status: VoiceNoteStatus
+    
     /// The full URL to the audio recording file.
     ///
     /// This computed property constructs the URL to the audio file in the app's
@@ -106,14 +133,15 @@ struct VoiceNote: Identifiable, Codable {
     ///   - creationDate: The date and time when the note was created. Defaults to the current date/time.
     ///   - audioFilename: The filename of the associated audio recording.
     ///   - obsidianPath: The path to the note in Obsidian, if exported. Defaults to nil.
-    init(id: UUID = UUID(), 
-         title: String, 
-         originalTranscript: String, 
-         cleanedTranscript: String, 
-         duration: TimeInterval, 
-         creationDate: Date = Date(), 
-         audioFilename: String, 
-         obsidianPath: String? = nil) {
+    init(id: UUID = UUID(),
+         title: String,
+         originalTranscript: String,
+         cleanedTranscript: String,
+         duration: TimeInterval,
+         creationDate: Date = Date(),
+         audioFilename: String,
+         obsidianPath: String? = nil,
+         status: VoiceNoteStatus = .complete) {
         self.id = id
         self.title = title
         self.originalTranscript = originalTranscript
@@ -122,6 +150,7 @@ struct VoiceNote: Identifiable, Codable {
         self.creationDate = creationDate
         self.audioFilename = audioFilename
         self.obsidianPath = obsidianPath
+        self.status = status
     }
 }
 
@@ -138,12 +167,13 @@ extension VoiceNote {
     static var sampleNote: VoiceNote {
         VoiceNote(
             title: "Meeting Notes for Project X",
-            originalTranscript: "Um, so for project X we need to, uh, finish the UI design by next week and then start implementing the, the backend services. John will handle the API integration and Sarah will work on the database schema.",
-            cleanedTranscript: "For Project X, we need to finish the UI design by next week and then start implementing the backend services. John will handle the API integration and Sarah will work on the database schema.",
+            originalTranscript: "Discussed project timeline and deliverables. Assigned tasks to team members.",
+            cleanedTranscript: "Meeting Notes:\n- Project timeline reviewed\n- Deliverables discussed\n- Tasks assigned to team members",
             duration: 35.7,
             creationDate: Date().addingTimeInterval(-86400), // Yesterday
             audioFilename: "sample_recording.m4a",
-            obsidianPath: "Voice Notes/Meeting Notes for Project X.md"
+            obsidianPath: "Voice Notes/Meeting Notes for Project X.md",
+            status: .complete
         )
     }
     
