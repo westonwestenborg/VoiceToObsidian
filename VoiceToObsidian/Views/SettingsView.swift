@@ -6,6 +6,8 @@ import Security
 import UIKit
 import OSLog
 
+// MARK: - Form Components
+
 // Custom form components for Flexoki styling
 struct FlexokiFormView<Content: View>: View {
     let content: Content
@@ -15,20 +17,11 @@ struct FlexokiFormView<Content: View>: View {
     }
     
     var body: some View {
-        ZStack {
-            // Background that extends to all edges
-            Color.flexokiBackground
-                .edgesIgnoringSafeArea(.all)
-            
-            // Content with styling
-            ScrollView {
-                VStack(spacing: 24) {
-                    content
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 16)
-            }
+        VStack(spacing: 16) {
+            content
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
     }
 }
 
@@ -278,165 +271,46 @@ struct ClearAllDataSection: View {
     }
 }
 
-// Main Settings View
-struct SettingsView: View {
-    @EnvironmentObject var coordinator: VoiceNoteCoordinator
+// MARK: - State Coordinator
+
+/// Coordinator class that manages all state for the Settings view
+/// This approach avoids the 'self is immutable' errors in SwiftUI by using a reference type
+@MainActor
+class SettingsStateCoordinator: ObservableObject {
+    // Reference to the main coordinator
+    var voiceNoteCoordinator: VoiceNoteCoordinator
     
-    // Use property wrappers for settings
+    // Logger for structured logging
+    private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "SettingsCoordinator")
+    
+    // Published properties for UI state
+    @Published var anthropicAPIKey = ""
+    @Published var obsidianVaultPath = ""
+    @Published var isLoadingAPIKey = false
+    @Published var isLoadingVaultPath = false
+    @Published var showingDocumentPicker = false
+    @Published var showingAPIKeyAlert = false
+    @Published var showingClearedAlert = false
+    @Published var showingVaultPathAlert = false
+    @Published var showingClearAllAlert = false
+    @Published var showingClearAllConfirmation = false
+    @Published var localErrorState: AppError?
+    @Published var isShowingLocalError = false
+    
+    // Secure storage references
     @SecureStorage(wrappedValue: "", key: "AnthropicAPIKey")
-    private var secureAnthropicAPIKey: String
+    var secureAnthropicAPIKey: String
     
     @SecureStorage(wrappedValue: "", key: "ObsidianVaultPath")
-    private var secureObsidianVaultPath: String
+    var secureObsidianVaultPath: String
     
-    // Local state for editing
-    @State private var anthropicAPIKey = ""
-    @State private var obsidianVaultPath = ""
-    
-    // App preferences
-    @AppPreference(wrappedValue: true, "ShowTranscriptionProgress")
-    private var showTranscriptionProgress: Bool
-    
-    @AppPreference(wrappedValue: true, "UseHighQualityRecording")
-    private var useHighQualityRecording: Bool
-    
-    @State private var isLoadingAPIKey = false
-    @State private var isLoadingVaultPath = false
-    @State private var showingDocumentPicker = false
-    @State private var showingAPIKeyAlert = false
-    @State private var showingClearedAlert = false
-    @State private var showingVaultPathAlert = false
-    @State private var showingClearAllAlert = false
-    @State private var showingClearAllConfirmation = false
-    
-    // For local error handling
-    @State private var localErrorState: AppError?
-    @State private var isShowingLocalError: Bool = false
-    
-    /// StateObject for managing custom words/phrases.
-    @StateObject private var customWordsManager = CustomWordsManager.shared
-    
-    var body: some View {
-        NavigationView {
-            FlexokiFormView {
-                // Use the extracted API Key Section component
-                APIKeySection(
-                    anthropicAPIKey: $anthropicAPIKey,
-                    isLoadingAPIKey: $isLoadingAPIKey,
-                    showingAPIKeyAlert: $showingAPIKeyAlert,
-                    showingClearedAlert: $showingClearedAlert,
-                    secureAnthropicAPIKey: $secureAnthropicAPIKey
-                )
-                
-                // Use the extracted Vault Path Section component
-                VaultPathSection(
-                    obsidianVaultPath: $obsidianVaultPath,
-                    isLoadingVaultPath: $isLoadingVaultPath,
-                    showingDocumentPicker: $showingDocumentPicker,
-                    showingVaultPathAlert: $showingVaultPathAlert,
-                    secureObsidianVaultPath: $secureObsidianVaultPath
-                )
-                
-                // --- Custom Words Section ---
-                FlexokiSectionView("Custom Words & Phrases") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Add words or phrases you commonly use to improve transcription accuracy.")
-                            .font(.footnote)
-                            .foregroundColor(.flexokiText2)
-                            .padding(.bottom, 4)
-                        
-                        NavigationLink(destination: CustomWordsView(customWordsManager: customWordsManager)) {
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text("Manage Custom Words")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.flexokiText)
-                                    
-                                    if customWordsManager.customWords.isEmpty {
-                                        Text("No custom words added")
-                                            .font(.footnote)
-                                            .foregroundColor(.flexokiText2)
-                                    } else {
-                                        Text("\(customWordsManager.customWords.count) word\(customWordsManager.customWords.count == 1 ? "" : "s") added")
-                                            .font(.footnote)
-                                            .foregroundColor(.flexokiText2)
-                                    }
-                                }
-                                
-                                Spacer()
-                                
-                                Image(systemName: "chevron.right")
-                                    .foregroundColor(.flexokiAccentBlue)
-                                    .font(.footnote)
-                            }
-                            .padding(.vertical, 8)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                // --- END Custom Words Section ---
-                
-                // Use the extracted Clear All Data Section component
-                ClearAllDataSection(
-                    isLoadingAPIKey: $isLoadingAPIKey,
-                    isLoadingVaultPath: $isLoadingVaultPath,
-                    showingClearAllAlert: $showingClearAllAlert
-                )
-            }
-            .navigationTitle("Settings")
-            .onAppear {
-                loadSavedSettings()
-            }
-            .errorBanner(error: $localErrorState, isPresented: $isShowingLocalError)
-            .sheet(isPresented: $showingDocumentPicker) {
-                DocumentPicker { url in
-                    handleVaultSelection(url)
-                }
-            }
-            .alert("API Key Saved", isPresented: $showingAPIKeyAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("Your Anthropic API key has been securely saved.")
-            }
-            .alert("API Key Cleared", isPresented: $showingClearedAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("Your Anthropic API key has been removed.")
-            }
-            .alert("Vault Path Cleared", isPresented: $showingVaultPathAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("Your Obsidian vault path has been removed.")
-            }
-            .alert("Clear All Sensitive Data", isPresented: $showingClearAllAlert) {
-                Button("Cancel", role: .cancel) {}
-                Button("Clear All", role: .destructive) {
-                    Task {
-                        let _ = await coordinator.clearAllSensitiveDataAsync()
-                        // These updates are redundant since the coordinator already updates these values,
-                        // but we'll keep them to ensure the UI is updated
-                        await MainActor.run {
-                            anthropicAPIKey = ""
-                            obsidianVaultPath = ""
-                            showingClearAllConfirmation = true
-                        }
-                    }
-                }
-            } message: {
-                Text("This will remove all API keys, vault paths, and security bookmarks. Are you sure?")
-            }
-            .alert("Data Cleared", isPresented: $showingClearAllConfirmation) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("All sensitive data has been removed from the app.")
-            }
-        }
+    init(coordinator: VoiceNoteCoordinator) {
+        self.voiceNoteCoordinator = coordinator
+        loadSavedSettings()
     }
     
-    // Logger for SettingsView
-    private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "SettingsView")
-    
-    private func loadSavedSettings() {
+    /// Loads saved settings from secure storage
+    func loadSavedSettings() {
         logger.debug("Loading saved settings")
         
         // Load API Key from property wrapper
@@ -450,11 +324,28 @@ struct SettingsView: View {
         isLoadingVaultPath = false
     }
     
-    private func handleVaultSelection(_ url: URL) {
+    /// Clears all sensitive data asynchronously
+    func clearAllSensitiveData() async {
+        logger.debug("Clearing all sensitive data")
+        
+        // Clear data through the coordinator
+        await voiceNoteCoordinator.clearAllSensitiveDataAsync()
+        
+        // Update state variables
+        anthropicAPIKey = ""
+        obsidianVaultPath = ""
+        secureAnthropicAPIKey = ""
+        secureObsidianVaultPath = ""
+        showingClearAllConfirmation = true
+    }
+    
+    /// Handles vault selection from document picker
+    func handleVaultSelection(_ url: URL) async {
         isLoadingVaultPath = true
         
         // Get the path string from the URL
         let path = url.path
+        logger.debug("Selected vault path: \(path)")
         
         // Try to create a security-scoped bookmark using SecurityManager
         do {
@@ -469,34 +360,177 @@ struct SettingsView: View {
             // Create and store the bookmark using SecurityManager
             try SecurityManager.createAndStoreBookmark(for: url)
             
-            // Save the path using the coordinator
-            coordinator.setObsidianVaultPath(path)
-            
-            // Use the property wrapper's projected value (binding) to update the value
-            // This avoids the 'self is immutable' error
-            _secureObsidianVaultPath.projectedValue.wrappedValue = path
-            
-            // Update the UI
-            obsidianVaultPath = path
-            isLoadingVaultPath = false
-            showingVaultPathAlert = true
-            
             // Stop accessing the security-scoped resource
-            SecurityManager.stopAccessingSecurityScopedResource(url: url)
+            url.stopAccessingSecurityScopedResource()
+            
+            // Update the coordinator
+            await voiceNoteCoordinator.setObsidianVaultPath(path)
+            
+            // Update the secure storage and UI state
+            secureObsidianVaultPath = path
+            obsidianVaultPath = path
+            showingVaultPathAlert = true
         } catch {
             logger.error("Failed to create security-scoped bookmark: \(error)")
-            let appError = AppError.securityScoped(.bookmarkCreationFailed)
-            handleError(appError)
-            isLoadingVaultPath = false
+            handleError(AppError.securityScoped(.bookmarkCreationFailed))
         }
+        
+        isLoadingVaultPath = false
     }
     
-    /// Handle errors in this view
-    @MainActor
+    /// Handles errors by updating state for display
     private func handleError(_ error: AppError) {
+        logger.error("Error in settings: \(error.localizedDescription)")
         localErrorState = error
         isShowingLocalError = true
     }
+}
+
+// MARK: - Settings View
+
+/// Main settings view for the application
+struct SettingsView: View {
+    // Environment object for the main coordinator
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
+    
+    // State coordinator to manage all state for this view
+    @StateObject private var stateCoordinator: SettingsStateCoordinator
+    
+    // StateObject for managing custom words/phrases
+    @StateObject private var customWordsManager = CustomWordsManager.shared
+    
+    // Logger for structured logging
+    private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "SettingsView")
+    
+    // Initialize the state coordinator
+    init() {
+        // Create a temporary coordinator for initialization
+        // The actual coordinator will be provided by the environment
+        let tempCoordinator = VoiceNoteCoordinator()
+        _stateCoordinator = StateObject(wrappedValue: SettingsStateCoordinator(coordinator: tempCoordinator))
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Main content
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Use the extracted API Key Section component
+                    APIKeySection(
+                        anthropicAPIKey: $stateCoordinator.anthropicAPIKey,
+                        isLoadingAPIKey: $stateCoordinator.isLoadingAPIKey,
+                        showingAPIKeyAlert: $stateCoordinator.showingAPIKeyAlert,
+                        showingClearedAlert: $stateCoordinator.showingClearedAlert,
+                        secureAnthropicAPIKey: $stateCoordinator.secureAnthropicAPIKey
+                    )
+                    
+                    // Use the extracted Vault Path Section component
+                    VaultPathSection(
+                        obsidianVaultPath: $stateCoordinator.obsidianVaultPath,
+                        isLoadingVaultPath: $stateCoordinator.isLoadingVaultPath,
+                        showingDocumentPicker: $stateCoordinator.showingDocumentPicker,
+                        showingVaultPathAlert: $stateCoordinator.showingVaultPathAlert,
+                        secureObsidianVaultPath: $stateCoordinator.secureObsidianVaultPath
+                    )
+                    
+                    // --- Custom Words Section ---
+                    FlexokiSectionView("Custom Words & Phrases") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Add words or phrases you commonly use to improve transcription accuracy.")
+                                .font(.footnote)
+                                .foregroundColor(.flexokiText2)
+                                .padding(.bottom, 4)
+                            
+                            NavigationLink(destination: CustomWordsView(customWordsManager: customWordsManager)) {
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text("Manage Custom Words")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.flexokiText)
+                                        
+                                        if customWordsManager.customWords.isEmpty {
+                                            Text("No custom words added")
+                                                .font(.footnote)
+                                                .foregroundColor(.flexokiText2)
+                                        } else {
+                                            Text("\(customWordsManager.customWords.count) word\(customWordsManager.customWords.count == 1 ? "" : "s") added")
+                                                .font(.footnote)
+                                                .foregroundColor(.flexokiText2)
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.flexokiAccentBlue)
+                                        .font(.footnote)
+                                }
+                                .padding(.vertical, 8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    // --- END Custom Words Section ---
+                    
+                    // Use the extracted Clear All Data Section component
+                    ClearAllDataSection(
+                        isLoadingAPIKey: $stateCoordinator.isLoadingAPIKey,
+                        isLoadingVaultPath: $stateCoordinator.isLoadingVaultPath,
+                        showingClearAllAlert: $stateCoordinator.showingClearAllAlert
+                    )
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+            }
+        }
+        .background(Color.flexokiBackground.edgesIgnoringSafeArea(.all))
+        .navigationBarTitle("Settings", displayMode: .large)
+        .onAppear {
+            // Update the state coordinator with the actual coordinator from the environment
+            stateCoordinator.voiceNoteCoordinator = coordinator
+        }
+        .errorBanner(error: $stateCoordinator.localErrorState, isPresented: $stateCoordinator.isShowingLocalError)
+        .sheet(isPresented: $stateCoordinator.showingDocumentPicker) {
+            DocumentPicker { url in
+                // Use Task to handle the async vault selection
+                Task { @MainActor in
+                    await stateCoordinator.handleVaultSelection(url)
+                }
+            }
+        }
+        .alert("API Key Saved", isPresented: $stateCoordinator.showingAPIKeyAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your Anthropic API key has been securely saved.")
+        }
+        .alert("API Key Cleared", isPresented: $stateCoordinator.showingClearedAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your Anthropic API key has been removed.")
+        }
+        .alert("Vault Path Cleared", isPresented: $stateCoordinator.showingVaultPathAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your Obsidian vault path has been removed.")
+        }
+        .alert("Clear All Sensitive Data", isPresented: $stateCoordinator.showingClearAllAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear All", role: .destructive) {
+                // Use Task to handle the async operation
+                Task {
+                    await stateCoordinator.clearAllSensitiveData()
+                }
+            }
+        } message: {
+            Text("This will remove your API key and vault path from secure storage.")
+        }
+        .alert("Data Cleared", isPresented: $stateCoordinator.showingClearAllConfirmation) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("All sensitive data has been removed from the app.")
+        }
+    }
+    
 }
 
 // Helper function to hide the keyboard

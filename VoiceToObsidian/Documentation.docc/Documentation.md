@@ -23,6 +23,7 @@ The app follows the MVVM architecture pattern with a Coordinator layer for navig
 - ``AnthropicService``
 - ``ObsidianService``
 - ``SecurityManager``
+- ``CustomWordsManager``
 
 ### App Coordination
 

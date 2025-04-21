@@ -12,7 +12,8 @@ Voice to Obsidian follows the MVVM (Model-View-ViewModel) architecture pattern w
 
 The core data models in the app include:
 
-- `VoiceNote`: Represents a recorded voice note with its metadata and content
+- `VoiceNote`: Represents a recorded voice note with its metadata, content, and processing status
+- `VoiceNoteStatus`: An enum tracking the processing state of voice notes (processing, complete, error)
 - `AppError`: A comprehensive error handling system with nested error types for different components
 
 ### Views
@@ -20,8 +21,10 @@ The core data models in the app include:
 The UI layer is built with SwiftUI and consists of:
 
 - An integrated recording interface with a floating timer display
+- Real-time processing status indicators showing the current state of voice notes
 - Transcription views for displaying and editing transcripts
 - Settings views for configuring the app
+- Custom words management interface for adding, editing, and removing custom words
 - Shared UI components using the Flexoki theme system for consistent styling
 
 ### ViewModels
@@ -61,7 +64,7 @@ Handles persistence and retrieval of voice notes, including saving to and loadin
 
 ### AnthropicService
 
-Communicates with the Anthropic Claude API to clean and format transcripts and generate titles.
+Communicates with the Anthropic Claude API to clean and format transcripts and generate titles. Integrates custom words from the CustomWordsManager to improve transcription accuracy for specialized terminology.
 
 ### ObsidianService
 
@@ -70,6 +73,10 @@ Manages interactions with the Obsidian vault, including creating markdown files 
 ### SecurityManager
 
 Manages security-scoped bookmarks for accessing the Obsidian vault directory across app launches.
+
+### CustomWordsManager
+
+Manages user-defined custom words and phrases to improve transcription accuracy. Provides persistence and reactivity for the list of custom words, which are included in the context sent to Claude for transcript processing.
 
 ## Utilities and Extensions
 
