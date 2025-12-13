@@ -1,12 +1,12 @@
 # Voice to Obsidian
 
-An iOS app that records voice memos, transcribes them, processes them with Claude AI, and saves them to your Obsidian vault. Features the Flexoki color palette for a warm, readable interface that matches the Obsidian aesthetic.
+An iOS app that records voice memos, transcribes them, processes them with AI, and saves them to your Obsidian vault. Supports multiple LLM providers including Apple Intelligence, Anthropic Claude, OpenAI, and Google Gemini. Features the Flexoki color palette for a warm, readable interface that matches the Obsidian aesthetic.
 
 ## Features
 
 - Record voice memos directly in the app
 - Automatic transcription using Apple's Speech framework
-- Clean up and format transcripts using Anthropic's Claude API
+- Clean up and format transcripts using AI (Apple Intelligence, Claude, OpenAI, or Gemini)
 - Save voice notes as Markdown files in your Obsidian vault
 - Link voice notes in your daily note
 - Browse and play back past voice notes
@@ -28,14 +28,15 @@ An iOS app that records voice memos, transcribes them, processes them with Claud
 
 - **Services**
   - `ObsidianService.swift`: Manages file creation in the Obsidian vault
-  - `AnthropicService.swift`: Processes transcripts with Claude API
+  - `LLMService.swift`: Processes transcripts with multiple LLM providers
 
 ## Setup Instructions
 
 1. Open the project in Xcode
 2. Build and run the app on your iOS device
 3. In the Settings tab:
-   - Enter your Anthropic API key
+   - Select your preferred AI provider (Apple Intelligence is free and on-device)
+   - Enter an API key if using a cloud provider (Claude, OpenAI, or Gemini)
    - Select your Obsidian vault directory
 4. Start recording voice memos!
 

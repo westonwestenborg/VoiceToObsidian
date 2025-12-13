@@ -20,7 +20,7 @@ The app follows the MVVM architecture pattern with a Coordinator layer for navig
 - ``RecordingManager``
 - ``TranscriptionManager``
 - ``VoiceNoteStore``
-- ``AnthropicService``
+- ``LLMService``
 - ``ObsidianService``
 - ``SecurityManager``
 - ``CustomWordsManager``

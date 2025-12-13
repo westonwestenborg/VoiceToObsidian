@@ -114,12 +114,6 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// It remains `nil` until the `voiceNoteStore` property is accessed.
     private var _voiceNoteStore: VoiceNoteStore?
     
-    /// Backing variable for the lazily initialized Anthropic service.
-    ///
-    /// This variable holds the instance of `AnthropicService` once it's created.
-    /// It remains `nil` until the `anthropicService` property is accessed.
-    private var _anthropicService: AnthropicService?
-
     /// Backing variable for the lazily initialized LLM service.
     ///
     /// This variable holds the instance of `LLMService` once it's created.
@@ -173,19 +167,6 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         return _voiceNoteStore!
     }
     
-    /// The Anthropic service responsible for processing transcripts.
-    ///
-    /// This property lazily initializes the `AnthropicService` when first accessed,
-    /// which helps minimize memory usage and startup time. The service handles
-    /// communication with the Anthropic Claude API to clean and format transcripts.
-    private var anthropicService: AnthropicService {
-        if _anthropicService == nil {
-            logger.debug("Lazily creating AnthropicService")
-            _anthropicService = AnthropicService(apiKey: anthropicAPIKey)
-        }
-        return _anthropicService!
-    }
-
     /// The LLM service responsible for processing transcripts with multiple providers.
     ///
     /// This property lazily initializes the `LLMService` when first accessed,
@@ -230,12 +211,11 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     ///
     /// This property uses the `@SecureStorage` property wrapper to automatically
     /// handle secure storage and retrieval of the API key from the Keychain.
-    /// When the value changes, it automatically updates the Anthropic service.
+    /// When the value changes, it automatically updates the LLM service.
     @SecureStorage(wrappedValue: "", key: "AnthropicAPIKey")
     private var anthropicAPIKey: String {
         didSet {
             logger.debug("Anthropic API key updated")
-            anthropicService.updateAPIKey(anthropicAPIKey)
             llmService.updateAnthropicAPIKey(anthropicAPIKey)
         }
     }
@@ -378,7 +358,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             _ = recordingManager
             _ = transcriptionManager
             _ = voiceNoteStore
-            _ = anthropicService
+            _ = llmService
             _ = obsidianService
         }
         
@@ -472,7 +452,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// - Updates the UI state to reflect that recording has stopped
     /// - Initiates the processing pipeline, which includes:
     ///   - Transcribing the audio using `TranscriptionManager`
-    ///   - Processing the transcript with `AnthropicService` (if configured)
+    ///   - Processing the transcript with `LLMService` (if configured)
     ///   - Saving the note to Obsidian using `ObsidianService` (if configured)
     ///   - Persisting the voice note data using `VoiceNoteStore`
     ///
@@ -652,7 +632,6 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     func clearAnthropicAPIKey() {
         // Property wrapper handles the deletion from keychain
         anthropicAPIKey = ""
-        anthropicService.updateAPIKey("")
         llmService.updateAnthropicAPIKey("")
         logger.info("Anthropic API key cleared successfully")
     }
@@ -820,7 +799,6 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             _obsidianVaultPath = ""
 
             // Update services
-            anthropicService.updateAPIKey("")
             llmService.updateAnthropicAPIKey("")
             llmService.updateOpenAIAPIKey("")
             llmService.updateGeminiAPIKey("")
@@ -877,7 +855,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// This private method implements the core processing pipeline for a voice note after recording.
     /// It orchestrates the following sequence of operations:
     /// 1. Transcribes the audio file using `TranscriptionManager`
-    /// 2. If an Anthropic API key is available, processes the transcript with `AnthropicService` to:
+    /// 2. If an LLM provider is configured, processes the transcript with `LLMService` to:
     ///    - Clean and format the transcript
     ///    - Generate an appropriate title
     /// 3. If an Obsidian vault path is available:
@@ -1135,7 +1113,6 @@ extension VoiceNoteCoordinator {
         _recordingManager = nil
         _transcriptionManager = nil
         _voiceNoteStore = nil
-        _anthropicService = nil
         _llmService = nil
         _obsidianService = nil
         // Cancel Combine subscriptions

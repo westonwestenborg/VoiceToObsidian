@@ -39,10 +39,6 @@ enum AppError: Error {
     /// - Parameter TranscriptionError: The specific transcription error that occurred
     case transcription(TranscriptionError)
     
-    /// An error related to Anthropic API interactions.
-    /// - Parameter AnthropicError: The specific Anthropic API error that occurred
-    case anthropic(AnthropicError)
-
     /// An error related to LLM provider interactions.
     /// - Parameter LLMError: The specific LLM error that occurred
     case llm(LLMError)
@@ -105,29 +101,6 @@ enum AppError: Error {
         case recognitionRequestCreationFailed
     }
     
-    /// Errors related to Anthropic API interactions.
-    ///
-    /// This enum encapsulates all errors that can occur when communicating with
-    /// the Anthropic Claude API for transcript processing.
-    enum AnthropicError: Error {
-        /// The Anthropic API key is missing or not configured.
-        case apiKeyMissing
-
-        /// Creating the API request failed.
-        case requestCreationFailed
-
-        /// A network error occurred during the API call.
-        /// - Parameter String: A description of the network error
-        case networkError(String)
-
-        /// Parsing the API response failed.
-        /// - Parameter String: A description of why parsing failed
-        case responseParsingFailed(String)
-
-        /// The API response was invalid or unexpected.
-        case invalidResponse
-    }
-
     /// Errors related to LLM (Language Model) provider interactions.
     ///
     /// This enum encapsulates all errors that can occur when communicating with
@@ -218,7 +191,6 @@ extension AppError: LocalizedError {
         switch self {
         case .recording(let err): return handleRecordingError(err)
         case .transcription(let err): return handleTranscriptionError(err)
-        case .anthropic(let err): return handleAnthropicError(err)
         case .llm(let err): return handleLLMError(err)
         case .obsidian(let err): return handleObsidianError(err)
         case .securityScoped(let err): return handleSecurityScopedError(err)
@@ -237,7 +209,6 @@ extension AppError: LocalizedError {
         switch self {
         case .recording: return "Audio recording issue"
         case .transcription: return "Speech transcription issue"
-        case .anthropic: return "Anthropic API issue"
         case .llm: return "LLM processing issue"
         case .obsidian: return "Obsidian vault access issue"
         case .securityScoped: return "Security permission issue"
@@ -257,8 +228,6 @@ extension AppError: LocalizedError {
         switch self {
         case .recording(.permissionDenied):
             return "Please grant microphone permission in Settings."
-        case .anthropic(.apiKeyMissing):
-            return "Please add your Anthropic API key in Settings."
         case .llm(.apiKeyMissing):
             return "Please add an API key for your selected provider in Settings."
         case .llm(.providerUnavailable):
@@ -300,21 +269,6 @@ extension AppError: LocalizedError {
         }
     }
     
-    private func handleAnthropicError(_ error: AnthropicError) -> String {
-        switch error {
-        case .apiKeyMissing:
-            return "Anthropic API key is missing."
-        case .requestCreationFailed:
-            return "Failed to create API request."
-        case .networkError(let message):
-            return "Network error: \(message)"
-        case .responseParsingFailed(let message):
-            return "Failed to parse API response: \(message)"
-        case .invalidResponse:
-            return "Received invalid response from API."
-        }
-    }
-
     private func handleLLMError(_ error: LLMError) -> String {
         switch error {
         case .apiKeyMissing:

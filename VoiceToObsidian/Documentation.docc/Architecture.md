@@ -62,9 +62,9 @@ Manages speech recognition and transcription using Apple's Speech framework.
 
 Handles persistence and retrieval of voice notes, including saving to and loading from disk with pagination support.
 
-### AnthropicService
+### LLMService
 
-Communicates with the Anthropic Claude API to clean and format transcripts and generate titles. Integrates custom words from the CustomWordsManager to improve transcription accuracy for specialized terminology.
+Manages transcript processing using multiple LLM providers (Apple Foundation Models, Anthropic Claude, OpenAI, Google Gemini). Integrates custom words from the CustomWordsManager to improve transcription accuracy for specialized terminology.
 
 ### ObsidianService
 

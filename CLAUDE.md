@@ -29,10 +29,10 @@ The app follows **MVVM with Coordinators** pattern:
 ### Services (Business Logic)
 - `RecordingManager` - Audio recording with AVAudioSession/AVAudioRecorder, uses CADisplayLink for reliable timer updates
 - `TranscriptionManager` - Speech recognition using Apple's Speech framework
-- `AnthropicService` - Claude API integration for transcript cleanup and title generation
+- `LLMService` - Multi-provider LLM integration (Apple Intelligence, Claude, OpenAI, Gemini) for transcript cleanup and title generation
 - `ObsidianService` - Creates markdown files and copies audio to Obsidian vault
 - `SecurityManager` - Security-scoped bookmarks for vault directory access
-- `CustomWordsManager` - User-defined words sent to Claude for better transcription accuracy
+- `CustomWordsManager` - User-defined words sent to LLM for better transcription accuracy
 
 ### Property Wrappers
 - `@SecureStorage` - Keychain storage for sensitive data (API keys)

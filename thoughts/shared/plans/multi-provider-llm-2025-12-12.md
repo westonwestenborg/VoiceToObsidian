@@ -14,7 +14,7 @@ Research: thoughts/shared/research/multi-provider-llm-integration-2025-12-12.md
 | Phase 5 | ✅ COMPLETE | VoiceNoteCoordinator updated to use LLMService |
 | Phase 6 | ✅ COMPLETE | Settings UI updated with provider picker and conditional API key sections |
 | Phase 7 | ✅ COMPLETE | New test suites added, 69 tests passing |
-| Phase 8 | 🔲 PENDING | Delete old files & cleanup |
+| Phase 8 | ✅ COMPLETE | Delete old files & cleanup |
 
 ## Overview
 
@@ -903,9 +903,32 @@ final class LLMServiceTests: XCTestCase {
 4. Update any imports that referenced `AnthropicService`
 
 **Verification:**
-- [ ] Automated: `make build` succeeds with no warnings
-- [ ] Automated: `make test` passes
+- [x] Automated: `make build` succeeds with no warnings
+- [x] Automated: `make test` passes (62 tests)
 - [ ] Manual: App launches and functions correctly
+
+**Completion Notes (2025-12-12):**
+- Deleted `VoiceToObsidian/Services/AnthropicService.swift`
+- Deleted `VoiceToObsidianTests/AnthropicServiceTests.swift`
+- Removed all 4 references from `project.pbxproj`
+- Updated `VoiceNoteCoordinator.swift`:
+  - Removed `_anthropicService` backing variable and lazy property
+  - Updated `anthropicAPIKey` didSet to only call `llmService.updateAnthropicAPIKey()`
+  - Updated service preload to use `llmService` instead of `anthropicService`
+  - Updated `clearAnthropicAPIKey()` and `clearAllSensitiveDataAsync()`
+  - Updated `cleanup()` method
+  - Updated doc comments
+- Updated `AppError.swift`:
+  - Removed `case anthropic(AnthropicError)` from enum
+  - Removed `AnthropicError` nested enum
+  - Removed `handleAnthropicError()` method
+  - Updated `errorDescription`, `failureReason`, `recoverySuggestion` switches
+- Updated `ErrorBannerView.swift` preview to use `.llm(.apiKeyMissing)` instead of `.anthropic(.apiKeyMissing)`
+- Updated documentation:
+  - `CLAUDE.md`: Updated services list
+  - `Documentation.docc/Documentation.md`: Updated service list
+  - `Documentation.docc/Architecture.md`: Updated LLMService description
+  - `README.md`: Updated description, features, and setup instructions
 
 ---
 

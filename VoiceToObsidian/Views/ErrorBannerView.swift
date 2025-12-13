@@ -112,7 +112,7 @@ struct ErrorBannerView_Previews: PreviewProvider {
             }
             
             ErrorBannerView(
-                error: AppError.anthropic(.apiKeyMissing)
+                error: AppError.llm(.apiKeyMissing)
             ) {
                 logger.debug("Dismissed")
             }
