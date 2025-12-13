@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D4LLMPROV2DB9A00000000002 /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4LLMPROV2DB9A00000000001 /* LLMProvider.swift */; };
+		D4FILENAME2DB8A00000000002 /* String+Filename.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FILENAME2DB8A00000000001 /* String+Filename.swift */; };
 		00A1234567890123456789AB /* VoiceToObsidianApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B1234567890123456789AB /* VoiceToObsidianApp.swift */; };
 		00A2234567890123456789AB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B2234567890123456789AB /* ContentView.swift */; };
 		00A4234567890123456789AB /* VoiceNoteListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B4234567890123456789AB /* VoiceNoteListView.swift */; };
@@ -39,9 +41,7 @@
 		D45996EB2DB5BD78009D9CC3 /* GettingStarted.md in Resources */ = {isa = PBXBuildFile; fileRef = D45996E62DB5BD78009D9CC3 /* GettingStarted.md */; };
 		D45996EC2DB5BD78009D9CC3 /* Architecture.md in Resources */ = {isa = PBXBuildFile; fileRef = D45996E42DB5BD78009D9CC3 /* Architecture.md */; };
 		D45996EF2DB5C489009D9CC3 /* CustomWordsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45996ED2DB5C489009D9CC3 /* CustomWordsManager.swift */; };
-		D45996F02DB5C489009D9CC3 /* CustomWordsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45996ED2DB5C489009D9CC3 /* CustomWordsManager.swift */; };
 		D45996F22DB5CB16009D9CC3 /* CustomWordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45996F12DB5CB16009D9CC3 /* CustomWordsView.swift */; };
-		D45996F32DB5CB16009D9CC3 /* CustomWordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45996F12DB5CB16009D9CC3 /* CustomWordsView.swift */; };
 		D4D971AD2DA4E93400A6BB89 /* DateFormattingExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4D971AC2DA4E93400A6BB89 /* DateFormattingExtensions.swift */; };
 		D4E85B0D2DA62714006B8FC8 /* SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B0B2DA62714006B8FC8 /* SecureStorage.swift */; };
 		D4E85B0E2DA62714006B8FC8 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B0A2DA62714006B8FC8 /* AppPreferences.swift */; };
@@ -65,6 +65,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D4LLMPROV2DB9A00000000001 /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
+		D4FILENAME2DB8A00000000001 /* String+Filename.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Filename.swift"; sourceTree = "<group>"; };
 		00B1234567890123456789AB /* VoiceToObsidianApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceToObsidianApp.swift; sourceTree = "<group>"; };
 		00B2234567890123456789AB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		00B4234567890123456789AB /* VoiceNoteListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteListView.swift; sourceTree = "<group>"; };
@@ -196,6 +198,7 @@
 		00E5234567890123456789AB /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				D4LLMPROV2DB9A00000000001 /* LLMProvider.swift */,
 				00B7234567890123456789AB /* VoiceNote.swift */,
 			);
 			path = Models;
@@ -234,6 +237,7 @@
 				D403DE0E2DA3904C00C29CDB /* FlexokiTheme.swift */,
 				D403DE092DA3647B00C29CDB /* SpacingConstants.swift */,
 				D403DDFF2DA3497F00C29CDB /* SimpleFlexokiColors.swift */,
+				D4FILENAME2DB8A00000000001 /* String+Filename.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -296,6 +300,9 @@
 			dependencies = (
 			);
 			name = VoiceToObsidian;
+			packageProductDependencies = (
+				D4LLMPKG2DB8B00000000002 /* AnyLanguageModel */,
+			);
 			productName = VoiceToObsidian;
 			productReference = 00C1234567890123456789AB /* VoiceToObsidian.app */;
 			productType = "com.apple.product-type.application";
@@ -351,6 +358,9 @@
 				Base,
 			);
 			mainGroup = 00E1234567890123456789AB;
+			packageReferences = (
+				D4LLMPKG2DB8B00000000001 /* XCLocalSwiftPackageReference "LocalPackages/AnyLanguageModel" */,
+			);
 			productRefGroup = 00E3234567890123456789AB /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -392,6 +402,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				D403DE122DA3906200C29CDB /* AppCoordinator.swift in Sources */,
+				D4LLMPROV2DB9A00000000002 /* LLMProvider.swift in Sources */,
+				D4FILENAME2DB8A00000000002 /* String+Filename.swift in Sources */,
 				D403DE142DA398BD00C29CDB /* ErrorBannerView.swift in Sources */,
 				00A1234567890123456789AB /* VoiceToObsidianApp.swift in Sources */,
 				00A2234567890123456789AB /* ContentView.swift in Sources */,
@@ -433,8 +445,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				D4E85B522DACA405006B8FC8 /* Documentation.docc in Sources */,
-				D45996F32DB5CB16009D9CC3 /* CustomWordsView.swift in Sources */,
-				D45996F02DB5C489009D9CC3 /* CustomWordsManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -501,7 +511,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -558,7 +568,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -638,7 +648,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8JF5HHJ64N;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ww.VoiceToObsidianTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -657,7 +667,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8JF5HHJ64N;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ww.VoiceToObsidianTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -699,6 +709,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		D4LLMPKG2DB8B00000000001 /* XCLocalSwiftPackageReference "LocalPackages/AnyLanguageModel" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/AnyLanguageModel;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D4LLMPKG2DB8B00000000002 /* AnyLanguageModel */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnyLanguageModel;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 00G1234567890123456789AB /* Project object */;
 }
