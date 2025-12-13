@@ -276,6 +276,22 @@ struct DetailContentView: View {
                                 .cornerRadius(8)
                                 .accessibilityLabel("Cleaned transcript: \(voiceNote.cleanedTranscript)")
                         }
+                        
+                        // Retry button when an error occurred processing transcript
+                        if voiceNote.status == .error {
+                            Button(action: {
+                                coordinator.retryProcessing(voiceNote)
+                            }) {
+                                Text("Retry Processing")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.flexokiAccentBlue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
+                            .padding(.top, 16)
+                        }
                     }
                 
                     // Obsidian link

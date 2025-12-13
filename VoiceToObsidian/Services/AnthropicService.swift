@@ -188,7 +188,7 @@ class AnthropicService {
         """
         
         let requestBody: [String: Any] = [
-            "model": "claude-3-7-sonnet-20250219",
+            "model": "claude-sonnet-4-5",
             "max_tokens": 10000,
             "messages": [
                 ["role": "user", "content": promptText]
@@ -316,25 +316,27 @@ class AnthropicService {
         // Create the request body with the prompt for transcript cleaning and title generation
         let promptText = """
         I have a voice memo transcript that needs to be cleaned up. Please:
-        
+
         1. Remove filler words (um, uh, like, etc.)
         2. Fix any grammatical errors or repetitions
         3. Format the text in a clear, readable way
         4. Suggest a concise title for this note (max 5-7 words)
-        
+           - Avoid special characters: : / \\ ? * " < > | [ ] # ^
+           - Use hyphens or spaces for separation instead of colons
+
         \(customWordsSection)Original transcript:
         \(transcript)
-        
+
         Please respond in the following format:
-        
+
         TITLE: [Your suggested title]
-        
+
         CLEANED TRANSCRIPT:
         [The cleaned up transcript]
         """
         
         let requestBody: [String: Any] = [
-            "model": "claude-3-7-sonnet-20250219",
+            "model": "claude-sonnet-4-5",
             "max_tokens": 10000,
             "messages": [
                 ["role": "user", "content": promptText]

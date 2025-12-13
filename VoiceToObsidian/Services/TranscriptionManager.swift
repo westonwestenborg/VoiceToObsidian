@@ -50,10 +50,12 @@ class TranscriptionManager: ObservableObject {
     private var speechRecognizer: SFSpeechRecognizer?
     
     /// The current recognition request being processed.
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    
+    /// Marked nonisolated(unsafe) because it must be accessed in deinit which is nonisolated.
+    private nonisolated(unsafe) var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+
     /// The current recognition task.
-    private var recognitionTask: SFSpeechRecognitionTask?
+    /// Marked nonisolated(unsafe) because it must be accessed in deinit which is nonisolated.
+    private nonisolated(unsafe) var recognitionTask: SFSpeechRecognitionTask?
     
     /// Stores the most recent partial transcription result.
     ///
@@ -86,12 +88,8 @@ class TranscriptionManager: ObservableObject {
         recognitionTask?.cancel()
         recognitionTask = nil
         recognitionRequest = nil
-        
-        // For completeness, we can schedule a task on the main actor, but it may not execute if the app is terminating
-        Task { @MainActor in
-            // Update any UI state
-            isTranscribing = false
-        }
+        // Note: Don't try to update isTranscribing here - the object is being deallocated
+        // and creating a Task that captures self is unsafe
     }
     
     // MARK: - Public Methods

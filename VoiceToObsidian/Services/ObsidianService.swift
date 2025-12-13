@@ -126,7 +126,8 @@ class ObsidianService {
             }
             
             // Create the markdown file
-            let notePath = "Voice Notes/\(voiceNote.title).md"
+            let sanitizedTitle = voiceNote.title.sanitizedForFilename()
+            let notePath = "Voice Notes/\(sanitizedTitle).md"
             let noteURL = baseURL.appendingPathComponent(notePath)
             logger.debug("Creating markdown file at: \(noteURL.path)")
             

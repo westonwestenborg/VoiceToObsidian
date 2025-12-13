@@ -4,12 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build and Test Commands
 
-This is an iOS/Swift project that must be built in Xcode:
-- **Build**: Open `VoiceToObsidian.xcodeproj` in Xcode and build (Cmd+B)
-- **Run Tests**: Use Xcode's test runner (Cmd+U) - tests are in `VoiceToObsidianTests/`
-- **Run Single Test**: In Xcode, click the diamond next to a test method or use the Test Navigator
+This project supports CLI-first development via Makefile:
 
-**Important**: Builds must be triggered manually in Xcode. New files/directories must be manually added to the Xcode project.
+| Command | Description |
+|---------|-------------|
+| `make build` | Compile the project |
+| `make test` | Run all unit tests |
+| `make run` | Build, install, and launch on simulator |
+| `make clean` | Remove build artifacts |
+| `make log` | Stream app logs from simulator |
+
+**Alternative**: Open `VoiceToObsidian.xcodeproj` in Xcode for GUI-based development.
+
+**Note**: New files must still be added to the Xcode project manually.
 
 ## Architecture Overview
 

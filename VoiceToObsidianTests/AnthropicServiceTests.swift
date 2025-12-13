@@ -1,3 +1,12 @@
+//
+//  AnthropicServiceTests.swift
+//  VoiceToObsidianTests
+//
+//  Tests for the deprecated AnthropicService.
+//  NOTE: This file will be deleted in Phase 8 when AnthropicService is removed.
+//  New LLM functionality should be tested in LLMServiceTests.swift
+//
+
 import Testing
 import Foundation
 @testable import VoiceToObsidian
@@ -32,27 +41,29 @@ class MockURLSession: URLSessionProtocol {
 // Testable AnthropicService that allows injecting a mock URLSession
 class TestableAnthropicService: AnthropicService {
     var urlSession: URLSessionProtocol
-    
+    private let testApiKey: String
+
     init(apiKey: String = "", urlSession: URLSessionProtocol) {
         self.urlSession = urlSession
+        self.testApiKey = apiKey
         super.init(apiKey: apiKey)
     }
-    
+
     override func processTranscriptAsync(transcript: String) async throws -> String {
-        guard !apiKey.isEmpty else {
+        guard !testApiKey.isEmpty else {
             throw AppError.anthropic(.apiKeyMissing)
         }
-        
+
         // Create the request
         guard let url = URL(string: "https://api.anthropic.com/v1/messages") else {
             throw AppError.anthropic(.requestCreationFailed)
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "content-type")
         request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.addValue(testApiKey, forHTTPHeaderField: "x-api-key")
         
         // Create the request body with the prompt for transcript cleaning
         let promptText = """

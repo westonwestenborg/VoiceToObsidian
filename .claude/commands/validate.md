@@ -29,11 +29,16 @@ Implementation Date: [date implemented]
 - [ ] [Criterion 2] - FAIL: [reason]
 
 ## Automated Verification
-| Check | Status | Notes |
-|-------|--------|-------|
-| Tests | PASS/FAIL | [details] |
-| Lint | PASS/FAIL | [details] |
-| Build | PASS/FAIL | [details] |
+Run these commands and record results:
+```bash
+make build  # Build verification
+make test   # Test verification
+```
+
+| Check | Command | Status | Notes |
+|-------|---------|--------|-------|
+| Build | `make build` | PASS/FAIL | [exit code, errors] |
+| Tests | `make test` | PASS/FAIL | [X/Y passed, failures] |
 
 ## Manual Verification
 | Check | Status | Notes |

@@ -53,20 +53,22 @@ class MockFileManager: FileManager {
 // Testable ObsidianService that allows injecting a mock FileManager
 class TestableObsidianService: ObsidianService {
     var fileManager: FileManager
-    
+    private let testVaultPath: String
+
     init(vaultPath: String, fileManager: FileManager) {
         self.fileManager = fileManager
+        self.testVaultPath = vaultPath
         super.init(vaultPath: vaultPath)
     }
-    
+
     // Override methods to use our injected FileManager
     override func createVoiceNoteFile(for voiceNote: VoiceNote) async throws -> (success: Bool, path: String?) {
         // This is a simplified version of the original method for testing
-        guard !vaultPath.isEmpty else {
+        guard !testVaultPath.isEmpty else {
             throw AppError.obsidian(.vaultPathMissing)
         }
-        
-        let baseURL = URL(fileURLWithPath: vaultPath)
+
+        let baseURL = URL(fileURLWithPath: testVaultPath)
         let voiceNotesDirectory = baseURL.appendingPathComponent("Voice Notes")
         
         do {
@@ -107,15 +109,15 @@ class TestableObsidianService: ObsidianService {
     
     override func copyAudioFileToVault(from audioURL: URL) async throws -> Bool {
         // This is a simplified version of the original method for testing
-        guard !vaultPath.isEmpty else {
+        guard !testVaultPath.isEmpty else {
             throw AppError.obsidian(.vaultPathMissing)
         }
-        
+
         guard fileManager.fileExists(atPath: audioURL.path) else {
             throw AppError.obsidian(.fileNotFound("Source audio file not found"))
         }
-        
-        let baseURL = URL(fileURLWithPath: vaultPath)
+
+        let baseURL = URL(fileURLWithPath: testVaultPath)
         let attachmentsDirectory = baseURL.appendingPathComponent("Attachments")
         
         do {

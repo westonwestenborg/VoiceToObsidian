@@ -72,10 +72,12 @@ class RecordingManager: ObservableObject {
     
     /// Display link used to update the recording duration.
     /// This is more reliable than Timer during scrolling and other UI interactions.
-    private var displayLink: CADisplayLink?
-    
+    /// Marked nonisolated(unsafe) because it must be accessed in deinit which is nonisolated.
+    private nonisolated(unsafe) var displayLink: CADisplayLink?
+
     /// Background task identifier for continuing recording when app is in background.
-    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    /// Marked nonisolated(unsafe) because it must be accessed in deinit which is nonisolated.
+    private nonisolated(unsafe) var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     
     /// Logger for structured logging of recording operations.
     ///
@@ -149,29 +151,16 @@ class RecordingManager: ObservableObject {
     ///
     /// - Note: Since this is a `@MainActor` class, we need special handling in deinit.
     deinit {
-        // Use Task to call the async method in deinit
-        Task {
-            do {
-                _ = try? await stopRecordingAsync()
-            }
-        }
+        // Stop the display link timer - safe because displayLink is nonisolated(unsafe)
         displayLink?.invalidate()
         displayLink = nil
-        
-        // Remove notification observers
+
+        // Remove notification observers - always safe to call
         NotificationCenter.default.removeObserver(self)
-        
-        // End background task if active - handle directly instead of calling MainActor-isolated method
-        if backgroundTask != .invalid {
-            UIApplication.shared.endBackgroundTask(backgroundTask)
-            backgroundTask = .invalid
-            
-            // We can't log directly here since logger might require MainActor
-            // but we can schedule a task for logging
-            Task { @MainActor in
-                logger.info("Background task ended in deinit")
-            }
-        }
+
+        // Background task cleanup - backgroundTask is nonisolated(unsafe)
+        // Skip UIApplication call in deinit as it can cause issues with actor isolation
+        backgroundTask = .invalid
     }
     
     // MARK: - Public Methods

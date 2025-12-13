@@ -1,6 +1,5 @@
 import SwiftUI
 import UniformTypeIdentifiers
-import MobileCoreServices
 import Combine
 import Security
 import UIKit
@@ -77,8 +76,8 @@ struct APIKeySection: View {
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(Color.flexokiUI, lineWidth: 1)
                         )
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                         .foregroundColor(Color.flexokiText)
                         .frame(minHeight: 44)
                         .disabled(isLoadingAPIKey)
@@ -165,8 +164,8 @@ struct VaultPathSection: View {
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(Color.flexokiUI, lineWidth: 1)
                         )
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                         .foregroundColor(Color.flexokiText)
                         .disabled(isLoadingVaultPath)
                         .accessibilityLabel("Obsidian vault path")
@@ -271,6 +270,282 @@ struct ClearAllDataSection: View {
     }
 }
 
+// MARK: - LLM Provider Section
+
+/// Provider selection section for choosing AI provider
+struct LLMProviderSection: View {
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
+    @Binding var selectedProvider: LLMProvider
+    let onProviderChange: (LLMProvider) -> Void
+
+    private func providerLabel(_ provider: LLMProvider) -> String {
+        if provider == .foundationModels {
+            return "\(provider.displayName) (Free)"
+        }
+        return provider.displayName
+    }
+
+    var body: some View {
+        FlexokiSectionView("AI Provider") {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Select your preferred AI provider for transcript processing.")
+                    .font(.footnote)
+                    .foregroundColor(.flexokiText2)
+
+                Picker("Provider", selection: $selectedProvider) {
+                    ForEach(LLMProvider.allCases) { provider in
+                        Text(providerLabel(provider))
+                            .tag(provider)
+                    }
+                }
+                .pickerStyle(.menu)
+                .tint(.flexokiAccentBlue)
+                .onChange(of: selectedProvider) { _, newValue in
+                    onProviderChange(newValue)
+                }
+
+                providerStatusView
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var providerStatusView: some View {
+        if selectedProvider == .foundationModels {
+            if coordinator.isFoundationModelsAvailable {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(Color.flexokiGreen)
+                    Text("On-device processing - free & private")
+                        .font(.caption)
+                        .foregroundColor(Color.flexokiText2)
+                }
+            } else {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(Color.flexokiOrange)
+                    Text("Apple Intelligence not available on this device")
+                        .font(.caption)
+                        .foregroundColor(Color.flexokiText2)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Foundation Models Info Section
+
+/// Information section displayed when Foundation Models is selected
+struct FoundationModelsInfoSection: View {
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
+
+    var body: some View {
+        FlexokiSectionView("Apple Intelligence") {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "apple.logo")
+                    Text("Powered by on-device AI")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+                .foregroundColor(.flexokiText)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Free to use", systemImage: "checkmark")
+                    Label("Private - data stays on device", systemImage: "lock.shield")
+                    Label("Works offline", systemImage: "wifi.slash")
+                }
+                .font(.caption)
+                .foregroundColor(.flexokiText2)
+
+                if !coordinator.isFoundationModelsAvailable {
+                    Divider()
+                        .background(Color.flexokiUI)
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.flexokiOrange)
+                        Text("Apple Intelligence is not available on this device. Please select a different provider.")
+                            .font(.caption)
+                            .foregroundColor(.flexokiOrange)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - OpenAI API Key Section
+
+/// OpenAI API key configuration section
+struct OpenAIKeySection: View {
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
+    @Binding var openAIAPIKey: String
+    @Binding var isLoadingAPIKey: Bool
+    @Binding var showingSavedAlert: Bool
+    @Binding var showingClearedAlert: Bool
+    @Binding var secureOpenAIAPIKey: String
+
+    var body: some View {
+        FlexokiSectionView("OpenAI API") {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("API Key")
+                    .font(.subheadline)
+                    .foregroundColor(Color.flexokiText2)
+                    .dynamicTypeSize(.small...(.accessibility5))
+
+                ZStack(alignment: .trailing) {
+                    SecureField("Enter your OpenAI API key", text: $openAIAPIKey)
+                        .padding(8)
+                        .background(Color.flexokiBackground)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.flexokiUI, lineWidth: 1)
+                        )
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .foregroundColor(Color.flexokiText)
+                        .frame(minHeight: 44)
+                        .disabled(isLoadingAPIKey)
+
+                    if isLoadingAPIKey {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color.flexokiAccentBlue))
+                            .scaleEffect(0.7)
+                            .padding(.trailing, 12)
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Button(action: {
+                        hideKeyboard()
+                        if !openAIAPIKey.isEmpty {
+                            coordinator.setOpenAIAPIKey(openAIAPIKey)
+                            secureOpenAIAPIKey = openAIAPIKey
+                            showingSavedAlert = true
+                        }
+                    }) {
+                        Text("Save API Key")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color.flexokiPaper)
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 44)
+                            .padding(.horizontal, 16)
+                            .background(Color.flexokiAccentBlue)
+                            .cornerRadius(8)
+                            .dynamicTypeSize(.small...(.accessibility5))
+                    }
+                    .disabled(isLoadingAPIKey)
+                    .accessibilityHint("Securely saves your API key to the device")
+
+                    Button(action: {
+                        hideKeyboard()
+                        coordinator.clearOpenAIAPIKey()
+                        secureOpenAIAPIKey = ""
+                        openAIAPIKey = ""
+                        showingClearedAlert = true
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(Color.flexokiPaper)
+                            .frame(width: 44, height: 44)
+                            .background(Color.flexokiRed)
+                            .cornerRadius(8)
+                    }
+                    .disabled(isLoadingAPIKey || openAIAPIKey.isEmpty)
+                    .accessibilityLabel("Clear API Key")
+                    .accessibilityHint("Removes the API key from the device")
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Gemini API Key Section
+
+/// Gemini API key configuration section
+struct GeminiKeySection: View {
+    @EnvironmentObject var coordinator: VoiceNoteCoordinator
+    @Binding var geminiAPIKey: String
+    @Binding var isLoadingAPIKey: Bool
+    @Binding var showingSavedAlert: Bool
+    @Binding var showingClearedAlert: Bool
+    @Binding var secureGeminiAPIKey: String
+
+    var body: some View {
+        FlexokiSectionView("Google Gemini API") {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("API Key")
+                    .font(.subheadline)
+                    .foregroundColor(Color.flexokiText2)
+                    .dynamicTypeSize(.small...(.accessibility5))
+
+                ZStack(alignment: .trailing) {
+                    SecureField("Enter your Gemini API key", text: $geminiAPIKey)
+                        .padding(8)
+                        .background(Color.flexokiBackground)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.flexokiUI, lineWidth: 1)
+                        )
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .foregroundColor(Color.flexokiText)
+                        .frame(minHeight: 44)
+                        .disabled(isLoadingAPIKey)
+
+                    if isLoadingAPIKey {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color.flexokiAccentBlue))
+                            .scaleEffect(0.7)
+                            .padding(.trailing, 12)
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Button(action: {
+                        hideKeyboard()
+                        if !geminiAPIKey.isEmpty {
+                            coordinator.setGeminiAPIKey(geminiAPIKey)
+                            secureGeminiAPIKey = geminiAPIKey
+                            showingSavedAlert = true
+                        }
+                    }) {
+                        Text("Save API Key")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color.flexokiPaper)
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 44)
+                            .padding(.horizontal, 16)
+                            .background(Color.flexokiAccentBlue)
+                            .cornerRadius(8)
+                            .dynamicTypeSize(.small...(.accessibility5))
+                    }
+                    .disabled(isLoadingAPIKey)
+                    .accessibilityHint("Securely saves your API key to the device")
+
+                    Button(action: {
+                        hideKeyboard()
+                        coordinator.clearGeminiAPIKey()
+                        secureGeminiAPIKey = ""
+                        geminiAPIKey = ""
+                        showingClearedAlert = true
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(Color.flexokiPaper)
+                            .frame(width: 44, height: 44)
+                            .background(Color.flexokiRed)
+                            .cornerRadius(8)
+                    }
+                    .disabled(isLoadingAPIKey || geminiAPIKey.isEmpty)
+                    .accessibilityLabel("Clear API Key")
+                    .accessibilityHint("Removes the API key from the device")
+                }
+            }
+        }
+    }
+}
+
 // MARK: - State Coordinator
 
 /// Coordinator class that manages all state for the Settings view
@@ -285,24 +560,38 @@ class SettingsStateCoordinator: ObservableObject {
     
     // Published properties for UI state
     @Published var anthropicAPIKey = ""
+    @Published var openAIAPIKey = ""
+    @Published var geminiAPIKey = ""
     @Published var obsidianVaultPath = ""
+    @Published var selectedProvider: LLMProvider = .foundationModels
     @Published var isLoadingAPIKey = false
     @Published var isLoadingVaultPath = false
     @Published var showingDocumentPicker = false
     @Published var showingAPIKeyAlert = false
+    @Published var showingOpenAIKeyAlert = false
+    @Published var showingGeminiKeyAlert = false
     @Published var showingClearedAlert = false
     @Published var showingVaultPathAlert = false
     @Published var showingClearAllAlert = false
     @Published var showingClearAllConfirmation = false
     @Published var localErrorState: AppError?
     @Published var isShowingLocalError = false
-    
+
     // Secure storage references
     @SecureStorage(wrappedValue: "", key: "AnthropicAPIKey")
     var secureAnthropicAPIKey: String
-    
+
+    @SecureStorage(wrappedValue: "", key: "OpenAIAPIKey")
+    var secureOpenAIAPIKey: String
+
+    @SecureStorage(wrappedValue: "", key: "GeminiAPIKey")
+    var secureGeminiAPIKey: String
+
     @SecureStorage(wrappedValue: "", key: "ObsidianVaultPath")
     var secureObsidianVaultPath: String
+
+    @AppPreference(wrappedValue: LLMProvider.foundationModels.rawValue, "SelectedLLMProvider")
+    var selectedProviderRaw: String
     
     init(coordinator: VoiceNoteCoordinator) {
         self.voiceNoteCoordinator = coordinator
@@ -312,12 +601,17 @@ class SettingsStateCoordinator: ObservableObject {
     /// Loads saved settings from secure storage
     func loadSavedSettings() {
         logger.debug("Loading saved settings")
-        
-        // Load API Key from property wrapper
+
+        // Load provider selection
+        selectedProvider = LLMProvider(rawValue: selectedProviderRaw) ?? .foundationModels
+
+        // Load API Keys from property wrappers
         isLoadingAPIKey = true
         anthropicAPIKey = secureAnthropicAPIKey
+        openAIAPIKey = secureOpenAIAPIKey
+        geminiAPIKey = secureGeminiAPIKey
         isLoadingAPIKey = false
-        
+
         // Load Vault Path from property wrapper
         isLoadingVaultPath = true
         obsidianVaultPath = secureObsidianVaultPath
@@ -327,14 +621,18 @@ class SettingsStateCoordinator: ObservableObject {
     /// Clears all sensitive data asynchronously
     func clearAllSensitiveData() async {
         logger.debug("Clearing all sensitive data")
-        
+
         // Clear data through the coordinator
         await voiceNoteCoordinator.clearAllSensitiveDataAsync()
-        
+
         // Update state variables
         anthropicAPIKey = ""
+        openAIAPIKey = ""
+        geminiAPIKey = ""
         obsidianVaultPath = ""
         secureAnthropicAPIKey = ""
+        secureOpenAIAPIKey = ""
+        secureGeminiAPIKey = ""
         secureObsidianVaultPath = ""
         showingClearAllConfirmation = true
     }
@@ -410,44 +708,74 @@ struct SettingsView: View {
         _stateCoordinator = StateObject(wrappedValue: SettingsStateCoordinator(coordinator: tempCoordinator))
     }
     
+    /// Provider-specific settings section based on current selection
+    @ViewBuilder
+    private var providerSettingsSection: some View {
+        switch stateCoordinator.selectedProvider {
+        case .foundationModels:
+            FoundationModelsInfoSection()
+
+        case .anthropic:
+            APIKeySection(
+                anthropicAPIKey: $stateCoordinator.anthropicAPIKey,
+                isLoadingAPIKey: $stateCoordinator.isLoadingAPIKey,
+                showingAPIKeyAlert: $stateCoordinator.showingAPIKeyAlert,
+                showingClearedAlert: $stateCoordinator.showingClearedAlert,
+                secureAnthropicAPIKey: $stateCoordinator.secureAnthropicAPIKey
+            )
+
+        case .openai:
+            OpenAIKeySection(
+                openAIAPIKey: $stateCoordinator.openAIAPIKey,
+                isLoadingAPIKey: $stateCoordinator.isLoadingAPIKey,
+                showingSavedAlert: $stateCoordinator.showingOpenAIKeyAlert,
+                showingClearedAlert: $stateCoordinator.showingClearedAlert,
+                secureOpenAIAPIKey: $stateCoordinator.secureOpenAIAPIKey
+            )
+
+        case .gemini:
+            GeminiKeySection(
+                geminiAPIKey: $stateCoordinator.geminiAPIKey,
+                isLoadingAPIKey: $stateCoordinator.isLoadingAPIKey,
+                showingSavedAlert: $stateCoordinator.showingGeminiKeyAlert,
+                showingClearedAlert: $stateCoordinator.showingClearedAlert,
+                secureGeminiAPIKey: $stateCoordinator.secureGeminiAPIKey
+            )
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Main content
             ScrollView {
                 VStack(spacing: 16) {
-                    // Use the extracted API Key Section component
-                    APIKeySection(
-                        anthropicAPIKey: $stateCoordinator.anthropicAPIKey,
-                        isLoadingAPIKey: $stateCoordinator.isLoadingAPIKey,
-                        showingAPIKeyAlert: $stateCoordinator.showingAPIKeyAlert,
-                        showingClearedAlert: $stateCoordinator.showingClearedAlert,
-                        secureAnthropicAPIKey: $stateCoordinator.secureAnthropicAPIKey
+                    // Provider selection (always visible)
+                    LLMProviderSection(
+                        selectedProvider: $stateCoordinator.selectedProvider,
+                        onProviderChange: { provider in
+                            stateCoordinator.selectedProviderRaw = provider.rawValue
+                            coordinator.setLLMProvider(provider)
+                        }
                     )
-                    
-                    // Use the extracted Vault Path Section component
-                    VaultPathSection(
-                        obsidianVaultPath: $stateCoordinator.obsidianVaultPath,
-                        isLoadingVaultPath: $stateCoordinator.isLoadingVaultPath,
-                        showingDocumentPicker: $stateCoordinator.showingDocumentPicker,
-                        showingVaultPathAlert: $stateCoordinator.showingVaultPathAlert,
-                        secureObsidianVaultPath: $stateCoordinator.secureObsidianVaultPath
-                    )
-                    
-                    // --- Custom Words Section ---
+
+                    // Show API key section only for selected provider
+                    providerSettingsSection
+
+                    // Custom Words Section (always visible)
                     FlexokiSectionView("Custom Words & Phrases") {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Add words or phrases you commonly use to improve transcription accuracy.")
                                 .font(.footnote)
                                 .foregroundColor(.flexokiText2)
                                 .padding(.bottom, 4)
-                            
+
                             NavigationLink(destination: CustomWordsView(customWordsManager: customWordsManager)) {
                                 HStack {
                                     VStack(alignment: .leading) {
                                         Text("Manage Custom Words")
                                             .font(.system(size: 16, weight: .medium))
                                             .foregroundColor(.flexokiText)
-                                        
+
                                         if customWordsManager.customWords.isEmpty {
                                             Text("No custom words added")
                                                 .font(.footnote)
@@ -458,9 +786,9 @@ struct SettingsView: View {
                                                 .foregroundColor(.flexokiText2)
                                         }
                                     }
-                                    
+
                                     Spacer()
-                                    
+
                                     Image(systemName: "chevron.right")
                                         .foregroundColor(.flexokiAccentBlue)
                                         .font(.footnote)
@@ -470,9 +798,17 @@ struct SettingsView: View {
                             .buttonStyle(PlainButtonStyle())
                         }
                     }
-                    // --- END Custom Words Section ---
-                    
-                    // Use the extracted Clear All Data Section component
+
+                    // Vault Path Section (always visible)
+                    VaultPathSection(
+                        obsidianVaultPath: $stateCoordinator.obsidianVaultPath,
+                        isLoadingVaultPath: $stateCoordinator.isLoadingVaultPath,
+                        showingDocumentPicker: $stateCoordinator.showingDocumentPicker,
+                        showingVaultPathAlert: $stateCoordinator.showingVaultPathAlert,
+                        secureObsidianVaultPath: $stateCoordinator.secureObsidianVaultPath
+                    )
+
+                    // Clear All Data Section (always visible)
                     ClearAllDataSection(
                         isLoadingAPIKey: $stateCoordinator.isLoadingAPIKey,
                         isLoadingVaultPath: $stateCoordinator.isLoadingVaultPath,
@@ -503,10 +839,20 @@ struct SettingsView: View {
         } message: {
             Text("Your Anthropic API key has been securely saved.")
         }
+        .alert("API Key Saved", isPresented: $stateCoordinator.showingOpenAIKeyAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your OpenAI API key has been securely saved.")
+        }
+        .alert("API Key Saved", isPresented: $stateCoordinator.showingGeminiKeyAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your Gemini API key has been securely saved.")
+        }
         .alert("API Key Cleared", isPresented: $stateCoordinator.showingClearedAlert) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Your Anthropic API key has been removed.")
+            Text("Your API key has been removed.")
         }
         .alert("Vault Path Cleared", isPresented: $stateCoordinator.showingVaultPathAlert) {
             Button("OK", role: .cancel) {}
@@ -522,7 +868,7 @@ struct SettingsView: View {
                 }
             }
         } message: {
-            Text("This will remove your API key and vault path from secure storage.")
+            Text("This will remove all API keys and vault path from secure storage.")
         }
         .alert("Data Cleared", isPresented: $stateCoordinator.showingClearAllConfirmation) {
             Button("OK", role: .cancel) {}

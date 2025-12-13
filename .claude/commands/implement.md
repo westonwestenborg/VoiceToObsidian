@@ -21,7 +21,13 @@ You are implementing a plan. Execute ONE PHASE at a time, then pause for verific
    - Update the plan document if you discover new requirements
    - Note any deviations from the plan and why
 
-4. **After each phase, report**:
+4. **After each phase, run automated verification**:
+   ```bash
+   make build  # Must succeed
+   make test   # Should pass (note any failures)
+   ```
+
+5. **Report results**:
 ```markdown
 ## Phase [N] Complete: [Name]
 
@@ -29,9 +35,8 @@ You are implementing a plan. Execute ONE PHASE at a time, then pause for verific
 - `path/to/file.swift:123` - [description]
 
 ### Automated Verification
-- [ ] Tests: [pass/fail]
-- [ ] Lint: [pass/fail]
-- [ ] Build: [pass/fail]
+- [ ] Build: `make build` - [PASS/FAIL]
+- [ ] Tests: `make test` - [PASS/FAIL, X/Y passed]
 
 ### Manual Verification Needed
 - [ ] [What the user should check]

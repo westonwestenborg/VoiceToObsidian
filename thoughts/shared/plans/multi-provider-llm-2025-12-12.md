@@ -12,8 +12,8 @@ Research: thoughts/shared/research/multi-provider-llm-integration-2025-12-12.md
 | Phase 3 | ✅ COMPLETE | LLMService.swift created with unified provider interface |
 | Phase 4 | ✅ COMPLETE | LLMError already added in Phase 3, both error types coexist during transition |
 | Phase 5 | ✅ COMPLETE | VoiceNoteCoordinator updated to use LLMService |
-| Phase 6 | 🔲 PENDING | Update Settings UI |
-| Phase 7 | 🔲 PENDING | Update tests |
+| Phase 6 | ✅ COMPLETE | Settings UI updated with provider picker and conditional API key sections |
+| Phase 7 | ✅ COMPLETE | New test suites added, 69 tests passing |
 | Phase 8 | 🔲 PENDING | Delete old files & cleanup |
 
 ## Overview
@@ -773,11 +773,33 @@ struct FoundationModelsInfoSection: View {
 ```
 
 **Verification:**
-- [ ] Automated: `make build` succeeds
+- [x] Automated: `make build` succeeds
 - [ ] Manual: Provider picker displays all 4 options
 - [ ] Manual: Selecting Foundation Models hides API key field
 - [ ] Manual: Selecting Claude/OpenAI/Gemini shows appropriate API key field
 - [ ] Manual: API keys save and load correctly
+
+**Completion Notes (2025-12-12):**
+- Added to `SettingsStateCoordinator`:
+  - `@Published var selectedProvider: LLMProvider`
+  - `@Published var openAIAPIKey`, `geminiAPIKey`
+  - `@Published var showingOpenAIKeyAlert`, `showingGeminiKeyAlert`
+  - `@SecureStorage` for `secureOpenAIAPIKey`, `secureGeminiAPIKey`
+  - `@AppPreference` for `selectedProviderRaw`
+  - Updated `loadSavedSettings()` to load all new settings
+  - Updated `clearAllSensitiveData()` to clear all API keys
+- Created new view components:
+  - `LLMProviderSection` - Provider picker with status indicator
+  - `FoundationModelsInfoSection` - Info card for Apple Intelligence
+  - `OpenAIKeySection` - OpenAI API key configuration
+  - `GeminiKeySection` - Gemini API key configuration
+- Updated `SettingsView`:
+  - Extracted `providerSettingsSection` computed property for provider-specific content
+  - Uses switch to show appropriate section based on selected provider
+  - Added alerts for OpenAI and Gemini API key save confirmations
+  - Updated "Clear All Sensitive Data" message to mention all API keys
+- Build passes: `make build` ✅
+- Tests pass: `make test` ✅ (44/44 tests)
 
 ---
 
@@ -844,8 +866,25 @@ final class LLMServiceTests: XCTestCase {
 2. Update any integration tests that reference `AnthropicService` to use `LLMService`
 
 **Verification:**
-- [ ] Automated: `make test` passes all tests
-- [ ] Manual: Verify test coverage is maintained
+- [x] Automated: `make test` passes all tests
+- [x] Manual: Verify test coverage is maintained
+
+**Completion Notes (2025-12-12):**
+- Created new `VoiceToObsidianTests/LLMServiceTests.swift` with:
+  - `LLMServiceTests` - Tests for LLMService configuration and error handling
+  - `LLMProviderTests` - Tests for LLMProvider enum properties and Codable conformance
+  - `LLMProcessingResultTests` - Tests for result struct initialization
+  - `LLMErrorTests` - Tests for all LLMError cases in AppError
+- Updated `AnthropicServiceTests.swift`:
+  - Added header comment noting it's deprecated and will be deleted in Phase 8
+  - All existing tests preserved for backwards compatibility
+- Updated `IntegrationTests.swift`:
+  - Updated comment from "testWorkflowWithAnthropicError" to "testWorkflowWithLLMError"
+  - Added note that LLM error handling is tested in LLMServiceTests.swift
+- Test file automatically discovered by Xcode (PBXFileSystemSynchronizedRootGroup)
+- Test count increased from 44 to 69 tests
+- Build passes: `make build` ✅
+- Tests pass: `make test` ✅ (69/69 tests)
 
 ---
 
