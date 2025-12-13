@@ -9,9 +9,9 @@ Research: thoughts/shared/research/multi-provider-llm-integration-2025-12-12.md
 |-------|--------|-------|
 | Phase 1 | ✅ COMPLETE | AnyLanguageModel added (local copy with fix), iOS 26 target |
 | Phase 2 | ✅ COMPLETE | LLMProvider.swift created with all provider types |
-| Phase 3 | 🔲 PENDING | Create LLMService |
-| Phase 4 | 🔲 PENDING | Update error handling |
-| Phase 5 | 🔲 PENDING | Update VoiceNoteCoordinator |
+| Phase 3 | ✅ COMPLETE | LLMService.swift created with unified provider interface |
+| Phase 4 | ✅ COMPLETE | LLMError already added in Phase 3, both error types coexist during transition |
+| Phase 5 | ✅ COMPLETE | VoiceNoteCoordinator updated to use LLMService |
 | Phase 6 | 🔲 PENDING | Update Settings UI |
 | Phase 7 | 🔲 PENDING | Update tests |
 | Phase 8 | 🔲 PENDING | Delete old files & cleanup |
@@ -331,8 +331,21 @@ class LLMService {
 ```
 
 **Verification:**
-- [ ] Automated: `make build` succeeds
-- [ ] Manual: Verify AnyLanguageModel imports resolve
+- [x] Automated: `make build` succeeds
+- [x] Manual: Verify AnyLanguageModel imports resolve
+
+**Completion Notes (2025-12-12):**
+- Created `VoiceToObsidian/Services/LLMService.swift` with:
+  - `LLMProcessingResult` struct for transcript and title
+  - `@MainActor class LLMService` with provider management
+  - `isFoundationModelsAvailable` computed property using `SystemLanguageModel.default.availability`
+  - `processTranscriptWithTitle(transcript:customWords:)` async method
+  - Private methods: `buildPrompt()`, `sendRequest()`, `createLanguageModel()`, `parseResponse()`
+- Added `LLMError` enum to `AppError.swift` (brought forward from Phase 4)
+- Added file to Xcode project (project.pbxproj)
+- Fixed MainActor isolation issue by capturing API keys before creating language models
+- Build passes: `make build` ✅
+- Tests pass: `make test` ✅ (44/44 tests)
 
 ---
 
@@ -406,8 +419,13 @@ case .llm(.providerUnavailable):
 ```
 
 **Verification:**
-- [ ] Automated: `make build` succeeds
-- [ ] Automated: `make test` passes
+- [x] Automated: `make build` succeeds
+- [x] Automated: `make test` passes
+
+**Completion Notes (2025-12-12):**
+- Phase 4 was mostly completed during Phase 3 when `LLMError` was added to `AppError.swift`
+- Both `AnthropicError` and `LLMError` coexist during the transition period
+- `AnthropicError` will be removed in Phase 8 when `AnthropicService.swift` is deleted
 
 ---
 
@@ -550,9 +568,22 @@ _llmService = nil  // instead of _anthropicService = nil
 ```
 
 **Verification:**
-- [ ] Automated: `make build` succeeds
-- [ ] Automated: `make test` passes (update tests as needed)
+- [x] Automated: `make build` succeeds
+- [x] Automated: `make test` passes (44/44 tests)
 - [ ] Manual: Recording still works with default Foundation Models
+
+**Completion Notes (2025-12-12):**
+- Added `_llmService` backing variable and lazy `llmService` property
+- Added `@SecureStorage` for `openAIAPIKey` and `geminiAPIKey`
+- Added `@AppPreference` for `selectedLLMProviderRaw` and computed `selectedLLMProvider`
+- Added `canProcessWithLLM` computed property checking provider availability
+- Updated `processRecordingAsync()` to use `llmService.processTranscriptWithTitle()` instead of `anthropicService`
+- Now uses `AppError.llm(.requestFailed(...))` instead of `AppError.anthropic(.networkError(...))`
+- Added public methods: `setOpenAIAPIKey()`, `clearOpenAIAPIKey()`, `setGeminiAPIKey()`, `clearGeminiAPIKey()`, `setLLMProvider()`
+- Added helper properties: `isFoundationModelsAvailable`, `selectedLLMProviderDisplayName`, `availableLLMProviders`, `isSelectedProviderConfigured`, `hasAPIKey(for:)`
+- Updated `cleanup()` to include `_llmService = nil`
+- Updated `clearAllSensitiveDataAsync()` to clear all API keys
+- Both `AnthropicService` and `LLMService` coexist until Phase 8
 
 ---
 

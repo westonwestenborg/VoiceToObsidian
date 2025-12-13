@@ -42,7 +42,11 @@ enum AppError: Error {
     /// An error related to Anthropic API interactions.
     /// - Parameter AnthropicError: The specific Anthropic API error that occurred
     case anthropic(AnthropicError)
-    
+
+    /// An error related to LLM provider interactions.
+    /// - Parameter LLMError: The specific LLM error that occurred
+    case llm(LLMError)
+
     /// An error related to Obsidian vault interactions.
     /// - Parameter ObsidianError: The specific Obsidian error that occurred
     case obsidian(ObsidianError)
@@ -108,20 +112,48 @@ enum AppError: Error {
     enum AnthropicError: Error {
         /// The Anthropic API key is missing or not configured.
         case apiKeyMissing
-        
+
         /// Creating the API request failed.
         case requestCreationFailed
-        
+
         /// A network error occurred during the API call.
         /// - Parameter String: A description of the network error
         case networkError(String)
-        
+
         /// Parsing the API response failed.
         /// - Parameter String: A description of why parsing failed
         case responseParsingFailed(String)
-        
+
         /// The API response was invalid or unexpected.
         case invalidResponse
+    }
+
+    /// Errors related to LLM (Language Model) provider interactions.
+    ///
+    /// This enum encapsulates all errors that can occur when communicating with
+    /// any LLM provider (Foundation Models, Anthropic, OpenAI, Gemini) for transcript processing.
+    enum LLMError: Error {
+        /// The API key is missing or not configured for the selected provider.
+        case apiKeyMissing
+
+        /// The selected LLM provider is unavailable.
+        /// - Parameter String: A description of why the provider is unavailable
+        case providerUnavailable(String)
+
+        /// The request to the LLM failed.
+        /// - Parameter String: A description of why the request failed
+        case requestFailed(String)
+
+        /// Parsing the LLM response failed.
+        /// - Parameter String: A description of why parsing failed
+        case responseParsingFailed(String)
+
+        /// The LLM response was invalid or unexpected.
+        case invalidResponse
+
+        /// A network error occurred during the API call.
+        /// - Parameter String: A description of the network error
+        case networkError(String)
     }
     
     /// Errors related to Obsidian vault interactions.
@@ -187,6 +219,7 @@ extension AppError: LocalizedError {
         case .recording(let err): return handleRecordingError(err)
         case .transcription(let err): return handleTranscriptionError(err)
         case .anthropic(let err): return handleAnthropicError(err)
+        case .llm(let err): return handleLLMError(err)
         case .obsidian(let err): return handleObsidianError(err)
         case .securityScoped(let err): return handleSecurityScopedError(err)
         case .keychain(let err): return handleKeychainError(err)
@@ -205,6 +238,7 @@ extension AppError: LocalizedError {
         case .recording: return "Audio recording issue"
         case .transcription: return "Speech transcription issue"
         case .anthropic: return "Anthropic API issue"
+        case .llm: return "LLM processing issue"
         case .obsidian: return "Obsidian vault access issue"
         case .securityScoped: return "Security permission issue"
         case .keychain: return "Secure storage issue"
@@ -225,6 +259,10 @@ extension AppError: LocalizedError {
             return "Please grant microphone permission in Settings."
         case .anthropic(.apiKeyMissing):
             return "Please add your Anthropic API key in Settings."
+        case .llm(.apiKeyMissing):
+            return "Please add an API key for your selected provider in Settings."
+        case .llm(.providerUnavailable):
+            return "Try selecting a different LLM provider in Settings."
         case .obsidian(.vaultPathMissing):
             return "Please select your Obsidian vault in Settings."
         case .securityScoped(.bookmarkDataStale), .securityScoped(.accessDenied):
@@ -276,7 +314,24 @@ extension AppError: LocalizedError {
             return "Received invalid response from API."
         }
     }
-    
+
+    private func handleLLMError(_ error: LLMError) -> String {
+        switch error {
+        case .apiKeyMissing:
+            return "API key is missing for the selected provider."
+        case .providerUnavailable(let message):
+            return "LLM provider unavailable: \(message)"
+        case .requestFailed(let message):
+            return "Failed to process with LLM: \(message)"
+        case .responseParsingFailed(let message):
+            return "Failed to parse LLM response: \(message)"
+        case .invalidResponse:
+            return "Received invalid response from LLM."
+        case .networkError(let message):
+            return "Network error: \(message)"
+        }
+    }
+
     private func handleObsidianError(_ error: ObsidianError) -> String {
         switch error {
         case .vaultAccessFailed:

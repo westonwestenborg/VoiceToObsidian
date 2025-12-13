@@ -17,7 +17,7 @@ import VoiceToObsidian
 /// ## Responsibilities
 /// - Recording voice notes via `RecordingManager`
 /// - Transcribing audio via `TranscriptionManager`
-/// - Processing transcripts via `AnthropicService`
+/// - Processing transcripts via `LLMService` (supports Foundation Models, Anthropic, OpenAI, Gemini)
 /// - Saving notes to Obsidian via `ObsidianService`
 /// - Delegating data persistence to `VoiceNoteStore`
 /// - Managing configuration and secure storage of sensitive data
@@ -119,6 +119,12 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// This variable holds the instance of `AnthropicService` once it's created.
     /// It remains `nil` until the `anthropicService` property is accessed.
     private var _anthropicService: AnthropicService?
+
+    /// Backing variable for the lazily initialized LLM service.
+    ///
+    /// This variable holds the instance of `LLMService` once it's created.
+    /// It remains `nil` until the `llmService` property is accessed.
+    private var _llmService: LLMService?
     
     /// Backing variable for the lazily initialized Obsidian service.
     ///
@@ -179,6 +185,23 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         }
         return _anthropicService!
     }
+
+    /// The LLM service responsible for processing transcripts with multiple providers.
+    ///
+    /// This property lazily initializes the `LLMService` when first accessed,
+    /// which helps minimize memory usage and startup time. The service handles
+    /// communication with various LLM providers (Foundation Models, Anthropic, OpenAI, Gemini).
+    private var llmService: LLMService {
+        if _llmService == nil {
+            logger.debug("Lazily creating LLMService")
+            _llmService = LLMService()
+            _llmService?.updateProvider(selectedLLMProvider)
+            _llmService?.updateAnthropicAPIKey(anthropicAPIKey)
+            _llmService?.updateOpenAIAPIKey(openAIAPIKey)
+            _llmService?.updateGeminiAPIKey(geminiAPIKey)
+        }
+        return _llmService!
+    }
     
     /// The Obsidian service responsible for vault interactions.
     ///
@@ -211,8 +234,35 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     @SecureStorage(wrappedValue: "", key: "AnthropicAPIKey")
     private var anthropicAPIKey: String {
         didSet {
-            logger.debug("API key updated")
+            logger.debug("Anthropic API key updated")
             anthropicService.updateAPIKey(anthropicAPIKey)
+            llmService.updateAnthropicAPIKey(anthropicAPIKey)
+        }
+    }
+
+    /// The OpenAI API key stored securely in the Keychain.
+    ///
+    /// This property uses the `@SecureStorage` property wrapper to automatically
+    /// handle secure storage and retrieval of the API key from the Keychain.
+    /// When the value changes, it automatically updates the LLM service.
+    @SecureStorage(wrappedValue: "", key: "OpenAIAPIKey")
+    private var openAIAPIKey: String {
+        didSet {
+            logger.debug("OpenAI API key updated")
+            llmService.updateOpenAIAPIKey(openAIAPIKey)
+        }
+    }
+
+    /// The Gemini API key stored securely in the Keychain.
+    ///
+    /// This property uses the `@SecureStorage` property wrapper to automatically
+    /// handle secure storage and retrieval of the API key from the Keychain.
+    /// When the value changes, it automatically updates the LLM service.
+    @SecureStorage(wrappedValue: "", key: "GeminiAPIKey")
+    private var geminiAPIKey: String {
+        didSet {
+            logger.debug("Gemini API key updated")
+            llmService.updateGeminiAPIKey(geminiAPIKey)
         }
     }
     
@@ -242,7 +292,49 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// This property holds the bookmark data that allows the app to maintain
     /// access to the user-selected Obsidian vault directory across app launches.
     private var obsidianVaultBookmark: Data?
-    
+
+    // MARK: - LLM Provider Selection
+
+    /// The raw string value of the selected LLM provider stored in UserDefaults.
+    ///
+    /// This property uses the `@AppPreference` property wrapper to store the provider
+    /// selection persistently. The raw value is used because UserDefaults doesn't
+    /// natively support enums.
+    @AppPreference(wrappedValue: "foundation_models", "SelectedLLMProvider")
+    private var selectedLLMProviderRaw: String
+
+    /// The currently selected LLM provider for transcript processing.
+    ///
+    /// This computed property provides type-safe access to the selected provider
+    /// by converting between the stored raw string and the `LLMProvider` enum.
+    /// Defaults to `.foundationModels` if the stored value is invalid.
+    var selectedLLMProvider: LLMProvider {
+        get { LLMProvider(rawValue: selectedLLMProviderRaw) ?? .foundationModels }
+        set {
+            selectedLLMProviderRaw = newValue.rawValue
+            llmService.updateProvider(newValue)
+            logger.debug("LLM provider updated to: \(newValue.displayName)")
+        }
+    }
+
+    /// Indicates whether LLM processing can be performed with the current configuration.
+    ///
+    /// This property checks if the selected provider is available and properly configured:
+    /// - For Foundation Models: checks device availability
+    /// - For cloud providers: checks if the required API key is set
+    var canProcessWithLLM: Bool {
+        switch selectedLLMProvider {
+        case .foundationModels:
+            return llmService.isFoundationModelsAvailable
+        case .anthropic:
+            return !anthropicAPIKey.isEmpty
+        case .openai:
+            return !openAIAPIKey.isEmpty
+        case .gemini:
+            return !geminiAPIKey.isEmpty
+        }
+    }
+
     // MARK: - Combine
     
     /// Collection of cancellables for managing Combine subscriptions.
@@ -561,9 +653,99 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         // Property wrapper handles the deletion from keychain
         anthropicAPIKey = ""
         anthropicService.updateAPIKey("")
-        logger.info("API key cleared successfully")
+        llmService.updateAnthropicAPIKey("")
+        logger.info("Anthropic API key cleared successfully")
     }
-    
+
+    /// Sets the OpenAI API key for transcript processing.
+    ///
+    /// This method securely stores the provided API key in the Keychain using the
+    /// `@SecureStorage` property wrapper and updates the LLM service with the new key.
+    ///
+    /// - Parameter key: The OpenAI API key to store
+    func setOpenAIAPIKey(_ key: String) {
+        openAIAPIKey = key
+    }
+
+    /// Clears the OpenAI API key securely from storage.
+    ///
+    /// This method removes the API key from the Keychain using the `@SecureStorage`
+    /// property wrapper and updates the LLM service to reflect the change.
+    func clearOpenAIAPIKey() {
+        openAIAPIKey = ""
+        llmService.updateOpenAIAPIKey("")
+        logger.info("OpenAI API key cleared successfully")
+    }
+
+    /// Sets the Gemini API key for transcript processing.
+    ///
+    /// This method securely stores the provided API key in the Keychain using the
+    /// `@SecureStorage` property wrapper and updates the LLM service with the new key.
+    ///
+    /// - Parameter key: The Gemini API key to store
+    func setGeminiAPIKey(_ key: String) {
+        geminiAPIKey = key
+    }
+
+    /// Clears the Gemini API key securely from storage.
+    ///
+    /// This method removes the API key from the Keychain using the `@SecureStorage`
+    /// property wrapper and updates the LLM service to reflect the change.
+    func clearGeminiAPIKey() {
+        geminiAPIKey = ""
+        llmService.updateGeminiAPIKey("")
+        logger.info("Gemini API key cleared successfully")
+    }
+
+    /// Sets the LLM provider for transcript processing.
+    ///
+    /// This method updates the selected provider and persists the choice to UserDefaults.
+    ///
+    /// - Parameter provider: The LLM provider to use
+    func setLLMProvider(_ provider: LLMProvider) {
+        selectedLLMProvider = provider
+    }
+
+    /// Returns whether Foundation Models is available on this device.
+    var isFoundationModelsAvailable: Bool {
+        llmService.isFoundationModelsAvailable
+    }
+
+    /// Returns the display name of the currently selected LLM provider.
+    var selectedLLMProviderDisplayName: String {
+        selectedLLMProvider.displayName
+    }
+
+    /// Returns all available LLM providers.
+    var availableLLMProviders: [LLMProvider] {
+        LLMProvider.allCases
+    }
+
+    /// Returns whether the selected LLM provider is properly configured.
+    ///
+    /// For Foundation Models, this checks device availability.
+    /// For cloud providers, this checks if the required API key is set.
+    var isSelectedProviderConfigured: Bool {
+        canProcessWithLLM
+    }
+
+    /// Returns whether an API key exists for the specified provider.
+    ///
+    /// - Parameter provider: The provider to check
+    /// - Returns: True if an API key is configured for the provider
+    func hasAPIKey(for provider: LLMProvider) -> Bool {
+        switch provider {
+        case .foundationModels:
+            return true // No API key needed
+        case .anthropic:
+            return !anthropicAPIKey.isEmpty
+        case .openai:
+            return !openAIAPIKey.isEmpty
+        case .gemini:
+            return !geminiAPIKey.isEmpty
+        }
+    }
+
     /// Sets the path to the Obsidian vault for note creation.
     ///
     /// This method securely stores the provided vault path in the Keychain using the
@@ -604,7 +786,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     ///
     /// This method provides a comprehensive way to remove all sensitive data from the app,
     /// including:
-    /// - The Anthropic API key from the Keychain
+    /// - All API keys (Anthropic, OpenAI, Gemini) from the Keychain
     /// - The Obsidian vault path from the Keychain
     /// - Any security-scoped bookmarks for the Obsidian vault
     ///
@@ -628,18 +810,23 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// ```
     func clearAllSensitiveDataAsync() async -> [String: Error] {
         var errors: [String: Error] = [:]
-        
+
         // Clear local properties - property wrappers will handle keychain deletion
         await MainActor.run {
-            // Update local properties
-            anthropicAPIKey = "" // SecureStorage wrapper handles keychain deletion
-            _obsidianVaultPath = "" // SecureStorage wrapper handles keychain deletion
-            
+            // Update local properties (SecureStorage wrapper handles keychain deletion)
+            anthropicAPIKey = ""
+            openAIAPIKey = ""
+            geminiAPIKey = ""
+            _obsidianVaultPath = ""
+
             // Update services
             anthropicService.updateAPIKey("")
+            llmService.updateAnthropicAPIKey("")
+            llmService.updateOpenAIAPIKey("")
+            llmService.updateGeminiAPIKey("")
             obsidianService.updateVaultPath("")
         }
-        
+
         // Clear the vault bookmark using the BookmarkManager
         BookmarkManager.shared.clearObsidianVaultBookmark()
         
@@ -710,41 +897,72 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             // First, transcribe the audio file
             var processedVoiceNote = voiceNote
             
-            do {
-                // Use the async version of the transcription manager
-                let transcript = try await transcriptionManager.transcribeAudioFileAsync(at: recordingURL)
-                
-                // Update the voice note with the transcript
+            // Transcription with retry logic
+            let transcriptionRetries = 2
+            var transcriptionError: Error?
+            var transcript: String = ""
+            for attempt in 1...transcriptionRetries {
+                do {
+                    transcript = try await transcriptionManager.transcribeAudioFileAsync(at: recordingURL)
+                    transcriptionError = nil
+                    break
+                } catch {
+                    transcriptionError = error
+                    logger.error("Attempt \(attempt) transcription failed: \(error.localizedDescription)")
+                    if attempt < transcriptionRetries {
+                        try? await Task.sleep(nanoseconds: 1_000_000_000) // retry delay
+                    }
+                }
+            }
+            if let error = transcriptionError {
+                await MainActor.run {
+                    var failedNote = processedVoiceNote
+                    failedNote.status = .error
+                    voiceNoteStore.updateVoiceNote(failedNote)
+                    self.isProcessing = false
+                    recordingManager.resetRecordingDuration()
+                    self.handleError(AppError.transcription(.recognitionFailed("Failed to transcribe after multiple attempts")))
+                }
+                return
+            } else {
                 processedVoiceNote.originalTranscript = transcript
-            } catch {
-                logger.error("Error transcribing audio: \(error.localizedDescription)")
-                // Continue with empty transcript
             }
             
-            // Process with Anthropic API if key is set and we have a transcript
-            if !anthropicAPIKey.isEmpty && !processedVoiceNote.originalTranscript.isEmpty {
-                do {
-                    // Use the async version of the Anthropic service
-                    // Process transcript and get title in one call
-                    let result = try await anthropicService.processTranscriptWithTitleAsync(transcript: processedVoiceNote.originalTranscript)
-                    processedVoiceNote.cleanedTranscript = result.transcript
-                    processedVoiceNote.title = result.title
-                    // Successfully processed with Anthropic
-                } catch {
-                    // Log the error but continue with the original voice note
-                    await MainActor.run {
-                        if !self.anthropicAPIKey.isEmpty {
-                            // Only show error if API key is set but call failed
-                            let appError = AppError.anthropic(.networkError("Failed to process transcript with Anthropic API"))
-                            self.handleError(appError)
+            // Process with LLM if configured and we have a transcript
+            if canProcessWithLLM && !processedVoiceNote.originalTranscript.isEmpty {
+                let maxRetries = 2
+                var lastError: Error?
+                let customWords = CustomWordsManager.shared.customWords
+                for attempt in 1...maxRetries {
+                    do {
+                        let result = try await llmService.processTranscriptWithTitle(
+                            transcript: processedVoiceNote.originalTranscript,
+                            customWords: customWords
+                        )
+                        processedVoiceNote.cleanedTranscript = result.transcript
+                        processedVoiceNote.title = result.title
+                        lastError = nil
+                        break
+                    } catch {
+                        lastError = error
+                        logger.error("Attempt \(attempt) processing with \(self.selectedLLMProvider.displayName) failed: \(error.localizedDescription)")
+                        if attempt < maxRetries {
+                            try? await Task.sleep(nanoseconds: 1_000_000_000) // retry delay
                         }
                     }
-                    logger.error("Error processing with Anthropic: \(error.localizedDescription)")
+                }
+                if lastError != nil {
+                    await MainActor.run {
+                        var failedNote = processedVoiceNote
+                        failedNote.status = .error
+                        voiceNoteStore.updateVoiceNote(failedNote)
+                        self.isProcessing = false
+                        self.handleError(AppError.llm(.requestFailed("Failed to process transcript after multiple attempts")))
+                    }
+                    return
                 }
             } else if !processedVoiceNote.originalTranscript.isEmpty {
-                // If we have a transcript but no Anthropic API key, use the original transcript
                 processedVoiceNote.cleanedTranscript = processedVoiceNote.originalTranscript
-                // Using original transcript as cleaned transcript
             }
             
             // Save to Obsidian if path is set
@@ -791,43 +1009,22 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     
 
     
-    /// Cleans up resources and prepares the coordinator for deallocation.
-    ///
-    /// This method performs proper cleanup of all resources managed by the coordinator,
-    /// including:
-    /// - Releasing the audio session
-    /// - Releasing all service instances
-    /// - Cancelling all Combine subscriptions
-    ///
-    /// It should be called when the coordinator is no longer needed, such as when
-    /// the app is terminating or when switching to a different user session.
-    ///
-    /// ## Example
-    /// ```swift
-    /// // When app is terminating
-    /// coordinator.cleanup()
-    /// ```
-    func cleanup() {
-        // Only clean up resources that were actually initialized
-        if _recordingManager != nil {
-            // Release audio session
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    /// Retries processing of a voice note when previous processing failed.
+    /// - Parameter voiceNote: The voice note to retry processing.
+    func retryProcessing(_ voiceNote: VoiceNote) {
+        guard voiceNote.status == .error else { return }
+        var retryNote = voiceNote
+        retryNote.status = .processing
+        voiceNoteStore.updateVoiceNote(retryNote)
+        guard let url = voiceNote.audioURL else {
+            handleError(AppError.general("Audio file not found"))
+            return
         }
-        
-        // Force nil all optionals to release memory
-        _recordingManager = nil
-        _transcriptionManager = nil
-        _voiceNoteStore = nil
-        _anthropicService = nil
-        _obsidianService = nil
-        
-        // Cancel any publishers
-        cancellables.forEach { $0.cancel() }
-        cancellables.removeAll()
-        
-        print("VoiceNoteCoordinator cleaned up")
+        Task {
+            await self.processRecordingAsync(recordingURL: url, voiceNote: retryNote)
+        }
     }
-    
+
     /// Creates a voice note and saves it
     /// - Parameters:
     ///   - recordingURL: The URL of the recording
@@ -925,5 +1122,25 @@ extension VoiceNoteCoordinator {
     /// ```
     var voiceNoteStoreForObservation: VoiceNoteStore {
         return voiceNoteStore
+    }
+    
+    // MARK: - Cleanup
+    /// Cleans up all resources managed by the coordinator.
+    func cleanup() {
+        // Deactivate audio session if initialized
+        if _recordingManager != nil {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
+        // Release service instances
+        _recordingManager = nil
+        _transcriptionManager = nil
+        _voiceNoteStore = nil
+        _anthropicService = nil
+        _llmService = nil
+        _obsidianService = nil
+        // Cancel Combine subscriptions
+        cancellables.forEach { $0.cancel() }
+        cancellables.removeAll()
+        logger.debug("VoiceNoteCoordinator cleaned up")
     }
 }
