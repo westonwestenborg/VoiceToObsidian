@@ -19,11 +19,13 @@ help:
 build:
 	xcodebuild -scheme $(SCHEME) \
 		-destination '$(DESTINATION)' \
+		-skipMacroValidation \
 		build
 
 test:
 	xcodebuild -scheme $(SCHEME) \
 		-destination '$(DESTINATION)' \
+		-skipMacroValidation \
 		test
 
 run: build-for-run
@@ -36,6 +38,7 @@ build-for-run:
 	xcodebuild -scheme $(SCHEME) \
 		-destination '$(DESTINATION)' \
 		-derivedDataPath $(DERIVED_DATA) \
+		-skipMacroValidation \
 		build
 
 clean:

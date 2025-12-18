@@ -943,6 +943,10 @@ final class LLMServiceTests: XCTestCase {
 - [ ] All existing tests pass (with updates)
 - [ ] Voice note recording → transcription → LLM processing → Obsidian save flow works
 
+## TODO
+
+- [ ] **Update AnyLanguageModel to official release** - Currently pinned to commit `97db31f` which includes our iOS availability fix (PR #63). When version 0.5.1+ is released, update `project.pbxproj` to use `upToNextMajorVersion` instead of `revision`. Check releases at: https://github.com/mattt/AnyLanguageModel/releases
+
 ## Risks & Mitigations
 
 | Risk | Mitigation |

@@ -359,7 +359,7 @@
 			);
 			mainGroup = 00E1234567890123456789AB;
 			packageReferences = (
-				D4LLMPKG2DB8B00000000001 /* XCLocalSwiftPackageReference "LocalPackages/AnyLanguageModel" */,
+				D4LLMPKG2DB8B00000000001 /* XCRemoteSwiftPackageReference "AnyLanguageModel" */,
 			);
 			productRefGroup = 00E3234567890123456789AB /* Products */;
 			projectDirPath = "";
@@ -710,16 +710,21 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		D4LLMPKG2DB8B00000000001 /* XCLocalSwiftPackageReference "LocalPackages/AnyLanguageModel" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = LocalPackages/AnyLanguageModel;
+/* Begin XCRemoteSwiftPackageReference section */
+		D4LLMPKG2DB8B00000000001 /* XCRemoteSwiftPackageReference "AnyLanguageModel" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mattt/AnyLanguageModel.git";
+			requirement = {
+				kind = revision;
+				revision = 97db31f5ff217015fac2bf406494cb0c4c0c673a;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		D4LLMPKG2DB8B00000000002 /* AnyLanguageModel */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = D4LLMPKG2DB8B00000000001 /* XCRemoteSwiftPackageReference "AnyLanguageModel" */;
 			productName = AnyLanguageModel;
 		};
 /* End XCSwiftPackageProductDependency section */
