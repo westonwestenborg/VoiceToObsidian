@@ -47,10 +47,14 @@ struct ContentView: View {
                     // Delay full initialization
                     Task {
                         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                        
+
+                        // Pre-warm audio session in parallel with notes loading
+                        // This eliminates the 4-5 second delay on first recording
+                        coordinator.prepareForRecording()
+
                         // Preload notes before showing the main view
                         coordinator.loadMoreVoiceNotes()
-                        
+
                         // Set isReady after a short delay to ensure notes are loaded
                         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
                         isReady = true
@@ -250,11 +254,11 @@ extension ContentView {
             }
             .store(in: &cancellables)
         
-        // Listen for recording completion
-        coordinator.$isProcessing
+        // Listen for recording completion (subscribe to processingCount since isProcessing is computed)
+        coordinator.$processingCount
             .dropFirst() // Skip initial value
-            .sink { isProcessing in
-                if !isProcessing && self.isRecording == false {
+            .sink { processingCount in
+                if processingCount == 0 && self.isRecording == false {
                     // Recording has finished processing, refresh the view after a short delay
                     Task {
                         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds

@@ -277,8 +277,8 @@ struct DetailContentView: View {
                                 .accessibilityLabel("Cleaned transcript: \(voiceNote.cleanedTranscript)")
                         }
                         
-                        // Retry button when an error occurred processing transcript
-                        if voiceNote.status == .error {
+                        // Retry button when processing failed or was interrupted
+                        if voiceNote.status == .error || voiceNote.status == .processing {
                             Button(action: {
                                 coordinator.retryProcessing(voiceNote)
                             }) {

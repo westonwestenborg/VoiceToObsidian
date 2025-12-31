@@ -62,11 +62,16 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// When `true`, the app is actively recording audio.
     @Published var isRecording = false
     
-    /// Indicates whether a voice note is currently being processed.
+    /// Count of voice notes currently being processed.
     ///
-    /// This property is used to update the UI and prevent multiple simultaneous operations.
-    /// When `true`, the app is transcribing, processing with Anthropic, or saving to Obsidian.
-    @Published var isProcessing = false
+    /// When > 0, at least one note is being transcribed, processed with LLM, or saved to Obsidian.
+    /// This allows multiple notes to process concurrently while tracking overall processing state.
+    @Published private(set) var processingCount: Int = 0
+
+    /// Indicates whether any voice note is currently being processed.
+    ///
+    /// Computed from processingCount for backwards compatibility with existing UI code.
+    var isProcessing: Bool { processingCount > 0 }
     
     /// The current duration of the active recording in seconds.
     ///
@@ -365,10 +370,21 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
         logger.debug("VoiceNoteCoordinator initialized - services will load on demand")
     }
     
-    // This method is no longer needed - initialization moved to init()
-    
-    // This method is no longer needed - preloading moved to init()
-    
+    /// Pre-warms the audio session for instant recording.
+    ///
+    /// Call this method when the main view appears to eliminate the 4-5 second
+    /// delay on first recording. This initializes the audio session in the background
+    /// so that tapping the record button starts recording instantly.
+    ///
+    /// This method is safe to call multiple times - subsequent calls are no-ops.
+    func prepareForRecording() {
+        Task {
+            logger.debug("Pre-warming audio session...")
+            await recordingManager.prepareAudioSession()
+            logger.debug("Audio session pre-warm complete")
+        }
+    }
+
     // MARK: - Public Methods - Recording
     
     /// Starts recording a voice note asynchronously.
@@ -398,8 +414,8 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// }
     /// ```
     func startRecordingAsync() async throws -> Bool {
-        guard !isRecording && !isProcessing else {
-            let error = AppError.recording(.recordingFailed("Recording or processing already in progress"))
+        guard !isRecording else {
+            let error = AppError.recording(.recordingFailed("Recording already in progress"))
             await MainActor.run {
                 handleError(error)
             }
@@ -480,17 +496,12 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             }
             throw error
         }
-        
-        guard !isProcessing else {
-            let error = AppError.recording(.recordingFailed("Already processing a recording"))
-            await MainActor.run {
-                handleError(error)
-            }
-            throw error
-        }
-        
+
+        // Note: We no longer block on isProcessing - this allows concurrent recording
+        // while previous notes are still being processed
+
         await MainActor.run {
-            isProcessing = true
+            processingCount += 1
         }
         
         do {
@@ -517,7 +528,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                 return true
             } else {
                 await MainActor.run {
-                    self.isProcessing = false
+                    self.processingCount -= 1
                     // Reset the recording duration on error
                     self.recordingManager.resetRecordingDuration()
                 }
@@ -529,7 +540,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             }
         } catch {
             await MainActor.run {
-                self.isProcessing = false
+                self.processingCount -= 1
                 // Reset the recording duration on error
                 self.recordingManager.resetRecordingDuration()
                 self.handleError(AppError.recording(.recordingFailed(error.localizedDescription)))
@@ -897,7 +908,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                     var failedNote = processedVoiceNote
                     failedNote.status = .error
                     voiceNoteStore.updateVoiceNote(failedNote)
-                    self.isProcessing = false
+                    self.processingCount -= 1
                     recordingManager.resetRecordingDuration()
                     self.handleError(AppError.transcription(.recognitionFailed("Failed to transcribe after multiple attempts")))
                 }
@@ -934,7 +945,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                         var failedNote = processedVoiceNote
                         failedNote.status = .error
                         voiceNoteStore.updateVoiceNote(failedNote)
-                        self.isProcessing = false
+                        self.processingCount -= 1
                         self.handleError(AppError.llm(.requestFailed("Failed to process transcript after multiple attempts")))
                     }
                     return
@@ -966,7 +977,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             processedVoiceNote.status = .complete
             await MainActor.run {
                 voiceNoteStore.updateVoiceNote(processedVoiceNote)
-                self.isProcessing = false
+                self.processingCount -= 1
                 recordingManager.resetRecordingDuration()
             }
         } catch {
@@ -975,7 +986,7 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             failedNote.status = .error
             await MainActor.run {
                 voiceNoteStore.updateVoiceNote(failedNote)
-                self.isProcessing = false
+                self.processingCount -= 1
                 recordingManager.resetRecordingDuration()
                 self.handleError(AppError.transcription(.recognitionFailed(error.localizedDescription)))
             }
@@ -987,10 +998,10 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     
 
     
-    /// Retries processing of a voice note when previous processing failed.
+    /// Retries processing of a voice note when previous processing failed or was interrupted.
     /// - Parameter voiceNote: The voice note to retry processing.
     func retryProcessing(_ voiceNote: VoiceNote) {
-        guard voiceNote.status == .error else { return }
+        guard voiceNote.status == .error || voiceNote.status == .processing else { return }
         var retryNote = voiceNote
         retryNote.status = .processing
         voiceNoteStore.updateVoiceNote(retryNote)

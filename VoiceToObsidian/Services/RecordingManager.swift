@@ -86,6 +86,9 @@ class RecordingManager: ObservableObject {
     
     // MARK: - Initialization
     
+    /// Indicates whether the audio session has been pre-warmed.
+    private var isSessionPrepared = false
+
     /// Initializes a new RecordingManager instance.
     ///
     /// This initializer sets up notification observers for handling audio interruptions
@@ -93,6 +96,39 @@ class RecordingManager: ObservableObject {
     init() {
         logger.info("RecordingManager initialized")
         setupNotifications()
+    }
+
+    /// Pre-warms the audio session for faster recording start.
+    ///
+    /// Call this method early (e.g., when the app launches or main view appears)
+    /// to eliminate the 4-5 second delay on first recording. The audio session
+    /// setup is expensive and doing it ahead of time provides instant recording.
+    ///
+    /// This method is safe to call multiple times - subsequent calls are no-ops.
+    func prepareAudioSession() async {
+        guard !isSessionPrepared else {
+            logger.debug("Audio session already prepared, skipping")
+            return
+        }
+
+        logger.info("Pre-warming audio session...")
+        let session = AVAudioSession.sharedInstance()
+        recordingSession = session
+
+        do {
+            // Configure the audio session for recording
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
+            try session.setPreferredSampleRate(44100.0)
+            try session.setPreferredIOBufferDuration(0.005)
+
+            // Activate the session - this is the slow part (~4 seconds)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+
+            isSessionPrepared = true
+            logger.info("Audio session pre-warmed successfully (sample rate: \(session.sampleRate))")
+        } catch {
+            logger.error("Failed to pre-warm audio session: \(error.localizedDescription)")
+        }
     }
     
     /// Sets up notification observers for audio session interruptions and app state changes.
@@ -389,20 +425,24 @@ class RecordingManager: ObservableObject {
     /// - Important: This method should only be called from `startRecordingAsync()`
     private func setupRecordingSessionAsync(session: AVAudioSession) async throws -> Bool {
         do {
-            // Configure the audio session for recording with background support
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
-            
-            // Set the preferred sample rate and I/O buffer duration
-            try session.setPreferredSampleRate(44100.0)
-            try session.setPreferredIOBufferDuration(0.005)
-            
-            // Activate the session with options
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-            
-            logger.info("Audio session successfully configured with sample rate: \(session.sampleRate)")
-            
-            // Removed intentional delay to reduce latency
-            
+            // Skip session setup if already pre-warmed
+            if !isSessionPrepared {
+                // Configure the audio session for recording with background support
+                try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
+
+                // Set the preferred sample rate and I/O buffer duration
+                try session.setPreferredSampleRate(44100.0)
+                try session.setPreferredIOBufferDuration(0.005)
+
+                // Activate the session with options
+                try session.setActive(true, options: .notifyOthersOnDeactivation)
+
+                isSessionPrepared = true
+                logger.info("Audio session configured on-demand with sample rate: \(session.sampleRate)")
+            } else {
+                logger.debug("Audio session already prepared, skipping setup")
+            }
+
             return try await startRecordingAudioAsync()
         } catch {
             logger.error("Failed to set up recording session: \(error.localizedDescription)")

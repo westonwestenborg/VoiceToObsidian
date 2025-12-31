@@ -75,6 +75,7 @@ struct VoiceNoteListView: View {
                     await refreshNotes()
                 }
                 .navigationTitle("Voice Notes")
+                .navigationBarTitleDisplayMode(.large)
                 .searchable(text: $searchText, prompt: "Search notes")
                 .toolbar {
                     Button(action: {
