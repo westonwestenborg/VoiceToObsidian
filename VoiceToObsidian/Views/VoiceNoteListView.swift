@@ -69,7 +69,13 @@ struct VoiceNoteListView: View {
             }
             .navigationTitle("Voice Notes")
             .navigationBarTitleDisplayMode(.large)
-            .searchable(text: $searchText, prompt: "Search notes")
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search notes")
+            .onChange(of: searchText) { _, newValue in
+                let searching = !newValue.isEmpty
+                if coordinator.isSearching != searching {
+                    coordinator.isSearching = searching
+                }
+            }
             .toolbar {
                 Button(action: {
                     logger.debug("Settings button tapped")
@@ -104,6 +110,10 @@ struct VoiceNoteListView: View {
             .listStyle(PlainListStyle())
             .scrollContentBackground(.hidden)
             .background(Color.flexokiBackground)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                // Space for record button (64pt button + 20pt padding + 16pt breathing room)
+                Color.clear.frame(height: 100)
+            }
             .overlay {
                 // Initial loading state
                 if filteredNotes.isEmpty && coordinator.isLoadingNotes && !isRefreshing {

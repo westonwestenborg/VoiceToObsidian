@@ -78,14 +78,18 @@ struct ContentView: View {
                             }
                         }
 
-                    // Record button with floating timer when recording
-                    VStack {
-                        Spacer()
-                        RecordButton(isRecording: $isRecording)
-                            .padding(.bottom, 20)
+                    // Record button with floating timer when recording - hidden when searching
+                    if !coordinator.isSearching {
+                        VStack {
+                            Spacer()
+                            RecordButton(isRecording: $isRecording)
+                                .padding(.bottom, 20)
+                        }
+                        .transition(.scale.combined(with: .opacity))
                     }
                 }
                 .animation(.spring(), value: isRecording)
+                .animation(.easeInOut(duration: 0.2), value: coordinator.isSearching)
             }
         }
         .onAppear {

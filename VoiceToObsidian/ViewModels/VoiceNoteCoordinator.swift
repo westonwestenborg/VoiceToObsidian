@@ -98,7 +98,13 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
     /// Part of the `ErrorHandling` protocol. This property controls the visibility
     /// of error UI components like alerts or banners.
     @Published var isShowingError: Bool = false
-    
+
+    /// Indicates whether the user is actively searching in the voice notes list.
+    ///
+    /// This property is set by `VoiceNoteListView` when the search text is non-empty.
+    /// It's used by `ContentView` to hide the record button during search.
+    @Published var isSearching: Bool = false
+
     // MARK: - Lazy Service Backing Variables
     
     /// Backing variable for the lazily initialized recording manager.
