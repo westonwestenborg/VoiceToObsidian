@@ -10,20 +10,17 @@ struct VoiceToObsidianApp: App {
     // Use AppCoordinator to manage service lifecycle
     @StateObject private var coordinator = AppCoordinator()
     
-    // Basic UI state - minimal state to avoid memory pressure
-    @State private var isFirstLaunch = true
-    
     // Logger for app-level logging
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "VoiceToObsidianApp")
     
     init() {
-        // Minimal app initialization
         logger.debug("App initialization started - using lightweight approach")
-        
+
         // Reduce URLCache size for startup
         URLCache.shared = URLCache(memoryCapacity: 100_000, diskCapacity: 1_000_000, directory: nil)
-        
-        // Don't register notification observation here - moved to onAppear in the body
+
+        // Configure navigation bar appearance BEFORE any views render
+        Self.configureAppearance()
     }
     
     // Set up memory warning notification handler - called from a non-escaping context
@@ -52,68 +49,57 @@ struct VoiceToObsidianApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                // Background color
-                Color(UIColor.systemBackground)
-                    .edgesIgnoringSafeArea(.all)
-                
-                // Content based on app state
+            Group {
                 switch coordinator.appState {
                 case .initializing:
                     // Show simple loading screen
                     ProgressView("Loading...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.flexokiBackground)
                         .onAppear {
                             // Start the coordinator's initialization process
                             coordinator.startInitialization()
-                            
+
                             // Set up memory warning handler
                             setupMemoryWarningHandler()
                         }
-                    
+
                 case .uiReady, .ready:
                     // Main content view
                     ContentView()
                         .environmentObject(coordinator.voiceNoteCoordinator)
                         .transition(.opacity)
                         .animation(.easeIn, value: coordinator.appState != .initializing)
-                        .onAppear {
-                            if isFirstLaunch {
-                                // Do minimal first-launch setup
-                                configureAppearance()
-                                isFirstLaunch = false
-                            }
-                        }
                 }
             }
         }
     }
     
-    // Configure appearance (standard approach)
-    private func configureAppearance() {
-        // Basic appearance configuration
+    /// Configure UIKit appearance proxies synchronously before views render
+    private static func configureAppearance() {
+        // Standard appearance (used when scrolled, inline title)
+        let standardAppearance = UINavigationBarAppearance()
+        standardAppearance.configureWithOpaqueBackground()
+        standardAppearance.backgroundColor = UIColor(Color.flexokiBackground)
+        standardAppearance.titleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
+        standardAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
+
+        // Scroll edge appearance (used at top, large title visible)
+        // Use transparent background so large title renders correctly
+        let scrollEdgeAppearance = UINavigationBarAppearance()
+        scrollEdgeAppearance.configureWithTransparentBackground()
+        scrollEdgeAppearance.titleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
+        scrollEdgeAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
+
         UINavigationBar.appearance().tintColor = UIColor.systemBlue
-        
-        // More detailed appearance configuration
-        Task {
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            autoreleasepool {
-                let navBarAppearance = UINavigationBarAppearance()
-                navBarAppearance.configureWithOpaqueBackground()
-                navBarAppearance.backgroundColor = UIColor(Color.flexokiBackground)
-                navBarAppearance.titleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
-                navBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color.flexokiText)]
-                
-                UINavigationBar.appearance().standardAppearance = navBarAppearance
-                UINavigationBar.appearance().compactAppearance = navBarAppearance
-                UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
-                
-                UITableView.appearance().backgroundColor = UIColor(Color.flexokiBackground)
-                UITableViewCell.appearance().backgroundColor = UIColor(Color.flexokiBackground2)
-                
-                UITableView.appearance().sectionHeaderTopPadding = 0
-                UITableView.appearance().separatorColor = UIColor(Color.flexokiUI)
-            }
-        }
+        UINavigationBar.appearance().standardAppearance = standardAppearance
+        UINavigationBar.appearance().compactAppearance = standardAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = scrollEdgeAppearance
+
+        UITableView.appearance().backgroundColor = UIColor(Color.flexokiBackground)
+        UITableViewCell.appearance().backgroundColor = UIColor(Color.flexokiBackground2)
+        UITableView.appearance().sectionHeaderTopPadding = 0
+        UITableView.appearance().separatorColor = UIColor(Color.flexokiUI)
     }
 }
 

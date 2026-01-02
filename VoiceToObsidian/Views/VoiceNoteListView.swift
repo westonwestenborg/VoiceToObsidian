@@ -25,92 +25,86 @@ struct VoiceNoteListView: View {
     
     var body: some View {
         NavigationView {
-            ZStack {
-                // Background color
-                Color.flexokiBackground
-                    .edgesIgnoringSafeArea(.all)
-                
-                List {
-                    if filteredNotes.isEmpty && !coordinator.isLoadingNotes && coordinator.loadedAllNotes {
-                        Text("No voice notes yet")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(Color.flexokiText2)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(16)
-                            .dynamicTypeSize(.small...(.accessibility5))
-                            .accessibilityLabel("No voice notes available")
-                            .listRowBackground(Color.flexokiBackground)
-                    } else {
-                        ForEach(filteredNotes) { voiceNote in
-                            NavigationLink(destination: VoiceNoteDetailView(voiceNote: voiceNote)) {
-                                VoiceNoteRow(voiceNote: voiceNote)
-                            }
-                            .listRowBackground(Color.flexokiBackground)
-                            .onAppear {
-                                // If this is one of the last items, load more
-                                if voiceNote.id == filteredNotes.last?.id && !coordinator.isLoadingNotes && !coordinator.loadedAllNotes {
-                                    coordinator.loadMoreVoiceNotes()
-                                }
+            List {
+                if filteredNotes.isEmpty && !coordinator.isLoadingNotes && coordinator.loadedAllNotes {
+                    Text("No voice notes yet")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(Color.flexokiText2)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(16)
+                        .dynamicTypeSize(.small...(.accessibility5))
+                        .accessibilityLabel("No voice notes available")
+                        .listRowBackground(Color.flexokiBackground)
+                } else {
+                    ForEach(filteredNotes) { voiceNote in
+                        NavigationLink(destination: VoiceNoteDetailView(voiceNote: voiceNote)) {
+                            VoiceNoteRow(voiceNote: voiceNote)
+                        }
+                        .listRowBackground(Color.flexokiBackground)
+                        .onAppear {
+                            // If this is one of the last items, load more
+                            if voiceNote.id == filteredNotes.last?.id && !coordinator.isLoadingNotes && !coordinator.loadedAllNotes {
+                                coordinator.loadMoreVoiceNotes()
                             }
                         }
-                        .onDelete(perform: deleteNotes)
-                        
-                        // Loading indicator at the bottom
-                        if coordinator.isLoadingNotes {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: Color.flexokiAccentBlue))
-                                    .scaleEffect(1.0)
-                                    .padding()
-                                Spacer()
-                            }
-                            .listRowBackground(Color.flexokiBackground)
+                    }
+                    .onDelete(perform: deleteNotes)
+
+                    // Loading indicator at the bottom
+                    if coordinator.isLoadingNotes {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: Color.flexokiAccentBlue))
+                                .scaleEffect(1.0)
+                                .padding()
+                            Spacer()
                         }
-                        
-                        // No end of list indicator - removed as requested
+                        .listRowBackground(Color.flexokiBackground)
                     }
                 }
-                .refreshable {
-                    await refreshNotes()
+            }
+            .refreshable {
+                await refreshNotes()
+            }
+            .navigationTitle("Voice Notes")
+            .navigationBarTitleDisplayMode(.large)
+            .searchable(text: $searchText, prompt: "Search notes")
+            .toolbar {
+                Button(action: {
+                    logger.debug("Settings button tapped")
+                    showingSettingsView = true
+                }) {
+                    Image(systemName: "gear")
+                        .foregroundColor(Color.flexokiAccentBlue)
                 }
-                .navigationTitle("Voice Notes")
-                .navigationBarTitleDisplayMode(.large)
-                .searchable(text: $searchText, prompt: "Search notes")
-                .toolbar {
-                    Button(action: {
-                        logger.debug("Settings button tapped")
-                        showingSettingsView = true
-                    }) {
-                        Image(systemName: "gear")
-                            .foregroundColor(Color.flexokiAccentBlue)
-                    }
-                    .accessibilityLabel("Settings")
-                }
-                .fullScreenCover(isPresented: $showingSettingsView) {
-                    NavigationView {
-                        SettingsView()
-                            .navigationTitle("Settings")
-                            .toolbar {
-                                ToolbarItem(placement: .navigationBarLeading) {
-                                    Button(action: {
-                                        showingSettingsView = false
-                                    }) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "chevron.left")
-                                                .font(.system(size: 16, weight: .medium))
-                                            Text("Back")
-                                                .font(.system(size: 16, weight: .medium))
-                                        }
-                                        .foregroundColor(Color.flexokiAccentBlue)
+                .accessibilityLabel("Settings")
+            }
+            .fullScreenCover(isPresented: $showingSettingsView) {
+                NavigationView {
+                    SettingsView()
+                        .navigationTitle("Settings")
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarLeading) {
+                                Button(action: {
+                                    showingSettingsView = false
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "chevron.left")
+                                            .font(.system(size: 16, weight: .medium))
+                                        Text("Back")
+                                            .font(.system(size: 16, weight: .medium))
                                     }
+                                    .foregroundColor(Color.flexokiAccentBlue)
                                 }
                             }
-                    }
+                        }
                 }
-                .listStyle(PlainListStyle())
-                .background(Color.flexokiBackground)
-                
+            }
+            .listStyle(PlainListStyle())
+            .scrollContentBackground(.hidden)
+            .background(Color.flexokiBackground)
+            .overlay {
                 // Initial loading state
                 if filteredNotes.isEmpty && coordinator.isLoadingNotes && !isRefreshing {
                     VStack {

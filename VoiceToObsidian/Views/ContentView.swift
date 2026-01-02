@@ -19,12 +19,7 @@ struct ContentView: View {
     private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "ContentView")
     
     var body: some View {
-        // Use a lightweight loading view until ready
-        ZStack {
-            // Error banner will be displayed at the top of the screen
-            // It uses the errorBanner modifier we created
-            Color.flexokiBackground.edgesIgnoringSafeArea(.all)
-            
+        Group {
             if !isReady {
                 // Show a simple loading view
                 VStack(spacing: 16) {
@@ -33,7 +28,7 @@ struct ContentView: View {
                         .foregroundColor(Color.flexokiText)
                         .padding(.horizontal, 16)
                         .dynamicTypeSize(.small...(.accessibility5))
-                    
+
                     // Simple loading indicator
                     Circle()
                         .trim(from: 0, to: 0.7)
@@ -42,7 +37,8 @@ struct ContentView: View {
                         .rotationEffect(Angle(degrees: isReady ? 0 : 360))
                         .animation(Animation.linear(duration: 1).repeatForever(autoreverses: false), value: isReady)
                 }
-                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.flexokiBackground)
                 .onAppear {
                     // Delay full initialization
                     Task {
@@ -81,7 +77,7 @@ struct ContentView: View {
                                 }
                             }
                         }
-                    
+
                     // Record button with floating timer when recording
                     VStack {
                         Spacer()
