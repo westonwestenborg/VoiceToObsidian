@@ -306,6 +306,7 @@ struct LLMProviderSection: View {
 
                 providerStatusView
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -370,6 +371,7 @@ struct FoundationModelsInfoSection: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
