@@ -38,8 +38,22 @@ enum VoiceNoteStatus: String, Codable, CaseIterable {
 }
 
 struct VoiceNote: Identifiable, Codable {
-    // ... existing properties ...
-    
+    // MARK: - CodingKeys
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case originalTranscript
+        case cleanedTranscript
+        case duration
+        case creationDate
+        case audioFilename
+        case obsidianPath
+        case status
+        case llmProvider
+        case llmModel
+    }
+
     // Custom decoding to handle missing status (for backward compatibility)
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -52,6 +66,8 @@ struct VoiceNote: Identifiable, Codable {
         audioFilename = try container.decode(String.self, forKey: .audioFilename)
         obsidianPath = try container.decodeIfPresent(String.self, forKey: .obsidianPath)
         status = (try? container.decode(VoiceNoteStatus.self, forKey: .status)) ?? .complete
+        llmProvider = try container.decodeIfPresent(String.self, forKey: .llmProvider)
+        llmModel = try container.decodeIfPresent(String.self, forKey: .llmModel)
     }
     
     // Existing synthesized init and Encodable remain unchanged
@@ -102,7 +118,17 @@ struct VoiceNote: Identifiable, Codable {
     
     /// The processing status of the note (processing, complete, error)
     var status: VoiceNoteStatus
-    
+
+    /// The LLM provider used to process this note (e.g., "apple_intelligence", "claude").
+    ///
+    /// This property is nil if the note was not processed by an LLM.
+    var llmProvider: String?
+
+    /// The specific model used for processing (e.g., "default", "claude-sonnet-4-5-20250929").
+    ///
+    /// This property is nil if the note was not processed by an LLM.
+    var llmModel: String?
+
     /// The full URL to the audio recording file.
     ///
     /// This computed property constructs the URL to the audio file in the app's
@@ -141,7 +167,9 @@ struct VoiceNote: Identifiable, Codable {
          creationDate: Date = Date(),
          audioFilename: String,
          obsidianPath: String? = nil,
-         status: VoiceNoteStatus = .complete) {
+         status: VoiceNoteStatus = .complete,
+         llmProvider: String? = nil,
+         llmModel: String? = nil) {
         self.id = id
         self.title = title
         self.originalTranscript = originalTranscript
@@ -151,6 +179,8 @@ struct VoiceNote: Identifiable, Codable {
         self.audioFilename = audioFilename
         self.obsidianPath = obsidianPath
         self.status = status
+        self.llmProvider = llmProvider
+        self.llmModel = llmModel
     }
 }
 

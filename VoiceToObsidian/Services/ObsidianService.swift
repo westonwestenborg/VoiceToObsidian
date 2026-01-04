@@ -354,27 +354,36 @@ class ObsidianService {
     private func generateMarkdownContent(for voiceNote: VoiceNote) -> String {
         // Get today's date in the format YYYY-MM-DD for linking to daily note
         let dailyNoteDate = DateFormatUtil.shared.formatTimestamp(date: Date()).prefix(10)
-        
+
         // Format the creation timestamp
         let dateString = DateFormatUtil.shared.formatTimestamp(date: voiceNote.creationDate)
-        
+
+        // Build optional LLM fields for frontmatter
+        var llmFields = ""
+        if let provider = voiceNote.llmProvider {
+            llmFields += "llm_provider: \(provider)\n"
+        }
+        if let model = voiceNote.llmModel {
+            llmFields += "llm_model: \(model)\n"
+        }
+
         // Generate markdown without repeating the title (since the filename will be the title)
         // Using Option 3: Keep the property in YAML for structured queries and add a proper backlink in the body
         let markdown = """
         ---
         date: \(dateString)
         duration: \(formatDuration(voiceNote.duration))
-        ---
-        
+        \(llmFields)---
+
         ![[Attachments/\(voiceNote.audioFilename)]]
-        
+
         > Related to daily note: [[\(dailyNoteDate)]]
-        
+
         ## Transcript
-        
+
         \(voiceNote.cleanedTranscript)
         """
-        
+
         return markdown
     }
     

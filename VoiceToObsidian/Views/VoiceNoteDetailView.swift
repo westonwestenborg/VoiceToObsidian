@@ -149,16 +149,37 @@ struct DetailContentView: View {
                             .foregroundColor(Color.flexokiText2)
                             .dynamicTypeSize(.small...(.accessibility5))
                             .accessibilityLabel("Recorded on \(DateFormatUtil.shared.formattedDateSpoken(voiceNote.creationDate))")
-                    
+
                         Spacer()
-                    
+
                         Label(DateFormatUtil.shared.formatTimeShort(voiceNote.duration), systemImage: "clock")
                             .font(.system(size: 14, weight: .regular))
                             .foregroundColor(Color.flexokiText2)
                             .dynamicTypeSize(.small...(.accessibility5))
                             .accessibilityLabel("Duration: \(DateFormatUtil.shared.formatTimeSpoken(voiceNote.duration))")
                     }
-                
+
+                    // LLM processing info
+                    if let provider = voiceNote.llmProvider {
+                        HStack {
+                            Label(provider.replacingOccurrences(of: "_", with: " ").capitalized, systemImage: "cpu")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(Color.flexokiText2)
+                                .dynamicTypeSize(.small...(.accessibility5))
+
+                            if let model = voiceNote.llmModel, model != "default" {
+                                Text("(\(model))")
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(Color.flexokiText2)
+                                    .dynamicTypeSize(.small...(.accessibility5))
+                            }
+
+                            Spacer()
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Processed with \(provider.replacingOccurrences(of: "_", with: " "))")
+                    }
+
                     // Audio player controls
                     VStack {
                         // Progress bar

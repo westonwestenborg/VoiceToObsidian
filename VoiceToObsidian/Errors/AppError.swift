@@ -127,6 +127,13 @@ enum AppError: Error {
         /// A network error occurred during the API call.
         /// - Parameter String: A description of the network error
         case networkError(String)
+
+        /// The transcript is too long for the selected provider's context window.
+        /// - Parameter Int: The maximum number of characters supported
+        case transcriptTooLong(maxCharacters: Int)
+
+        /// The transcript is too short to process meaningfully.
+        case transcriptTooShort
     }
     
     /// Errors related to Obsidian vault interactions.
@@ -283,6 +290,10 @@ extension AppError: LocalizedError {
             return "Received invalid response from LLM."
         case .networkError(let message):
             return "Network error: \(message)"
+        case .transcriptTooLong(let maxCharacters):
+            return "Transcript too long for processing (max \(maxCharacters) characters)."
+        case .transcriptTooShort:
+            return "Transcript too short to process."
         }
     }
 

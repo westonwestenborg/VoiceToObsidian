@@ -102,9 +102,10 @@ struct LLMServiceTests {
         llmService.updateProvider(.anthropic)
 
         // Try to process - should throw apiKeyMissing error
+        // Note: Transcript must be 3+ words to pass validation
         do {
             _ = try await llmService.processTranscriptWithTitle(
-                transcript: "Test transcript",
+                transcript: "This is a test transcript",
                 customWords: []
             )
             #expect(false, "Expected an error but got success")
@@ -125,9 +126,10 @@ struct LLMServiceTests {
         // Set provider to OpenAI but don't provide API key
         llmService.updateProvider(.openai)
 
+        // Note: Transcript must be 3+ words to pass validation
         do {
             _ = try await llmService.processTranscriptWithTitle(
-                transcript: "Test transcript",
+                transcript: "This is a test transcript",
                 customWords: []
             )
             #expect(false, "Expected an error but got success")
@@ -147,9 +149,10 @@ struct LLMServiceTests {
         // Set provider to Gemini but don't provide API key
         llmService.updateProvider(.gemini)
 
+        // Note: Transcript must be 3+ words to pass validation
         do {
             _ = try await llmService.processTranscriptWithTitle(
-                transcript: "Test transcript",
+                transcript: "This is a test transcript",
                 customWords: []
             )
             #expect(false, "Expected an error but got success")
@@ -161,6 +164,111 @@ struct LLMServiceTests {
             }
             #expect(true)
         }
+    }
+
+    // MARK: - Transcript Validation Tests
+
+    @Test @MainActor func testShortTranscriptThrowsError() async throws {
+        let llmService = LLMService()
+        llmService.updateProvider(.anthropic)
+        llmService.updateAnthropicAPIKey("test-key")
+
+        // Two words - should fail validation before API key check
+        do {
+            _ = try await llmService.processTranscriptWithTitle(
+                transcript: "Too short",
+                customWords: []
+            )
+            #expect(false, "Expected an error but got success")
+        } catch {
+            guard let appError = error as? AppError,
+                  case .llm(.transcriptTooShort) = appError else {
+                #expect(false, "Expected transcriptTooShort error but got \(error)")
+                return
+            }
+            #expect(true)
+        }
+    }
+
+    @Test @MainActor func testEmptyTranscriptThrowsError() async throws {
+        let llmService = LLMService()
+        llmService.updateProvider(.anthropic)
+        llmService.updateAnthropicAPIKey("test-key")
+
+        do {
+            _ = try await llmService.processTranscriptWithTitle(
+                transcript: "",
+                customWords: []
+            )
+            #expect(false, "Expected an error but got success")
+        } catch {
+            guard let appError = error as? AppError,
+                  case .llm(.transcriptTooShort) = appError else {
+                #expect(false, "Expected transcriptTooShort error but got \(error)")
+                return
+            }
+            #expect(true)
+        }
+    }
+
+    @Test @MainActor func testIsTranscriptProcessable() async throws {
+        let llmService = LLMService()
+
+        // Less than 3 words should not be processable
+        #expect(llmService.isTranscriptProcessable("") == false)
+        #expect(llmService.isTranscriptProcessable("Hello") == false)
+        #expect(llmService.isTranscriptProcessable("Hello world") == false)
+
+        // 3+ words should be processable
+        #expect(llmService.isTranscriptProcessable("Hello world today") == true)
+        #expect(llmService.isTranscriptProcessable("This is a longer transcript with many words") == true)
+    }
+
+    @Test @MainActor func testIsTranscriptTooLong() async throws {
+        let llmService = LLMService()
+
+        // Short transcript should not be too long
+        #expect(llmService.isTranscriptTooLong("Short text") == false)
+
+        // maxTranscriptTokens is 3096, at 4 chars/token = ~12,384 chars
+        let shortText = String(repeating: "word ", count: 100)  // ~500 chars
+        #expect(llmService.isTranscriptTooLong(shortText) == false)
+
+        // Very long text should be too long (> 12,384 chars)
+        let longText = String(repeating: "word ", count: 5000)  // ~25,000 chars
+        #expect(llmService.isTranscriptTooLong(longText) == true)
+    }
+
+    @Test @MainActor func testLongTranscriptThrowsTranscriptTooLongError() async throws {
+        let llmService = LLMService()
+        llmService.updateProvider(.anthropic)
+        llmService.updateAnthropicAPIKey("test-key")
+
+        // Very long text (> 120,000 chars) should throw transcriptTooLong error for cloud providers
+        // Cloud providers have 30,000 token limit * 4 chars/token = 120,000 chars
+        let longText = String(repeating: "word ", count: 25000)  // ~125,000 chars
+
+        do {
+            _ = try await llmService.processTranscriptWithTitle(
+                transcript: longText,
+                customWords: []
+            )
+            #expect(false, "Expected an error but got success")
+        } catch {
+            guard let appError = error as? AppError,
+                  case .llm(.transcriptTooLong(let maxChars)) = appError else {
+                #expect(false, "Expected transcriptTooLong error but got \(error)")
+                return
+            }
+            #expect(maxChars == 120000, "Max characters should be 120000 (30000 tokens * 4) for cloud providers")
+        }
+    }
+
+    @Test @MainActor func testMaxTranscriptTokens() async throws {
+        let llmService = LLMService()
+
+        // Should be 4096 - 200 - 800 = 3096
+        #expect(llmService.maxTranscriptTokens == 3096)
     }
 }
 

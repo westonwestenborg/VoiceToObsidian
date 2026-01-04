@@ -927,6 +927,8 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
             if canProcessWithLLM && !processedVoiceNote.originalTranscript.isEmpty {
                 let maxRetries = 2
                 var lastError: Error?
+                var transcriptTooLongError = false
+                var transcriptTooShortError = false
                 let customWords = CustomWordsManager.shared.customWords
                 for attempt in 1...maxRetries {
                     do {
@@ -936,8 +938,28 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                         )
                         processedVoiceNote.cleanedTranscript = result.transcript
                         processedVoiceNote.title = result.title
+                        processedVoiceNote.llmProvider = llmService.currentProviderIdentifier
+                        processedVoiceNote.llmModel = llmService.currentModelIdentifier
                         lastError = nil
                         break
+                    } catch let error as AppError {
+                        // Check for transcript length issues - don't retry, just use raw transcript
+                        if case .llm(.transcriptTooLong) = error {
+                            transcriptTooLongError = true
+                            logger.warning("Transcript too long for LLM processing, using raw transcript")
+                            break
+                        }
+                        if case .llm(.transcriptTooShort) = error {
+                            // Short transcripts don't need processing - just save as-is
+                            transcriptTooShortError = true
+                            logger.info("Transcript too short for LLM processing, saving raw transcript")
+                            break
+                        }
+                        lastError = error
+                        logger.error("Attempt \(attempt) processing with \(self.selectedLLMProvider.displayName) failed: \(error.localizedDescription)")
+                        if attempt < maxRetries {
+                            try? await Task.sleep(nanoseconds: 1_000_000_000) // retry delay
+                        }
                     } catch {
                         lastError = error
                         logger.error("Attempt \(attempt) processing with \(self.selectedLLMProvider.displayName) failed: \(error.localizedDescription)")
@@ -946,7 +968,17 @@ class VoiceNoteCoordinator: ObservableObject, ErrorHandling {
                         }
                     }
                 }
-                if lastError != nil {
+
+                // Handle transcript length issues gracefully - use raw transcript
+                if transcriptTooLongError {
+                    let header = "[Transcript not processed - too long for \(self.selectedLLMProvider.displayName)]\n\n"
+                    processedVoiceNote.cleanedTranscript = header + processedVoiceNote.originalTranscript
+                    processedVoiceNote.title = "Voice Note \(DateFormatUtil.shared.formatTimestamp(date: Date()))"
+                } else if transcriptTooShortError {
+                    // Short transcripts - just use raw transcript, no header needed
+                    processedVoiceNote.cleanedTranscript = processedVoiceNote.originalTranscript
+                    processedVoiceNote.title = "Voice Note \(DateFormatUtil.shared.formatTimestamp(date: Date()))"
+                } else if lastError != nil {
                     await MainActor.run {
                         var failedNote = processedVoiceNote
                         failedNote.status = .error
