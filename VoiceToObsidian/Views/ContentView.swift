@@ -23,7 +23,13 @@ struct ContentView: View {
             if !isReady {
                 // Show a simple loading view
                 VStack(spacing: 16) {
-                    Text("Voice to Obsidian")
+                    Image("AppIconImage")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 120, height: 120)
+                        .cornerRadius(24)
+
+                    Text("Coati")
                         .font(.largeTitle)
                         .foregroundColor(Color.flexokiText)
                         .padding(.horizontal, 16)

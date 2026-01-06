@@ -12,6 +12,8 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Coati</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
@@ -42,7 +44,7 @@
 	<key>UIApplicationExitsOnSuspend</key>
 	<false/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Voice to Obsidian App</string>
+	<string>Coati App</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
