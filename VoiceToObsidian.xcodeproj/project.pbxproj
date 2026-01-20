@@ -7,11 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D4NATIVETC2E0F000000000002 /* NativeTranscriptCleanupResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4NATIVETC2E0F000000000001 /* NativeTranscriptCleanupResult.swift */; };
-		D4TCRESULT2E0F000000000002 /* TranscriptCleanupResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4TCRESULT2E0F000000000001 /* TranscriptCleanupResult.swift */; };
-		D4LLMSERV2DB9B00000000002 /* LLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4LLMSERV2DB9B00000000001 /* LLMService.swift */; };
-		D4LLMPROV2DB9A00000000002 /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4LLMPROV2DB9A00000000001 /* LLMProvider.swift */; };
-		D4FILENAME2DB8A00000000002 /* String+Filename.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FILENAME2DB8A00000000001 /* String+Filename.swift */; };
 		00A1234567890123456789AB /* VoiceToObsidianApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B1234567890123456789AB /* VoiceToObsidianApp.swift */; };
 		00A2234567890123456789AB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B2234567890123456789AB /* ContentView.swift */; };
 		00A4234567890123456789AB /* VoiceNoteListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B4234567890123456789AB /* VoiceNoteListView.swift */; };
@@ -36,6 +31,7 @@
 		D403DE162DA398CE00C29CDB /* ErrorHandling.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE152DA398CE00C29CDB /* ErrorHandling.swift */; };
 		D403DE192DA3991C00C29CDB /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE172DA3991C00C29CDB /* AppError.swift */; };
 		D403DE1B2DA39D0900C29CDB /* SecurityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D403DE1A2DA39D0900C29CDB /* SecurityManager.swift */; };
+		D44D8D792F09DFD200121630 /* AnyLanguageModel in Frameworks */ = {isa = PBXBuildFile; productRef = D4LLMPKG2DB8B00000000002 /* AnyLanguageModel */; };
 		D45996E72DB5BD78009D9CC3 /* Documentation.md in Resources */ = {isa = PBXBuildFile; fileRef = D45996E52DB5BD78009D9CC3 /* Documentation.md */; };
 		D45996E82DB5BD78009D9CC3 /* GettingStarted.md in Resources */ = {isa = PBXBuildFile; fileRef = D45996E62DB5BD78009D9CC3 /* GettingStarted.md */; };
 		D45996E92DB5BD78009D9CC3 /* Architecture.md in Resources */ = {isa = PBXBuildFile; fileRef = D45996E42DB5BD78009D9CC3 /* Architecture.md */; };
@@ -54,6 +50,11 @@
 		D4E85B1B2DA63C55006B8FC8 /* BookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B1A2DA63C55006B8FC8 /* BookmarkManager.swift */; };
 		D4E85B512DACA405006B8FC8 /* Documentation.docc in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B502DACA405006B8FC8 /* Documentation.docc */; };
 		D4E85B522DACA405006B8FC8 /* Documentation.docc in Sources */ = {isa = PBXBuildFile; fileRef = D4E85B502DACA405006B8FC8 /* Documentation.docc */; };
+		D4FILENAME2DB8A00000000002 /* String+Filename.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FILENAME2DB8A00000000001 /* String+Filename.swift */; };
+		D4LLMPROV2DB9A00000000002 /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4LLMPROV2DB9A00000000001 /* LLMProvider.swift */; };
+		D4LLMSERV2DB9B00000000002 /* LLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4LLMSERV2DB9B00000000001 /* LLMService.swift */; };
+		D4NATIVETC2E0F000000000002 /* NativeTranscriptCleanupResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4NATIVETC2E0F000000000001 /* NativeTranscriptCleanupResult.swift */; };
+		D4TCRESULT2E0F000000000002 /* TranscriptCleanupResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4TCRESULT2E0F000000000001 /* TranscriptCleanupResult.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,11 +68,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		D4NATIVETC2E0F000000000001 /* NativeTranscriptCleanupResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTranscriptCleanupResult.swift; sourceTree = "<group>"; };
-		D4TCRESULT2E0F000000000001 /* TranscriptCleanupResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptCleanupResult.swift; sourceTree = "<group>"; };
-		D4LLMSERV2DB9B00000000001 /* LLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMService.swift; sourceTree = "<group>"; };
-		D4LLMPROV2DB9A00000000001 /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
-		D4FILENAME2DB8A00000000001 /* String+Filename.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Filename.swift"; sourceTree = "<group>"; };
 		00B1234567890123456789AB /* VoiceToObsidianApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceToObsidianApp.swift; sourceTree = "<group>"; };
 		00B2234567890123456789AB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		00B4234567890123456789AB /* VoiceNoteListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteListView.swift; sourceTree = "<group>"; };
@@ -115,6 +111,11 @@
 		D4E85B202DA64160006B8FC8 /* VoiceToObsidianTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceToObsidianTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D4E85B412DAB080C006B8FC8 /* VoiceToObsidian.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = VoiceToObsidian.xctestplan; sourceTree = "<group>"; };
 		D4E85B502DACA405006B8FC8 /* Documentation.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = Documentation.docc; sourceTree = "<group>"; };
+		D4FILENAME2DB8A00000000001 /* String+Filename.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Filename.swift"; sourceTree = "<group>"; };
+		D4LLMPROV2DB9A00000000001 /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
+		D4LLMSERV2DB9B00000000001 /* LLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMService.swift; sourceTree = "<group>"; };
+		D4NATIVETC2E0F000000000001 /* NativeTranscriptCleanupResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTranscriptCleanupResult.swift; sourceTree = "<group>"; };
+		D4TCRESULT2E0F000000000001 /* TranscriptCleanupResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptCleanupResult.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -126,6 +127,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D44D8D792F09DFD200121630 /* AnyLanguageModel in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -594,14 +596,22 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = 8JF5HHJ64N;
+				DEVELOPMENT_TEAM = 492B7Q63J2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/VoiceToObsidian/Info.plist";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Coati;
+				INFOPLIST_KEY_NSFileProviderDomainUsageDescription = "We need access to your files to save notes in your Obsidian vault.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Coati App";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone to record voice memos.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We need speech recognition to transcribe your voice memos.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -609,7 +619,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.VoiceToObsidian;
+				PRODUCT_BUNDLE_IDENTIFIER = com.westonwestenborg.coati;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -625,14 +635,22 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = 8JF5HHJ64N;
+				DEVELOPMENT_TEAM = 492B7Q63J2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/VoiceToObsidian/Info.plist";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Coati;
+				INFOPLIST_KEY_NSFileProviderDomainUsageDescription = "We need access to your files to save notes in your Obsidian vault.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Coati App";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone to record voice memos.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We need speech recognition to transcribe your voice memos.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -640,7 +658,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.VoiceToObsidian;
+				PRODUCT_BUNDLE_IDENTIFIER = com.westonwestenborg.coati;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -654,7 +672,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8JF5HHJ64N;
+				DEVELOPMENT_TEAM = 492B7Q63J2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
@@ -673,7 +691,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8JF5HHJ64N;
+				DEVELOPMENT_TEAM = 492B7Q63J2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;

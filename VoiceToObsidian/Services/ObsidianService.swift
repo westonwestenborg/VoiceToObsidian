@@ -90,32 +90,35 @@ class ObsidianService {
     /// }
     /// ```
     func createVoiceNoteFile(for voiceNote: VoiceNote) async throws -> (success: Bool, path: String?) {
-        logger.debug("Creating voice note file in Obsidian vault at: \(self.vaultPath)")
-        
+        logger.info("📝 Creating voice note file in Obsidian vault at: \(self.vaultPath)")
+
         // Check if vault path is set
         guard !vaultPath.isEmpty else {
-            logger.error("Obsidian vault path is not set")
+            logger.error("❌ Obsidian vault path is not set")
             throw AppError.obsidian(.vaultPathMissing)
         }
-        
+
         // Try to access the vault using the security-scoped bookmark
         var vaultURL: URL?
         var didStartAccessing = false
-        
+
         // Resolve bookmark without using Task, which is causing compile issues
         do {
             // Use the SecurityManager to resolve the bookmark
             let result = try SecurityManager.resolveBookmark()
             vaultURL = result.url
             didStartAccessing = result.didStartAccessing
+            logger.info("📍 Bookmark resolution: url=\(result.url?.path ?? "nil"), didStartAccessing=\(didStartAccessing)")
         } catch {
-            logger.error("Error resolving bookmark: \(error.localizedDescription)")
+            logger.error("❌ Error resolving bookmark: \(error.localizedDescription)")
             // We'll continue with the file URL path as fallback
         }
-        
+
         // If we couldn't access the vault with the bookmark, fall back to the path
         let baseURL = vaultURL ?? URL(fileURLWithPath: vaultPath)
-        
+        let usingFallback = vaultURL == nil
+        logger.info("📂 Using baseURL: \(baseURL.path), usingFallback=\(usingFallback), didStartAccessing=\(didStartAccessing)")
+
         // Create the directory structure if needed
         let voiceNotesDirectory = baseURL.appendingPathComponent("Voice Notes")
         

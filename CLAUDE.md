@@ -127,3 +127,19 @@ thoughts/
 │   └── plans/          # Plans and validation reports
 └── searchable/         # Symlinked for AI search
 ```
+
+## Recommended Plugins
+
+Install these plugins when working in this repo:
+```
+/plugin install swift-lsp
+```
+
+## Vault Context
+
+This project is linked to the Obsidian vault at `$OBSIDIAN_VAULT_ROOT` (/Users/ww/vaults/notes).
+
+- **Vault project:** [[01_Projects/Coati]]
+- **Tasks:** [[02_Areas/Tasks/Open Tasks.md]]
+
+Use `/quick-capture` to send notes to the vault's daily note from this project.

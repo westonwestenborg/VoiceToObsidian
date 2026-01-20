@@ -131,11 +131,12 @@ class SecurityManager {
     static func resolveBookmark() throws -> (url: URL?, didStartAccessing: Bool) {
         // Get bookmark data using property wrapper
         let bookmarkData = obsidianVaultBookmark
-        
+
         guard let bookmarkData = bookmarkData else {
-            Self.logger.info("No bookmark data found")
+            Self.logger.error("❌ No bookmark data found in Keychain")
             return (nil, false)
         }
+        Self.logger.info("✅ Found bookmark data: \(bookmarkData.count) bytes")
         
         do {
             var isStale = false

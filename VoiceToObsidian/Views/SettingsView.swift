@@ -197,7 +197,12 @@ struct VaultPathSection: View {
                     .dynamicTypeSize(.small...(.accessibility5))
                 }
                 .accessibilityHint("Opens a file browser to select your Obsidian vault location")
-                
+
+                Text("Select the root folder of your Obsidian vault. The app will create a \"Voice Notes\" folder inside it.")
+                    .font(.caption)
+                    .foregroundColor(Color.flexokiText2)
+                    .fixedSize(horizontal: false, vertical: true)
+
                 Button(action: {
                     coordinator.clearObsidianVaultPath()
                     secureObsidianVaultPath = ""
@@ -574,6 +579,7 @@ class SettingsStateCoordinator: ObservableObject {
     @Published var showingGeminiKeyAlert = false
     @Published var showingClearedAlert = false
     @Published var showingVaultPathAlert = false
+    @Published var showingVaultPathSavedAlert = false
     @Published var showingClearAllAlert = false
     @Published var showingClearAllConfirmation = false
     @Published var localErrorState: AppError?
@@ -669,7 +675,7 @@ class SettingsStateCoordinator: ObservableObject {
             // Update the secure storage and UI state
             secureObsidianVaultPath = path
             obsidianVaultPath = path
-            showingVaultPathAlert = true
+            showingVaultPathSavedAlert = true
         } catch {
             logger.error("Failed to create security-scoped bookmark: \(error)")
             handleError(AppError.securityScoped(.bookmarkCreationFailed))
@@ -860,6 +866,11 @@ struct SettingsView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Your Obsidian vault path has been removed.")
+        }
+        .alert("Vault Path Saved", isPresented: $stateCoordinator.showingVaultPathSavedAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your Obsidian vault has been configured successfully.")
         }
         .alert("Clear All Sensitive Data", isPresented: $stateCoordinator.showingClearAllAlert) {
             Button("Cancel", role: .cancel) {}
