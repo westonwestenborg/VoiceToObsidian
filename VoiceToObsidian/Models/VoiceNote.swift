@@ -237,4 +237,38 @@ extension VoiceNote {
             )
         ]
     }
+
+    /// A welcome note shown on first launch for new users.
+    ///
+    /// This note contains setup instructions and key features to help users
+    /// get started with the app. It has no audio file and zero duration.
+    static var welcomeNote: VoiceNote {
+        VoiceNote(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!, // Deterministic ID
+            title: "Welcome to Coati",
+            originalTranscript: "",
+            cleanedTranscript: """
+                Welcome to Coati - your voice-to-Obsidian companion.
+
+                Getting Started:
+                1. Tap the record button to capture a voice note
+                2. AI automatically cleans up your transcript
+                3. Connect your Obsidian vault in Settings to save notes directly
+
+                Key Features:
+                - On-device AI: Apple Intelligence processes locally when available (free, private)
+                - Cloud options: Add an API key in Settings to use Claude, OpenAI, or Gemini
+                - Custom words: Add proper nouns or technical terms in Settings for better accuracy
+
+                Happy note-taking!
+                """,
+            duration: 0,
+            creationDate: Date(),
+            audioFilename: "",
+            obsidianPath: nil,
+            status: .complete,
+            llmProvider: nil,
+            llmModel: nil
+        )
+    }
 }

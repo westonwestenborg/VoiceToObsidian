@@ -225,21 +225,26 @@ struct VoiceNoteRow: View {
                     .font(.system(size: 14, weight: .regular))
                     .foregroundColor(Color.flexokiText2)
                     .dynamicTypeSize(.small...(.accessibility5))
-                
+
                 Spacer()
-                
-                Image(systemName: "clock")
-                    .foregroundColor(Color.flexokiText2)
-                Text(DateFormatUtil.shared.formatTimeShort(voiceNote.duration))
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(Color.flexokiText2)
-                    .dynamicTypeSize(.small...(.accessibility5))
+
+                // Only show duration if there's an audio file
+                if !voiceNote.audioFilename.isEmpty {
+                    Image(systemName: "clock")
+                        .foregroundColor(Color.flexokiText2)
+                    Text(DateFormatUtil.shared.formatTimeShort(voiceNote.duration))
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(Color.flexokiText2)
+                        .dynamicTypeSize(.small...(.accessibility5))
+                }
             }
             .padding(.top, Spacing.tight)
         }
         .padding(.vertical, Spacing.tight)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Voice note: \(voiceNote.title), recorded on \(DateFormatUtil.shared.formattedDateSpoken(voiceNote.creationDate)), duration: \(DateFormatUtil.shared.formatTimeSpoken(voiceNote.duration))")
+        .accessibilityLabel(voiceNote.audioFilename.isEmpty
+            ? "Voice note: \(voiceNote.title), recorded on \(DateFormatUtil.shared.formattedDateSpoken(voiceNote.creationDate))"
+            : "Voice note: \(voiceNote.title), recorded on \(DateFormatUtil.shared.formattedDateSpoken(voiceNote.creationDate)), duration: \(DateFormatUtil.shared.formatTimeSpoken(voiceNote.duration))")
     }
     
 

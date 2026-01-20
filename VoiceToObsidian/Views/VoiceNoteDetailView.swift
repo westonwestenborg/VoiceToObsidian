@@ -33,7 +33,12 @@ struct DetailContentView: View {
     
     // Logger for DetailContentView
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app.VoiceToObsidian", category: "VoiceNoteDetailView")
-    
+
+    /// Whether this voice note has an associated audio file
+    private var hasAudio: Bool {
+        !voiceNote.audioFilename.isEmpty && voiceNote.audioURL != nil
+    }
+
     // Audio playback functions
     private func setupAudioPlayer() {
         guard let audioURL = voiceNote.audioURL else { return }
@@ -180,62 +185,64 @@ struct DetailContentView: View {
                         .accessibilityLabel("Processed with \(provider.replacingOccurrences(of: "_", with: " "))")
                     }
 
-                    // Audio player controls
-                    VStack {
-                        // Progress bar
-                        ProgressView(value: currentTime, total: voiceNote.duration)
-                            .progressViewStyle(LinearProgressViewStyle())
-                            .padding(.vertical, 16)
-                    
-                        // Time display
-                        HStack {
-                            Text(DateFormatUtil.shared.formatTimeShort(currentTime))
-                                .font(.caption)
-                                .monospacedDigit()
-                                .dynamicTypeSize(.small...(.accessibility5))
-                                .accessibilityLabel("Current position: \(DateFormatUtil.shared.formatTimeSpoken(currentTime))")
-                        
-                            Spacer()
-                        
-                            Text(DateFormatUtil.shared.formatTimeShort(voiceNote.duration))
-                                .font(.caption)
-                                .monospacedDigit()
-                                .dynamicTypeSize(.small...(.accessibility5))
-                                .accessibilityLabel("Total duration: \(DateFormatUtil.shared.formatTimeSpoken(voiceNote.duration))")
-                        }
-                    
-                        // Playback controls
-                        HStack {
-                            Button(action: {
-                                if isPlaying {
-                                    pauseAudio()
-                                } else {
-                                    playAudio()
+                    // Audio player controls (only show if audio exists)
+                    if hasAudio {
+                        VStack {
+                            // Progress bar
+                            ProgressView(value: currentTime, total: voiceNote.duration)
+                                .progressViewStyle(LinearProgressViewStyle())
+                                .padding(.vertical, 16)
+
+                            // Time display
+                            HStack {
+                                Text(DateFormatUtil.shared.formatTimeShort(currentTime))
+                                    .font(.caption)
+                                    .monospacedDigit()
+                                    .dynamicTypeSize(.small...(.accessibility5))
+                                    .accessibilityLabel("Current position: \(DateFormatUtil.shared.formatTimeSpoken(currentTime))")
+
+                                Spacer()
+
+                                Text(DateFormatUtil.shared.formatTimeShort(voiceNote.duration))
+                                    .font(.caption)
+                                    .monospacedDigit()
+                                    .dynamicTypeSize(.small...(.accessibility5))
+                                    .accessibilityLabel("Total duration: \(DateFormatUtil.shared.formatTimeSpoken(voiceNote.duration))")
+                            }
+
+                            // Playback controls
+                            HStack {
+                                Button(action: {
+                                    if isPlaying {
+                                        pauseAudio()
+                                    } else {
+                                        playAudio()
+                                    }
+                                }) {
+                                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                        .resizable()
+                                        .frame(width: 44, height: 44)
+                                        .foregroundColor(Color.flexokiAccentBlue)
                                 }
-                            }) {
-                                Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                    .resizable()
-                                    .frame(width: 44, height: 44)
-                                    .foregroundColor(Color.flexokiAccentBlue)
+                                .accessibilityLabel(isPlaying ? "Pause audio" : "Play audio")
+
+                                Button(action: {
+                                    stopAudio()
+                                }) {
+                                    Image(systemName: "stop.circle.fill")
+                                        .resizable()
+                                        .frame(width: 44, height: 44)
+                                        .foregroundColor(Color.flexokiAccentRed)
+                                }
+                                .accessibilityLabel("Stop audio")
                             }
-                            .accessibilityLabel(isPlaying ? "Pause audio" : "Play audio")
-                        
-                            Button(action: {
-                                stopAudio()
-                            }) {
-                                Image(systemName: "stop.circle.fill")
-                                    .resizable()
-                                    .frame(width: 44, height: 44)
-                                    .foregroundColor(Color.flexokiAccentRed)
-                            }
-                            .accessibilityLabel("Stop audio")
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 16)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 16)
+                        .padding(16)
+                        .background(Color.flexokiBackground2)
+                        .cornerRadius(10)
                     }
-                    .padding(16)
-                    .background(Color.flexokiBackground2)
-                    .cornerRadius(10)
                 
                     // Transcript section
                     VStack(alignment: .leading, spacing: 8) {
@@ -349,18 +356,20 @@ struct DetailContentView: View {
         .background(Color.flexokiBackground)
         .navigationBarTitle("", displayMode: .inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    // Share the voice note using UIActivityViewController
-                    if let audioURL = voiceNote.audioURL {
-                        let activityVC = UIActivityViewController(activityItems: [audioURL], applicationActivities: nil)
-                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                           let rootViewController = windowScene.windows.first?.rootViewController {
-                            rootViewController.present(activityVC, animated: true)
+            if hasAudio {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        // Share the voice note using UIActivityViewController
+                        if let audioURL = voiceNote.audioURL {
+                            let activityVC = UIActivityViewController(activityItems: [audioURL], applicationActivities: nil)
+                            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                               let rootViewController = windowScene.windows.first?.rootViewController {
+                                rootViewController.present(activityVC, animated: true)
+                            }
                         }
+                    }) {
+                        Image(systemName: "square.and.arrow.up")
                     }
-                }) {
-                    Image(systemName: "square.and.arrow.up")
                 }
             }
         }

@@ -77,7 +77,14 @@ class VoiceNoteStore: ObservableObject, ErrorHandling {
     /// This logger uses the OSLog system for efficient and structured logging
     /// of data operations, errors, and loading events.
     private let logger = Logger(subsystem: "com.voicetoobsidian.app", category: "VoiceNoteStore")
-    
+
+    // MARK: - First Launch
+
+    /// Tracks whether the app has been launched before.
+    /// Used to inject the welcome note on first launch only.
+    @AppPreference(wrappedValue: false, "hasLaunchedBefore")
+    private var hasLaunchedBefore: Bool
+
     // MARK: - State Management
     
     /// Tracks whether initialization has been completed.
@@ -175,7 +182,31 @@ class VoiceNoteStore: ObservableObject, ErrorHandling {
         hasInitialized = true
         logger.debug("Deferred initialization complete")
     }
-    
+
+    /// Creates and adds a welcome note for first-time users.
+    ///
+    /// This method checks if the app has been launched before and, if not,
+    /// creates a welcome note with onboarding instructions. The note is
+    /// added to the beginning of the voice notes array.
+    private func createWelcomeNoteIfNeeded() {
+        guard !hasLaunchedBefore else {
+            logger.debug("Not first launch, skipping welcome note")
+            return
+        }
+
+        logger.info("First launch detected, creating welcome note")
+
+        // Create and add the welcome note
+        let welcomeNote = VoiceNote.welcomeNote
+        voiceNotes.insert(welcomeNote, at: 0)
+
+        // Mark as launched and save
+        hasLaunchedBefore = true
+        saveVoiceNotes()
+
+        logger.debug("Welcome note created successfully")
+    }
+
     // MARK: - Voice Note Management
     
     /// Deletes a voice note and its associated files.
@@ -425,6 +456,9 @@ class VoiceNoteStore: ObservableObject, ErrorHandling {
                         // Clear and reload if this is the first page
                         if page == 0 {
                             self.voiceNotes = pageNotes
+
+                            // Check if we should add a welcome note (first launch)
+                            self.createWelcomeNoteIfNeeded()
                         } else {
                             // Append to existing notes for subsequent pages
                             self.voiceNotes.append(contentsOf: pageNotes)
@@ -454,10 +488,13 @@ class VoiceNoteStore: ObservableObject, ErrorHandling {
                 }
             } else {
                 await self.logger.info("No voice notes file found")
-                
+
                 // Update directly since we're on MainActor
                 await MainActor.run {
                     self.loadedAllNotes = true
+
+                    // Check if we should add a welcome note (first launch with no notes)
+                    self.createWelcomeNoteIfNeeded()
                 }
             }
         }
