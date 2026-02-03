@@ -117,7 +117,7 @@ class RecordingManager: ObservableObject {
 
         do {
             // Configure the audio session for recording
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
             try session.setPreferredSampleRate(44100.0)
             try session.setPreferredIOBufferDuration(0.005)
 
@@ -324,7 +324,20 @@ class RecordingManager: ObservableObject {
         
         // Wait a moment to ensure the file is properly written
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-        
+
+        // Deactivate the audio session to notify other apps they can resume
+        // This must be done after the file is written but before cleanup
+        if let session = recordingSession {
+            do {
+                try session.setActive(false, options: .notifyOthersOnDeactivation)
+                isSessionPrepared = false // Session needs to be re-prepared for next recording
+                logger.info("Audio session deactivated, other apps notified to resume")
+            } catch {
+                // Log but don't fail - deactivation failure shouldn't prevent returning the recording
+                logger.warning("Failed to deactivate audio session: \(error.localizedDescription)")
+            }
+        }
+
         // Verify the recording was saved
         if !fileManager.fileExists(atPath: recordingURL.path) {
             logger.error("Recording file was not created after stopping: \(recordingURL.path)")
@@ -428,7 +441,7 @@ class RecordingManager: ObservableObject {
             // Skip session setup if already pre-warmed
             if !isSessionPrepared {
                 // Configure the audio session for recording with background support
-                try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
+                try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
 
                 // Set the preferred sample rate and I/O buffer duration
                 try session.setPreferredSampleRate(44100.0)
